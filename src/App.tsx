@@ -7,19 +7,21 @@ import Choice from "./assets/Choice";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Send from "./assets/Send";
 import Recieve from "./assets/Recieve";
-
+import { ThemeProvider } from './assets/Theme';
 function App() {
 
   return (
     <div>
-      <Router>
-        <Routes>
-          {/* <Route path='/' element={}></Route> */}
-          <Route path='/' element={<Choice />}></Route>
-          <Route path='/send' element={<Send />}></Route>
-          <Route path='/receive' element={<Recieve />}></Route>
-        </Routes>
-      </Router>
+      <ThemeProvider>
+        <Router>
+          <Routes>
+            {/* <Route path='/' element={}></Route> */}
+            <Route path='/' element={<Choice />}></Route>
+            <Route path='/send' element={<Send />}></Route>
+            <Route path='/receive' element={<Recieve />}></Route>
+          </Routes>
+        </Router>
+      </ThemeProvider>
     </div>
   );
 }
