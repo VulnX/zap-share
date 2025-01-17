@@ -1,27 +1,37 @@
 use crate::server;
+use actix_web::dev::ServerHandle;
+use serde::Serialize;
 use std::{
-    io::{stdin, stdout, Read, Write},
-    sync::mpsc,
+    path::PathBuf,
+    sync::{mpsc, Mutex},
     thread,
     time::Duration,
 };
+use tauri::Runtime;
+
+pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Url {
     ip: Option<String>,
-    port: u16
+    port: u16,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum StartServerResponse {
     Success(Url),
     Error(String),
 }
 
+#[derive(Clone)]
+pub enum TransferMode {
+    Send(PathBuf),
+    Receive,
+}
 
 /// Starts server in `send` mode
-/// 
+///
 /// Assumes filepath is a valid path to the user selected file, or a content URI in case of android.
 ///
 /// Return value:
@@ -33,30 +43,35 @@ pub enum StartServerResponse {
 ///   }
 /// }
 /// ```
-/// 
+///
 /// or
-/// 
+///
 /// ```javascript
 /// { "Error": "<error message>" }
 /// ```
+#[allow(dead_code)]
 #[tauri::command]
-pub async fn send_file(filepath: String) -> StartServerResponse {
-    dbg!(filepath);
-    start_server()
+pub fn send_file<R: Runtime>(window: tauri::Window<R>, filepath: String) -> StartServerResponse {
+    let filepath = PathBuf::from(filepath);
+    if !filepath.is_file() {
+        return StartServerResponse::Error("No such file exists".into());
+    }
+    let mode = TransferMode::Send(filepath);
+    start_server(window, mode)
 }
 
-pub fn pause() {
-    let mut stdout = stdout();
-    stdout.write(b"Press Enter to continue...").unwrap();
-    stdout.flush().unwrap();
-    stdin().read(&mut [0]).unwrap();
-}
+// pub fn pause() {
+//     let mut stdout = stdout();
+//     stdout.write(b"Press Enter to continue...").unwrap();
+//     stdout.flush().unwrap();
+//     stdin().read(&mut [0]).unwrap();
+// }
 
 /// Starts (or re-starts existing) actix web server in separate thread
-fn start_server() -> StartServerResponse {
+fn start_server<R: Runtime>(window: tauri::Window<R>, mode: TransferMode) -> StartServerResponse {
     let (tx, rx) = mpsc::channel::<u16>();
     thread::spawn(|| {
-        server::start_server(tx);
+        server::start_server(window, mode, tx);
     });
     let port;
     match rx.recv_timeout(Duration::from_secs(10)) {
@@ -64,8 +79,5 @@ fn start_server() -> StartServerResponse {
         Err(_) => return StartServerResponse::Error("Timeout: Failed to start server".into()),
     }
     let ip = local_ip_address::local_ip().ok().map(|ip| ip.to_string());
-    StartServerResponse::Success(Url {
-        ip,
-        port
-    })
+    StartServerResponse::Success(Url { ip, port })
 }
