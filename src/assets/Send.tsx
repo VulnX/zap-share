@@ -5,6 +5,7 @@ import { useTheme } from "./Theme";
 import { open } from '@tauri-apps/plugin-dialog';
 import QRCode from 'qrcode'
 import { useState } from "react";
+import { invoke } from '@tauri-apps/api/core';
 
 
 export default function Send() {
@@ -12,28 +13,39 @@ export default function Send() {
     const navigate = useNavigate();
     const [qrCode, setQrCode] = useState<string | null>(null);
 
+
     const openFileSelector = async () => {
         const file = await open({
             multiple: false,
             directory: false,
         });
         console.log(file);
-        generateQR('www.google.com');
-    }
+        if (file) {
+            invoke<{ Success: { ip: string | null; port: number } }>('send_file', { filepath: file })
+                .then((response) => {
+                    console.log(response);
+                    const { ip, port } = response.Success;
 
-    QRCode.toDataURL('I am a pony!')
-        .then(url => {
-            console.log(url)
-        })
-        .catch(err => {
-            console.error(err)
-        })
+                    console.log(ip);
+                    console.log(port);
+                    if (ip) {
+                        generateQR(`http://${ip}:${port}/download`);
+                    } else {
+                        console.error("IP detection failed. Unable to generate QR code.");
+                    }
+                })
+                .catch((err) => console.error("Error invoking send_file:", err));
+        }
+
+    }
 
     // With async/await
     const generateQR = async (text: string | QRCode.QRCodeSegment[]) => {
         try {
             const url = await QRCode.toDataURL(text);
             setQrCode(url);
+            console.log(url);
+
         } catch (err) {
             console.error(err)
         }
