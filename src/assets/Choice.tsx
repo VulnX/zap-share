@@ -18,7 +18,7 @@ export default function Choice() {
 
 
                 {/* Send-Recieve Button */}
-                <div className="flex items-center justify-evenly  flex-grow">
+                <div className="flex mt-[10vh] justify-evenly  flex-grow">
                     <div className={`send || 
                         bg-gray-200 w-[40vh] h-[40vh] rounded-full || flex items-center justify-center
                          ${isTheme ? ' bg-neutral-700' : ' bg-gray-300'} 
