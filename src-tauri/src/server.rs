@@ -1,6 +1,7 @@
 use actix_web::{
     body::SizedStream,
     http::header::{ContentDisposition, ContentType},
+    middleware::Logger,
     rt, web, App, HttpResponse, HttpServer, Responder,
 };
 use futures_util::stream;
@@ -65,13 +66,14 @@ pub fn start_server<R: Runtime>(
     mode: TransferMode,
     tx: mpsc::Sender<u16>,
 ) {
+    // env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
     let server;
-    let window = web::Data::new(window);
     loop {
         let mode = mode.clone();
         let window = web::Data::new(window.clone());
         let _server = HttpServer::new(move || {
             let mut app = App::new();
+            // let mut app = app.wrap(Logger::default());
             match &mode {
                 TransferMode::Send(filepath) => {
                     app = app
