@@ -24,6 +24,7 @@ pub enum StartServerResponse {
     Error(String),
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub enum TransferMode {
     Send(PathBuf),
@@ -68,7 +69,20 @@ pub fn send_file<R: Runtime>(window: tauri::Window<R>, filepath: String) -> Star
 // }
 
 /// Starts (or re-starts existing) actix web server in separate thread
+/// 
+/// If the server has started successfully then the `port` number and (optionally detected) `ip` address will be returned
+/// 
+/// In case of any detected errors, corresponding `Error` type will be returned
 fn start_server<R: Runtime>(window: tauri::Window<R>, mode: TransferMode) -> StartServerResponse {
+    // Stop any running server instance before starting a new one
+    let mut handle_guard = SERVER_HANDLE.lock().unwrap();
+    if let Some(server_handle) = handle_guard.take() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            server_handle.stop(true).await;
+        });
+    }
+
     let (tx, rx) = mpsc::channel::<u16>();
     thread::spawn(|| {
         server::start_server(window, mode, tx);

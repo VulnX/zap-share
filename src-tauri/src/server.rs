@@ -14,6 +14,11 @@ use crate::api::{TransferMode, SERVER_HANDLE};
 const CHUNK_SIZE: usize = 1024 * 1024; // 1 MiB
 
 // TODO : Refactor this entire function
+/// Handles the `/download` route
+/// 
+/// Creates a future `data_stream` by adding the file contents in 1MiB chunks
+/// 
+/// A `progress-update` event will be emitted to this window if after adding a new chunk the overall progress difference is greater than 1%
 async fn download(filepath: web::Data<PathBuf>, window: web::Data<Window>) -> impl Responder {
     let filepath = &**filepath.clone();
     let file_name = filepath.file_name().unwrap().to_str().unwrap();
@@ -61,19 +66,26 @@ async fn upload() -> impl Responder {
     HttpResponse::Ok().body("unimplemented")
 }
 
+/// Starts an actix web server and enables required routes based on the given `mode`
+/// 
+/// Server will be exposed at : `0.0.0.0`
+/// 
+/// Port will be randomly assigned and sent back to caller function via `tx` channel
+/// 
+/// `SERVER_HANDLE` will be registered after server starts successfully
 pub fn start_server<R: Runtime>(
     window: tauri::Window<R>,
     mode: TransferMode,
     tx: mpsc::Sender<u16>,
 ) {
-    // env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
     let server;
     loop {
         let mode = mode.clone();
         let window = web::Data::new(window.clone());
         let _server = HttpServer::new(move || {
-            let mut app = App::new();
-            // let mut app = app.wrap(Logger::default());
+            let app = App::new();
+            let mut app = app.wrap(Logger::default());
             match &mode {
                 TransferMode::Send(filepath) => {
                     app = app
