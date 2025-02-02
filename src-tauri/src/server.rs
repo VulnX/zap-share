@@ -7,24 +7,50 @@ use actix_web::{
 use futures_util::stream;
 use std::{io::Error, path::PathBuf, sync::mpsc};
 use tauri::{Emitter, Runtime, Window};
+use tauri_plugin_fs::{FsExt, SafeFilePath};
 use tokio::io::AsyncReadExt;
 
 use crate::api::{TransferMode, SERVER_HANDLE};
 
 const CHUNK_SIZE: usize = 1024 * 1024; // 1 MiB
 
+fn open_file(
+    filepath: &web::Data<SafeFilePath>,
+    window: &web::Data<Window>,
+) -> (std::fs::File, PathBuf) {
+    let filepath: &SafeFilePath = &***filepath;
+    match filepath {
+        SafeFilePath::Path(_) => {
+            let path: PathBuf = filepath.clone().into_path().unwrap();
+            let file = std::fs::OpenOptions::new().read(true).open(&path).unwrap();
+            (file, path)
+        }
+        SafeFilePath::Url(url) => {
+            let path: PathBuf = url.as_str().into();
+            let file = window
+                .fs()
+                .open(
+                    filepath.clone(),
+                    tauri_plugin_fs::OpenOptions::new().read(true).clone(),
+                )
+                .unwrap();
+            (file, path)
+        }
+    }
+}
+
 // TODO : Refactor this entire function
 /// Handles the `/download` route
-/// 
+///
 /// Creates a future `data_stream` by adding the file contents in 1MiB chunks
-/// 
+///
 /// A `progress-update` event will be emitted to this window if after adding a new chunk the overall progress difference is greater than 1%
-async fn download(filepath: web::Data<PathBuf>, window: web::Data<Window>) -> impl Responder {
-    let filepath = &**filepath.clone();
-    let file_name = filepath.file_name().unwrap().to_str().unwrap();
-    let file = tokio::fs::File::open(filepath)
-        .await
-        .expect("successfully open selected file");
+async fn download(filepath: web::Data<SafeFilePath>, window: web::Data<Window>) -> impl Responder {
+    let file_name = "malum.nahi";
+    let (file, path) = open_file(&filepath, &window);
+    let file = tokio::fs::File::from_std(file);
+    println!("{:?}", file);
+    println!("{:?}", path);
     let file_size = file.metadata().await.unwrap().len();
     let transferred: usize = 0;
     let progress = 0;
@@ -67,18 +93,18 @@ async fn upload() -> impl Responder {
 }
 
 /// Starts an actix web server and enables required routes based on the given `mode`
-/// 
+///
 /// Server will be exposed at : `0.0.0.0`
-/// 
+///
 /// Port will be randomly assigned and sent back to caller function via `tx` channel
-/// 
+///
 /// `SERVER_HANDLE` will be registered after server starts successfully
 pub fn start_server<R: Runtime>(
     window: tauri::Window<R>,
     mode: TransferMode,
     tx: mpsc::Sender<u16>,
 ) {
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("debug"));
+    let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("debug"));
     let server;
     loop {
         let mode = mode.clone();

@@ -1,8 +1,8 @@
 use crate::server;
 use actix_web::dev::ServerHandle;
 use serde::Serialize;
+use tauri_plugin_fs::SafeFilePath;
 use std::{
-    path::PathBuf,
     sync::{mpsc, Mutex},
     thread,
     time::Duration,
@@ -27,7 +27,7 @@ pub enum StartServerResponse {
 #[allow(dead_code)]
 #[derive(Clone)]
 pub enum TransferMode {
-    Send(PathBuf),
+    Send(SafeFilePath),
     Receive,
 }
 
@@ -52,11 +52,8 @@ pub enum TransferMode {
 /// ```
 #[allow(dead_code)]
 #[tauri::command]
-pub fn send_file<R: Runtime>(window: tauri::Window<R>, filepath: String) -> StartServerResponse {
-    let filepath = PathBuf::from(filepath);
-    if !filepath.is_file() {
-        return StartServerResponse::Error("No such file exists".into());
-    }
+pub fn send_file<R: Runtime>(window: tauri::Window<R>, filepath: SafeFilePath) -> StartServerResponse {
+    // TODO : Add file checks before starting server
     let mode = TransferMode::Send(filepath);
     start_server(window, mode)
 }
@@ -69,9 +66,9 @@ pub fn send_file<R: Runtime>(window: tauri::Window<R>, filepath: String) -> Star
 // }
 
 /// Starts (or re-starts existing) actix web server in separate thread
-/// 
+///
 /// If the server has started successfully then the `port` number and (optionally detected) `ip` address will be returned
-/// 
+///
 /// In case of any detected errors, corresponding `Error` type will be returned
 fn start_server<R: Runtime>(window: tauri::Window<R>, mode: TransferMode) -> StartServerResponse {
     // Stop any running server instance before starting a new one

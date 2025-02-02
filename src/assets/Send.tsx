@@ -12,7 +12,7 @@ export default function Send() {
     const { isTheme } = useTheme();
     const navigate = useNavigate();
     const [qrCode, setQrCode] = useState<string | null>(null);
-
+    const [url, setUrl] = useState<string | null>(null);
 
     const openFileSelector = async () => {
         const file = await open({
@@ -30,6 +30,7 @@ export default function Send() {
                     console.log(port);
                     if (ip) {
                         generateQR(`http://${ip}:${port}/download`);
+                        setUrl(`http://${ip}:${port}/download`);
                     } else {
                         console.error("IP detection failed. Unable to generate QR code.");
                     }
@@ -65,6 +66,7 @@ export default function Send() {
                 </div>
             </nav>
 
+            <span>{url}</span>
 
             {/* File Picker */}
             {qrCode && (
