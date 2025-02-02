@@ -1,11 +1,40 @@
 
+// importing Hooks
 import { useNavigate } from "react-router-dom";
-import { ToggleThemeButton } from "./Navigation";
-import { useTheme } from "./Theme";
-import { open } from '@tauri-apps/plugin-dialog';
-import QRCode from 'qrcode'
 import { useState } from "react";
+import { useTheme } from "./Theme";  //custom hook
+
+// importing themeSwitcher
+import { ToggleThemeButton } from "./Navigation";
+
+// importing tauri plugins and features
+import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
+// import { listen } from '@tauri-apps/api/event';
+
+
+
+// importing other functionalities
+import QRCode from 'qrcode'
+import Swal from 'sweetalert2'
+
+
+// Response after sending file to backend
+interface SendFileResponse {
+    Success: {
+        ip: string | null;
+        port: number;
+    };
+}
+
+// if file not selected
+const swalWithBootstrapButtons = Swal.mixin({
+    customClass: {
+        confirmButton: "btn btn-success",
+        cancelButton: "btn btn-danger"
+    },
+    buttonsStyling: true
+});
 
 
 export default function Send() {
@@ -21,7 +50,7 @@ export default function Send() {
         });
         console.log(file);
         if (file) {
-            invoke<{ Success: { ip: string | null; port: number } }>('send_file', { filepath: file })
+            invoke<SendFileResponse>('send_file', { filepath: file })
                 .then((response) => {
                     console.log(response);
                     const { ip, port } = response.Success;
@@ -35,6 +64,15 @@ export default function Send() {
                     }
                 })
                 .catch((err) => console.error("Error invoking send_file:", err));
+        }
+        else {
+            swalWithBootstrapButtons.fire({
+                title: "File not selectd",
+                text: "Please select a file to transfer",
+                icon: "warning",
+                confirmButtonText: "OK",
+                reverseButtons: true
+            })
         }
 
     }
