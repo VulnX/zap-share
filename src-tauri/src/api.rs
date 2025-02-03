@@ -8,6 +8,7 @@ use std::{
 };
 use tauri::Runtime;
 use tauri_plugin_fs::SafeFilePath;
+use tauri_plugin_fs::SafeFilePath;
 
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 
@@ -56,6 +57,10 @@ pub fn send_file<R: Runtime>(
     window: tauri::Window<R>,
     filepath: SafeFilePath,
 ) -> StartServerResponse {
+pub fn send_file<R: Runtime>(
+    window: tauri::Window<R>,
+    filepath: SafeFilePath,
+) -> StartServerResponse {
     // TODO : Add file checks before starting server
     let mode = TransferMode::Send(filepath);
     start_server(window, mode)
@@ -98,7 +103,7 @@ fn start_server<R: Runtime>(window: tauri::Window<R>, mode: TransferMode) -> Sta
     // starting with "192.168.". The `local_ip_address` crate at the moment of
     // writing this code is not able to automatically detect ip address in case
     // host machine is using its own hotspot, thus this is a minimalistic (and
-    // possibly not the most appropriate) method to find a valid candiate.
+    // possibly not the most appropriate) method to find a valid candidate.
     let ip = local_ip_address::local_ip()
         .ok()
         .or_else(|| {
