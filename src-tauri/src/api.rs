@@ -1,13 +1,13 @@
 use crate::server;
 use actix_web::dev::ServerHandle;
 use serde::Serialize;
-use tauri_plugin_fs::SafeFilePath;
 use std::{
     sync::{mpsc, Mutex},
     thread,
     time::Duration,
 };
 use tauri::Runtime;
+use tauri_plugin_fs::SafeFilePath;
 
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 
@@ -52,7 +52,10 @@ pub enum TransferMode {
 /// ```
 #[allow(dead_code)]
 #[tauri::command]
-pub fn send_file<R: Runtime>(window: tauri::Window<R>, filepath: SafeFilePath) -> StartServerResponse {
+pub fn send_file<R: Runtime>(
+    window: tauri::Window<R>,
+    filepath: SafeFilePath,
+) -> StartServerResponse {
     // TODO : Add file checks before starting server
     let mode = TransferMode::Send(filepath);
     start_server(window, mode)
@@ -89,6 +92,25 @@ fn start_server<R: Runtime>(window: tauri::Window<R>, mode: TransferMode) -> Sta
         Ok(n) => port = n,
         Err(_) => return StartServerResponse::Error("Timeout: Failed to start server".into()),
     }
-    let ip = local_ip_address::local_ip().ok().map(|ip| ip.to_string());
+
+    // Attempt to automatically detect ip address. If this fails, then manually
+    // probe every network interface and attempt to find one with ip address
+    // starting with "192.168.". The `local_ip_address` crate at the moment of
+    // writing this code is not able to automatically detect ip address in case
+    // host machine is using its own hotspot, thus this is a minimalistic (and
+    // possibly not the most appropriate) method to find a valid candiate.
+    let ip = local_ip_address::local_ip()
+        .ok()
+        .or_else(|| {
+            local_ip_address::list_afinet_netifas()
+                .ok()
+                .and_then(|network_interfaces| {
+                    network_interfaces
+                        .iter()
+                        .find(|(_, ipaddr)| ipaddr.to_string().starts_with("192.168."))
+                        .map(|(_, ipaddr)| *ipaddr)
+                })
+        })
+        .map(|ipaddr| ipaddr.to_string());
     StartServerResponse::Success(Url { ip, port })
 }
