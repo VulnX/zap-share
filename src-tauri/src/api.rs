@@ -8,7 +8,6 @@ use std::{
 };
 use tauri::Runtime;
 use tauri_plugin_fs::SafeFilePath;
-use tauri_plugin_fs::SafeFilePath;
 
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 
@@ -53,10 +52,6 @@ pub enum TransferMode {
 /// ```
 #[allow(dead_code)]
 #[tauri::command]
-pub fn send_file<R: Runtime>(
-    window: tauri::Window<R>,
-    filepath: SafeFilePath,
-) -> StartServerResponse {
 pub fn send_file<R: Runtime>(
     window: tauri::Window<R>,
     filepath: SafeFilePath,
