@@ -1,4 +1,4 @@
-import logo from '../images/a6cc6028300b7e1165a46f9b41bec24c.png';
+import logo from '../images/a6cc6028300b7e1165a46f9b41bec24c.png'
 import { useTheme } from './Theme';
 
 

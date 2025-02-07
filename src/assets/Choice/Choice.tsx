@@ -4,6 +4,7 @@ import Navigation from './Navigation';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from './Theme';
 
+
 export default function Choice() {
 
     const { isTheme } = useTheme();
@@ -23,13 +24,13 @@ export default function Choice() {
                         bg-gray-200 w-[40vh] h-[40vh] rounded-full || flex items-center justify-center
                          ${isTheme ? ' bg-neutral-700' : ' bg-gray-300'} 
                          border-4 ${isTheme ? ' border-neutral-300' : ' border-gray-400'}`}
-                        onClick={() => navigate('/send')}
+                        onClick={() => navigate('/send', { replace: true })}
                     >
                         <img src={send} alt="Send" className='mr-3 mt-3' />
                     </div>
                     <div className={`recieve ||  bg-gray-200 w-[40vh] h-[40vh] rounded-full || flex items-center justify-center ${isTheme ? ' bg-neutral-700' : ' bg-gray-300'} 
                      border-4  ${isTheme ? ' border-neutral-300' : ' border-gray-400'}`}
-                        onClick={() => navigate('/receive')}
+                        onClick={() => navigate('/receive', { replace: true })}
                     >
                         <img src={receive} alt="Receive" className=' h-[28vh] ml-4' />
                     </div>
