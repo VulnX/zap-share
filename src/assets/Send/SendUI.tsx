@@ -1,5 +1,6 @@
 import { ToggleThemeButton } from "../Choice/Navigation";
 import { useNavigate } from "react-router-dom";
+import ProgressBar from "./ProgressBar";
 
 
 interface SendUIProps {
@@ -27,8 +28,9 @@ export default function SendUI({ isTheme, qrCode, openFileSelector }: SendUIProp
 
             {/* QR Code or File Picker */}
             {qrCode ? (
-                <div className="flex justify-center mt-[15vh]">
-                    <img src={qrCode} alt="QR Code" className="w-64 h-64" />
+                <div className="flex flex-col items-center mt-[15vh]">
+                    <img src={qrCode} alt="QR Code" className="w-64 h-64 mb-10" />
+                    <ProgressBar />
                 </div>
             ) : (
                 <div className="mt-[10vh] min-w-screen flex justify-center items-center">
