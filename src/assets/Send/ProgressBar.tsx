@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { Progress, Typography } from "@material-tailwind/react";
 
 export default function ProgressBar() {
-    const [prog, setProg] = useState<number | null>(null);
+    const [prog, setProg] = useState<number | undefined>(undefined);
 
     useEffect(() => {
         // Set up the listener on component mount
@@ -39,22 +40,16 @@ export default function ProgressBar() {
 
     return (
         <div className="h-10 w-[50vw]">
-            <span id="ProgressLabel" className="sr-only">
-                Loading
-            </span>
-            <div
-                role="progressbar"
-                aria-labelledby="ProgressLabel"
-                aria-valuenow={prog ?? 0} // Dynamically set aria-valuenow to the value of prog, fallback to 0 if null
-                className="block rounded-full bg-gray-200"
-            >
-                <div
-                    className="block h-4 rounded-full text-center text-[10px]/4 bg-[repeating-linear-gradient(45deg,_var(--tw-gradient-from)_0,_var(--tw-gradient-from)_20px,_var(--tw-gradient-to)_20px,_var(--tw-gradient-to)_40px)] from-gray-500 to-gray-600"
-                    style={{ width: `${prog ?? 0}%` }} // Apply the width of the progress bar dynamically based on prog
-                >
-                    <span className="font-bold text-white text-[12px]"> {prog ?? 0}% </span>
-                </div>
+            <div className="mb-2 flex items-center justify-between gap-4">
+                <Typography color="blue-gray" variant="h6" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}>
+                    Completed
+                </Typography>
+                <Typography color="blue-gray" variant="h6" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}>
+                    {prog}%
+                </Typography>
             </div>
+            <Progress value={prog} style={{ transition: "0.1s" }} placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined} />
+
         </div>
     );
 }
