@@ -15,13 +15,14 @@ export default withMT({
           choiceBg: "#C0C0C0",
           choiceBorder: "#989595",
           footer: "#ABABAB",
-          filepicker: "#D9D9D9"
+          filepicker: "#D9D9D9",
+          qrBg: "#C5E9ED"
         },
         dark: {
           background: "#2B2B2B",
           footer: "#000000",
-          filepicker: "#989898"
-
+          filepicker: "#989898",
+          qrBg: "#9D9D9D"
         }
       }
     },

@@ -29,7 +29,9 @@ export default function SendUI({ isTheme, qrCode, openFileSelector }: SendUIProp
             {/* QR Code or File Picker */}
             {qrCode ? (
                 <div className="flex flex-col items-center mt-[15vh]">
-                    <img src={qrCode} alt="QR Code" className="w-64 h-64 mb-10" />
+                    <div className={`${isTheme ? 'bg-dark-qrBg': 'bg-light-qrBg'} mb-10 rounded-2xl`}>
+                        <img src={qrCode} alt="QR Code" className="w-64 h-64 mix-blend-multiply" />
+                    </div>
                     <ProgressBar />
                 </div>
             ) : (
