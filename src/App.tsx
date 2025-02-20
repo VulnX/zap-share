@@ -3,11 +3,11 @@
 // import { invoke } from "@tauri-apps/api/core";
 
 import "./App.css";
-import Choice from "./assets/Choice";
+import Choice from "./assets/Choice/Choice";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Send from "./assets/Send";
-import Recieve from "./assets/Recieve";
-import { ThemeProvider } from './assets/Theme';
+import Send from "./assets/Send/Send";
+import Recieve from "./assets/Receive/Recieve";
+import { ThemeProvider } from './assets/Choice/Theme';
 function App() {
 
   return (

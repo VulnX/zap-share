@@ -1,4 +1,4 @@
-import logo from '../images/a6cc6028300b7e1165a46f9b41bec24c.png';
+import logo from '../images/a6cc6028300b7e1165a46f9b41bec24c.png'
 import { useTheme } from './Theme';
 
 
@@ -11,7 +11,7 @@ export function ToggleThemeButton() {
         <div>
             <label
                 htmlFor="AcceptConditions"
-                className="relative inline-block h-10 w-20 cursor-pointer rounded-full bg-gray-200 transition [-webkit-tap-highlight-color:_transparent] has-[:checked]:bg-neutral-700"
+                className="relative inline-block h-10 w-20 cursor-pointer rounded-full bg-gray-200 transition [-webkit-tap-highlight-color:_transparent] has-[:checked]:bg-gray-700"
             >
                 <input
                     type="checkbox"
@@ -22,7 +22,7 @@ export function ToggleThemeButton() {
                 />
 
                 <span
-                    className="absolute inset-y-0 start-0 z-10 m-1 inline-flex size-8 items-center justify-center rounded-full bg-white text-gray-400 transition-all shadow-xl  peer-checked:start-10 peer-checked:text-black  peer-checked:bg-neutral-900"
+                    className="absolute inset-y-0 start-0 z-10 m-1 inline-flex size-8 items-center justify-center rounded-full bg-white text-gray-400 transition-all shadow-xl  peer-checked:start-10 peer-checked:text-black  peer-checked:bg-gray-900"
                 >
 
                     <svg className={`dark-mode-icon ${isTheme ? 'block' : 'hidden'}`} xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF">
@@ -52,8 +52,8 @@ export function LogoTitle() {
         <div className='flex'>
             <img src={logo} alt="Zap Share" className='h-36 w-36' />
             <div className="flex flex-col pt-5">
-                <p className={`text-5xl font-bold ${isTheme ? '  text-neutral-100' : 'text-black '}`}>ZAP SHARE</p>
-                <p className={`text-2xl italic ${isTheme ? ' text-neutral-100' : 'text-black '}`}>Lightning-fast sharing, minus the drama!</p>
+                <p className={`text-5xl font-bold ${isTheme ? '  text-light-text' : 'text-black '}`}>ZAP SHARE</p>
+                <p className={`text-2xl italic ${isTheme ? ' text-light-text' : 'text-black '}`}>Lightning-fast sharing, minus the drama!</p>
             </div>
         </div>
     )
