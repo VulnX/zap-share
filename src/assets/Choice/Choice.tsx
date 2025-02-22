@@ -1,43 +1,20 @@
-import send from '../images/send.png'
-import receive from '../images/receive.png'
-import Navigation from './Navigation';
-import { useNavigate } from 'react-router-dom';
-import { useTheme } from './Theme';
+
+import { useContext } from 'react';
+import { DeviceProvider } from '../../App'
+import ChoiceMobile from './ChoiceMobile';
+import ChoiceDesk from './ChoiceDesk';
+
 
 
 export default function Choice() {
 
-    const { isTheme } = useTheme();
-    const navigate = useNavigate();
+    const isMobile = useContext(DeviceProvider)?.isMobile
+
+
 
     return (
         <div>
-            <div className={`min-h-screen flex flex-col  ${isTheme ? ' bg-dark-background' : ' bg-light-background '}`}>
-
-                {/* Navigation Bar */}
-                <Navigation />
-
-
-                {/* Send-Recieve Button */}
-                <div className="flex mt-[10vh] justify-evenly  flex-grow">
-                    <div className={`send || 
-                        bg-gray-200 w-[40vh] h-[40vh] rounded-full || flex items-center justify-center
-                         ${isTheme ? ' bg-gray-700' : ' bg-light-choiceBg'} 
-                         border-4 ${isTheme ? ' border-gray-300' : ' border-light-choiceBorder'}`}
-                        onClick={() => navigate('/send', { replace: true })}
-                    >
-                        <img src={send} alt="Send" className='mr-3 mt-3' />
-                    </div>
-                    <div className={`recieve ||  bg-gray-200 w-[40vh] h-[40vh] rounded-full || flex items-center justify-center ${isTheme ? ' bg-gray-700' : ' bg-light-choiceBg'} 
-                     border-4  ${isTheme ? ' border-gray-300' : ' border-light-choiceBorder'}`}
-                        onClick={() => navigate('/receive', { replace: true })}
-                    >
-                        <img src={receive} alt="Receive" className=' h-[28vh] ml-4' />
-                    </div>
-                </div>
-
-                <div className={`h-[5vh] ${isTheme ? ' bg-dark-footer' : ' bg-light-footer'}`}></div>
-            </div>
+            {isMobile ? (<ChoiceMobile />) : (<ChoiceDesk />)}
         </div>
     )
 }

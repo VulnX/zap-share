@@ -23,6 +23,14 @@ export default withMT({
           footer: "#000000",
           filepicker: "#989898",
           qrBg: "#9D9D9D"
+        },
+        mobile: {
+          light: {
+            background: "#F9F9F9",
+          },
+          dark: {
+            background: "#1F1A1A",
+          }
         }
       }
     },
