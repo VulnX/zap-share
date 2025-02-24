@@ -2,3 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+    user-select: none;
+    zoom: 0%;
+}
+
+:hover {
+    .clickable {
+        cursor: pointer;
+    }
+}
