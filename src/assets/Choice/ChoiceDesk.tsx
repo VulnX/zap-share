@@ -22,7 +22,7 @@ export default function ChoiceDesk() {
 
                 {/* Send-Recieve Button */}
                 <div className="flex mt-[10vh] justify-evenly  flex-grow">
-                    <div className={`send || 
+                    <div className={`send || clickable
     bg-gray-200 w-[40vh] h-[40vh] rounded-full || flex items-center justify-center
      ${isTheme ? ' bg-gray-700' : ' bg-light-choiceBg'} 
      border-4 ${isTheme ? ' border-gray-300' : ' border-light-choiceBorder'}`}
@@ -30,7 +30,7 @@ export default function ChoiceDesk() {
                     >
                         <img src={send} alt="Send" className='mr-3 mt-3' />
                     </div>
-                    <div className={`recieve ||  bg-gray-200 w-[40vh] h-[40vh] rounded-full || flex items-center justify-center ${isTheme ? ' bg-gray-700' : ' bg-light-choiceBg'} 
+                    <div className={`recieve clickable ||  bg-gray-200 w-[40vh] h-[40vh] rounded-full || flex items-center justify-center ${isTheme ? ' bg-gray-700' : ' bg-light-choiceBg'} 
  border-4  ${isTheme ? ' border-gray-300' : ' border-light-choiceBorder'}`}
                         onClick={() => navigate('/receive', { replace: true })}
                     >
