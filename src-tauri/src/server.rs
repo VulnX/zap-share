@@ -5,6 +5,8 @@ use actix_web::{
     rt, web, App, HttpResponse, HttpServer, Responder,
 };
 use futures_util::stream;
+use rand::RngCore;
+use serde::Serialize;
 use std::{io::Error, path::PathBuf, sync::mpsc};
 use tauri::{Emitter, Runtime, Window};
 use tauri_plugin_fs::{FsExt, SafeFilePath};
@@ -13,6 +15,12 @@ use tokio::io::AsyncReadExt;
 use crate::api::{TransferMode, SERVER_HANDLE};
 
 const CHUNK_SIZE: usize = 1024 * 1024; // 1 MiB
+
+#[derive(Serialize, Clone, Copy, Debug)]
+struct ProgressUpdatePayload {
+    id: [u8; 32],
+    progress: usize,
+}
 
 fn open_file(
     filepath: &web::Data<SafeFilePath>,
@@ -43,8 +51,18 @@ fn open_file(
 /// Handles the `/download` route
 ///
 /// Creates a future `data_stream` by adding the file contents in 1MiB chunks
+/// (see `CHUNK_SIZE`) and streaming it in the response body
 ///
-/// A `progress-update` event will be emitted to this window if after adding a new chunk the overall progress difference is greater than 1%
+/// Emits a `progress-update` event specific to this window with the following
+/// payload scheme:
+/// ```javascript
+/// {
+///     "id": Uint8Array, // Random `id` specific to this transfer session
+///     "progress": Number // Progress percentage ( 0-100 )
+/// }
+/// ```
+///
+/// if after adding a new chunk the overall progress difference is greater than 1%
 async fn download(filepath: web::Data<SafeFilePath>, window: web::Data<Window>) -> impl Responder {
     let file_name = "malum.nahi";
     let (file, path) = open_file(&filepath, &window);
@@ -53,7 +71,13 @@ async fn download(filepath: web::Data<SafeFilePath>, window: web::Data<Window>) 
     println!("{:?}", path);
     let file_size = file.metadata().await.unwrap().len();
     let transferred: usize = 0;
-    let progress = 0;
+    let mut transfer_id = [0u8; 32];
+    rand::rng().fill_bytes(&mut transfer_id);
+    let progress = ProgressUpdatePayload {
+        id: transfer_id,
+        progress: 0,
+    };
+    dbg!(progress.id);
     let data_stream = stream::unfold(
         (file, transferred, progress, window),
         move |(mut file, mut transferred, mut progress, window)| async move {
@@ -63,11 +87,11 @@ async fn download(filepath: web::Data<SafeFilePath>, window: web::Data<Window>) 
                 Ok(n) => {
                     chunk.truncate(n);
                     transferred += n;
-                    dbg!(transferred);
                     let new_progress = transferred * 100 / file_size as usize;
-                    if new_progress > progress {
-                        progress = new_progress;
+                    if new_progress > progress.progress {
+                        progress.progress = new_progress;
                         window.emit("progress-update", progress).unwrap();
+                        dbg!(progress.progress);
                     }
                     Some((
                         Ok::<_, Error>(web::Bytes::from(chunk)),

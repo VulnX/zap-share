@@ -11,7 +11,6 @@ use tauri_plugin_fs::SafeFilePath;
 
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 
-#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct Url {
     ip: Option<String>,
