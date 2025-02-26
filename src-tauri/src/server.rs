@@ -16,9 +16,9 @@ use crate::api::{TransferMode, SERVER_HANDLE};
 
 const CHUNK_SIZE: usize = 1024 * 1024; // 1 MiB
 
-#[derive(Serialize, Clone, Copy, Debug)]
+#[derive(Serialize, Clone, Debug)]
 struct ProgressUpdatePayload {
-    id: [u8; 32],
+    id: String,
     progress: usize,
 }
 
@@ -57,7 +57,7 @@ fn open_file(
 /// payload scheme:
 /// ```javascript
 /// {
-///     "id": Uint8Array, // Random `id` specific to this transfer session
+///     "id": String, // Random `id` specific to this transfer session
 ///     "progress": Number // Progress percentage ( 0-100 )
 /// }
 /// ```
@@ -73,11 +73,15 @@ async fn download(filepath: web::Data<SafeFilePath>, window: web::Data<Window>) 
     let transferred: usize = 0;
     let mut transfer_id = [0u8; 32];
     rand::rng().fill_bytes(&mut transfer_id);
+    let transfer_id: String = transfer_id
+    .iter()
+    .map(|byte| format!("{byte:02x}"))
+    .collect();
     let progress = ProgressUpdatePayload {
         id: transfer_id,
         progress: 0,
     };
-    dbg!(progress.id);
+    dbg!(&progress.id);
     let data_stream = stream::unfold(
         (file, transferred, progress, window),
         move |(mut file, mut transferred, mut progress, window)| async move {
@@ -90,8 +94,8 @@ async fn download(filepath: web::Data<SafeFilePath>, window: web::Data<Window>) 
                     let new_progress = transferred * 100 / file_size as usize;
                     if new_progress > progress.progress {
                         progress.progress = new_progress;
-                        window.emit("progress-update", progress).unwrap();
-                        dbg!(progress.progress);
+                        window.emit("progress-update", &progress).unwrap();
+                        dbg!(&progress.progress);
                     }
                     Some((
                         Ok::<_, Error>(web::Bytes::from(chunk)),
