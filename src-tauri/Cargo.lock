@@ -4242,8 +4242,7 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-dialog"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b59fd750551b1066744ab956a1cd6b1ea3e1b3763b0b9153ac27a044d596426"
+source = "git+https://github.com/VulnX/plugins-workspace.git?branch=feat/fs/get-filename-android#fba537e0e8680212ffb8be9ba7365c3ed28d9acf"
 dependencies = [
  "log",
  "raw-window-handle",
@@ -4260,8 +4259,7 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-fs"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1a1edf18000f02903a7c2e5997fb89aca455ecbc0acc15c6535afbb883be223"
+source = "git+https://github.com/VulnX/plugins-workspace.git?branch=feat/fs/get-filename-android#fba537e0e8680212ffb8be9ba7365c3ed28d9acf"
 dependencies = [
  "anyhow",
  "dunce",
