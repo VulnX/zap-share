@@ -4242,7 +4242,7 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-dialog"
 version = "2.2.0"
-source = "git+https://github.com/VulnX/plugins-workspace.git?branch=feat/fs/get-filename-android#fba537e0e8680212ffb8be9ba7365c3ed28d9acf"
+source = "git+https://github.com/VulnX/plugins-workspace.git?branch=feat%2Ffs%2Fget-filename-android#fba537e0e8680212ffb8be9ba7365c3ed28d9acf"
 dependencies = [
  "log",
  "raw-window-handle",
@@ -4259,7 +4259,7 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-fs"
 version = "2.2.0"
-source = "git+https://github.com/VulnX/plugins-workspace.git?branch=feat/fs/get-filename-android#fba537e0e8680212ffb8be9ba7365c3ed28d9acf"
+source = "git+https://github.com/VulnX/plugins-workspace.git?branch=feat%2Ffs%2Fget-filename-android#fba537e0e8680212ffb8be9ba7365c3ed28d9acf"
 dependencies = [
  "anyhow",
  "dunce",
