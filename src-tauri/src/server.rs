@@ -64,11 +64,14 @@ fn open_file(
 ///
 /// if after adding a new chunk the overall progress difference is greater than 1%
 async fn download(filepath: web::Data<SafeFilePath>, window: web::Data<Window>) -> impl Responder {
-    let file_name = "malum.nahi";
+    let _filepath = &filepath.clone().into_inner();
+    let _filepath = &**_filepath;
+    let file_name = window.fs().file_name(_filepath.clone()).unwrap();
     let (file, path) = open_file(&filepath, &window);
     let file = tokio::fs::File::from_std(file);
     println!("{:?}", file);
     println!("{:?}", path);
+    println!("{:?}", file_name);
     let file_size = file.metadata().await.unwrap().len();
     let transferred: usize = 0;
     let mut transfer_id = [0u8; 32];
