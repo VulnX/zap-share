@@ -4,11 +4,13 @@ import lightBack from '../images/lightBack.svg'
 import darkBack from '../images/darkBack.svg'
 import { ToggleThemeButton } from "./Navigation";
 import { useTheme } from './Theme';
+import { useNavigate } from 'react-router-dom';
 
 
 export default function ChoiceMobile() {
 
     const { isTheme } = useTheme()
+    const navigate = useNavigate()
 
     return (
         <div className={`${isTheme ? `bg-mobile-dark-background` : `bg-mobile-light-background`} || min-h-screen ${isTheme ? `text-[#C9C9C9]` : `text-black`}
@@ -26,7 +28,7 @@ export default function ChoiceMobile() {
                     <div className={`${isTheme ? `bg-[#577E6E]` : `bg-[#8DEDC280]`} ||
                 w-[25vh] h-[25vh] rounded-[25vh] | flex flex-col justify-center items-center
                 ${isTheme ? `border-[#64C19780]` : `border-[#8DEDC280]`} border-8
-                `}>
+                `} onClick={() => navigate('/send', { replace: true })}>
                         <img src={send} alt="" className="h-3/5 w-3/5" />
                     </div>
                     <div className="text-center mt-1">
@@ -39,7 +41,7 @@ export default function ChoiceMobile() {
                 w-[25vh] h-[25vh] rounded-[25vh] | flex justify-center items-center
                 ${isTheme ? `border-[#8095E780]` : `border-[#ABC6EB80]`} border-8
                 `}
-
+                        onClick={() => navigate('/receive', { replace: true })}
                     >
                         <img src={receive} alt="" className="h-3/5 w-3/5" />
                     </div>

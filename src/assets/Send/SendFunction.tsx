@@ -7,11 +7,10 @@ import { GetIP } from "./IP";
 const swalWithBootstrapButtons = Swal.mixin({
   customClass: {
     confirmButton: "btn btn-success",
-    cancelButton: "btn btn-danger"
+    cancelButton: "btn btn-danger",
   },
-  buttonsStyling: true
+  buttonsStyling: true,
 });
-
 
 export function SendLogic() {
   const { isTheme } = useTheme();
@@ -25,19 +24,16 @@ export function SendLogic() {
 
     if (file) {
       GetIP(file, setQrCode);
-
     } else {
       swalWithBootstrapButtons.fire({
         title: "File not selected",
         text: "Please select a file to transfer",
         icon: "warning",
         confirmButtonText: "OK",
-        reverseButtons: true
+        reverseButtons: true,
       });
     }
   };
 
-
-
-  return { isTheme, qrCode, openFileSelector };
+  return { isTheme, qrCode, openFileSelector, setQrCode };
 }
