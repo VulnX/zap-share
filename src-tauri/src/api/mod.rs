@@ -1,13 +1,15 @@
 use crate::server;
 use actix_web::dev::ServerHandle;
+use rand::RngCore;
 use serde::Serialize;
 use std::{
+    path::PathBuf,
     sync::{mpsc, Mutex},
     thread,
     time::Duration,
 };
-use tauri::Runtime;
-use tauri_plugin_fs::SafeFilePath;
+use tauri::{Runtime, Window};
+use tauri_plugin_fs::{FsExt, SafeFilePath};
 
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 
@@ -23,10 +25,35 @@ pub enum StartServerResponse {
     Error(String),
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub struct FileData {
+    pub id: String,
+    pub filepath: SafeFilePath,
+    pub filename: String,
+    pub filesize: u64,
+}
+
+impl FileData {
+    fn from<R: Runtime>(filepath: SafeFilePath, window: &Window<R>) -> Self {
+        let mut file_id = [0u8; 32];
+        rand::rng().fill_bytes(&mut file_id);
+        let id: String = file_id.iter().map(|byte| format!("{byte:02x}")).collect();
+        let (file, _) = open_file(&filepath, window);
+        let filename = window.fs().file_name(filepath.clone()).unwrap();
+        let filesize = file.metadata().unwrap().len();
+        Self {
+            id,
+            filepath,
+            filename,
+            filesize,
+        }
+    }
+}
+
 #[allow(dead_code)]
 #[derive(Clone)]
 pub enum TransferMode {
-    Send(SafeFilePath),
+    Send(Vec<FileData>),
     Receive,
 }
 
@@ -53,10 +80,14 @@ pub enum TransferMode {
 #[tauri::command]
 pub fn send_file<R: Runtime>(
     window: tauri::Window<R>,
-    filepath: SafeFilePath,
+    filepaths: Vec<SafeFilePath>,
 ) -> StartServerResponse {
     // TODO : Add file checks before starting server
-    let mode = TransferMode::Send(filepath);
+    let file_datas: Vec<FileData> = filepaths
+        .into_iter()
+        .map(|filepath| FileData::from(filepath, &window))
+        .collect();
+    let mode = TransferMode::Send(file_datas);
     start_server(window, mode)
 }
 
@@ -112,4 +143,28 @@ fn start_server<R: Runtime>(window: tauri::Window<R>, mode: TransferMode) -> Sta
         })
         .map(|ipaddr| ipaddr.to_string());
     StartServerResponse::Success(Url { ip, port })
+}
+
+pub fn open_file<R: Runtime>(
+    filepath: &SafeFilePath,
+    window: &Window<R>,
+) -> (std::fs::File, PathBuf) {
+    match filepath {
+        SafeFilePath::Path(_) => {
+            let path: PathBuf = filepath.clone().into_path().unwrap();
+            let file = std::fs::OpenOptions::new().read(true).open(&path).unwrap();
+            (file, path)
+        }
+        SafeFilePath::Url(url) => {
+            let path: PathBuf = url.as_str().into();
+            let file = window
+                .fs()
+                .open(
+                    filepath.clone(),
+                    tauri_plugin_fs::OpenOptions::new().read(true).clone(),
+                )
+                .unwrap();
+            (file, path)
+        }
+    }
 }

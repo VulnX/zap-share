@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download karlo</title>
+</head>
+
+<body>
+    <script defer>
+        const files = JSON.parse(decodeURIComponent("<FILE_DATA_HERE>"));
+        files.forEach(file => {
+            const btn = document.createElement('button');
+            btn.textContent = file.filename;
+            btn.onclick = () => { downloadFile(file.id) };
+            document.body.appendChild(btn);
+        });
+
+        function downloadFile(id) {
+            const a = document.createElement('a');
+            a.href = `/download/${id}`;
+            a.click();
+        }
+    </script>
+</body>
+
+</html>
