@@ -9,6 +9,7 @@ import darkBack from "../images/darkBack.svg";
 import darksend from "../images/darksend.svg";
 import lightsend from "../images/lightsend.svg";
 import { GetIP } from "./IP";
+import SendConfirmation from "./SendConfirmation";
 interface SendUIProps {
   isTheme: boolean;
   qrCode: string | null;
@@ -97,20 +98,21 @@ export function SendDesktop({
 
         {/* QR Code or File Picker */}
         {qrCode ? (
-          <div className="flex flex-col items-center mt-[15vh]">
-            <div
-              className={`${
-                isTheme ? "bg-dark-qrBg" : "bg-light-qrBg"
-              } mb-10 rounded-2xl`}
-            >
-              <img
-                src={qrCode}
-                alt="QR Code"
-                className="w-64 h-64 mix-blend-multiply"
-              />
-            </div>
-            <ProgressBar />
-          </div>
+          // <div className="flex flex-col items-center mt-[15vh]">
+          //   <div
+          //     className={`${
+          //       isTheme ? "bg-dark-qrBg" : "bg-light-qrBg"
+          //     } mb-10 rounded-2xl`}
+          //   >
+          //     <img
+          //       src={qrCode}
+          //       alt="QR Code"
+          //       className="w-64 h-64 mix-blend-multiply"
+          //     />
+          //   </div>
+          //   <ProgressBar />
+          // </div>
+          <SendConfirmation/>
         ) : confirm ? (
           <div className={` ${isTheme ? `text-[#C9C9C9]` : `text-black`}`}>
             <p>File Name : {}</p>
