@@ -1,5 +1,5 @@
-import React from "react"; 
-import { SendLogic } from "./SendFunction"; 
+import React from "react";
+import { SendLogic } from "./SendLogic";
 import { listen } from "@tauri-apps/api/event";
 
 export function DragDrop() {
@@ -11,37 +11,37 @@ export function DragDrop() {
     handleDragOver,
     handleDragLeave,
     handleFileDrop,
-  } = SendLogic(); 
+  } = SendLogic();
 
   function callme() {
-    listen('tauri://drag-enter', (event) => {
-        console.log('drag enter');
-        console.log(event);
-      });
-    
-      listen('tauri://drag-drop', (event) => {
-        console.log('drag drop');
-        console.log(event);
-      });
-    
-      listen('tauri://drag-leave', (event) => {
-        console.log('drag leave');
-        console.log(event);
-      });
-    
-      listen('tauri://drag-over', (event) => {
-        console.log('drag over');
-        console.log(event);
-      });
+    listen("tauri://drag-enter", (event) => {
+      console.log("drag enter");
+      console.log(event);
+    });
+
+    listen("tauri://drag-drop", (event) => {
+      console.log("drag drop");
+      console.log(event);
+    });
+
+    listen("tauri://drag-leave", (event) => {
+      console.log("drag leave");
+      console.log(event);
+    });
+
+    listen("tauri://drag-over", (event) => {
+      console.log("drag over");
+      console.log(event);
+    });
   }
 
   return (
     <div
       className="drag-drop-area"
-    //   onDragEnter={handleDragEnter}
-    //   onDragOver={handleDragOver}
-    //   onDragLeave={handleDragLeave}
-    //   onDrop={handleFileDrop}
+      //   onDragEnter={handleDragEnter}
+      //   onDragOver={handleDragOver}
+      //   onDragLeave={handleDragLeave}
+      //   onDrop={handleFileDrop}
       style={{
         padding: "20px",
         textAlign: "center",
