@@ -2,13 +2,17 @@ import { listen, TauriEvent } from "@tauri-apps/api/event";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navigation from "../Choice/Navigation";
-import { GetIP } from "./IP";
+import { GetIP } from "./SendLogic";
 
 interface SendProps {
   isTheme: boolean;
   qrCode: string | null;
   openFileSelector: () => void;
   setQrCode: (arg0: string) => void;
+}
+
+interface DragDropPayload {
+  paths: string[];
 }
 
 export default function SendDesktop({
@@ -38,7 +42,7 @@ export default function SendDesktop({
           //   console.log("Dragging over", event.payload);
         }
       );
-      const dragDropUnlisten = await listen<TauriEvent>(
+      const dragDropUnlisten = await listen<DragDropPayload>(
         TauriEvent.DRAG_DROP,
         (event) => {
           console.log("File dropped", event.payload);

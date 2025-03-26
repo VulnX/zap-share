@@ -9,7 +9,11 @@ const SendConfirmation: React.FC = () => {
   const { isTheme } = useTheme();
 
   return (
-    <div className={`min-h-screen ${isTheme ? "bg-gray-800" : "bg-gray-300"}`}>
+    <div
+      className={`min-h-screen flex flex-col  ${
+        isTheme ? "bg-dark-background" : "bg-light-background"
+      }`}
+    >
       <nav className="flex justify-between p-6">
         <img
           src={isTheme ? darkBack : lightBack}
@@ -45,7 +49,10 @@ const SendConfirmation: React.FC = () => {
             >
               Cancel
             </button>
-            <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300">
+            <button
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300"
+              onClick={() => navigate("/send/qrcode", { replace: true })}
+            >
               Proceed
             </button>
           </div>

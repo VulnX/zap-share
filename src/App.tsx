@@ -6,6 +6,7 @@ import Recieve from "./local/Receive/Recieve";
 import { ThemeProvider } from "./local/Choice/Theme";
 import { createContext, useEffect, useState } from "react";
 import SendConfirmation from "./local/Send/SendConfirmation";
+import QrCode from "./local/Send/QrCode";
 
 interface Device {
   isMobile: boolean;
@@ -34,7 +35,7 @@ function App() {
                 path="/send/confirm"
                 element={<SendConfirmation />}
               ></Route>
-              <Route path="/send/qrcode" element={<Send />}></Route>
+              <Route path="/send/qrcode" element={<QrCode />}></Route>
               <Route path="/receive" element={<Recieve />}></Route>
             </Routes>
           </Router>
