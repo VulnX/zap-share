@@ -9,80 +9,77 @@ import { ToggleThemeButton } from "../Choice/Navigation";
 import { useNavigate } from "react-router-dom";
 
 interface ProgressUpdatePayload {
-  id: String;
+  id: string; // Changed to string instead of String
   progress: number;
 }
 
 export function ProgressBar() {
-  const [prog, setProg] = useState<ProgressUpdatePayload | null>(null);
+  const [progressMap, setProgressMap] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    // Set up the listener on component mount
     const setupListener = async () => {
       try {
         const unlisten = await listen<ProgressUpdatePayload>(
           "progress-update",
           (event) => {
-            console.log(event.payload);
-            // setProg(event.payload as number);
             console.log("Progress event payload:", event.payload);
-            setProg(event.payload);
+
+            // Update progress for specific transfer ID
+            setProgressMap((prevMap) => ({
+              ...prevMap,
+              [event.payload.id]: event.payload.progress,
+            }));
           }
         );
 
-        // console.log("Listening for progress updates");
-
-        // Return the cleanup function (unlisten) to be used when the component unmounts
         return unlisten;
       } catch (error) {
         console.error("Error loading progress:", error);
       }
     };
 
-    // Call the async function and handle cleanup correctly
     const unlistenPromise = setupListener();
 
-    // Cleanup listener when the component unmounts
     return () => {
       unlistenPromise.then((unlisten) => {
-        if (unlisten) unlisten(); // Remove event listener
+        if (unlisten) unlisten();
       });
     };
-  }, []); // Empty dependency array ensures this effect runs only once on mount
-
-  useEffect(() => {
-    // console.log("Progress updated:", prog); // Log when prog changes
-  }, [prog]);
+  }, []);
 
   return (
-    <div className="h-10 w-[50vw]">
-      <div className="mb-2 flex items-center justify-between gap-4">
-        <Typography
-          color="blue-gray"
-          variant="h6"
-          placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
-        >
-          Completed
-        </Typography>
-        <Typography
-          color="blue-gray"
-          variant="h6"
-          placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
-        >
-          {prog?.progress}%
-        </Typography>
-      </div>
-      <Progress
-        value={prog?.progress}
-        style={{ transition: "0.1s" }}
-        placeholder={undefined}
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
-      />
+    <div className="w-[50vw] space-y-4">
+      {Object.entries(progressMap).map(([id, progress]) => (
+        <div key={id} className="h-10">
+          <div className="mb-2 flex items-center justify-between gap-4 text-wrap">
+            <Typography
+              color="blue-gray"
+              variant="h6"
+              placeholder={undefined}
+              onPointerEnterCapture={undefined}
+              onPointerLeaveCapture={undefined}
+            >
+              Transfer {id}
+            </Typography>
+            <Typography
+              color="blue-gray"
+              variant="h6"
+              placeholder={undefined}
+              onPointerEnterCapture={undefined}
+              onPointerLeaveCapture={undefined}
+            >
+              {progress}%
+            </Typography>
+          </div>
+          <Progress
+            value={progress}
+            style={{ transition: "0.1s" }}
+            placeholder={undefined}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
+          />
+        </div>
+      ))}
     </div>
   );
 }
@@ -93,9 +90,7 @@ export default function QrCode() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (qrCode) {
-      console.log("QR Code URL updated:", qrCode);
-    }
+    console.log("QR Code URL updated:", qrCode);
   }, [qrCode]);
 
   return (
@@ -126,7 +121,7 @@ export default function QrCode() {
               className="w-64 h-64 mix-blend-multiply"
             />
           ) : (
-            <p>ERROR OCCURED WHILE Generating Qr code</p>
+            <p>Generating Qr Code....</p>
           )}
         </div>
         <ProgressBar />

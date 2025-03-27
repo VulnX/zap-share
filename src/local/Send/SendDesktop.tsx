@@ -2,24 +2,16 @@ import { listen, TauriEvent } from "@tauri-apps/api/event";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navigation from "../Choice/Navigation";
-import { GetIP } from "./SendLogic";
-
-interface SendProps {
-  isTheme: boolean;
-  qrCode: string | null;
-  openFileSelector: () => void;
-  setQrCode: (arg0: string) => void;
-}
+import { SendLogic } from "./SendLogic";
+import { useTheme } from "../Choice/Theme";
 
 interface DragDropPayload {
   paths: string[];
 }
 
-export default function SendDesktop({
-  isTheme,
-  openFileSelector,
-  setQrCode,
-}: SendProps) {
+export default function SendDesktop() {
+  const { openFileSelector, generateQRCode } = SendLogic();
+  const { isTheme } = useTheme();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,7 +41,7 @@ export default function SendDesktop({
 
           // idk why error occurs here
           const { paths } = event.payload;
-          GetIP(paths, setQrCode);
+          generateQRCode(paths);
           navigate("/send/confirm", { replace: true });
         }
       );
