@@ -4,7 +4,6 @@ use actix_web::{
     web, Error, HttpRequest, HttpResponse, Responder,
 };
 use futures_util::stream;
-use rand::RngCore;
 use serde::Serialize;
 use tauri::{Emitter, Window};
 use tokio::io::AsyncReadExt;
@@ -66,14 +65,8 @@ pub async fn download_file(
     println!("{:?}", file_name);
     println!("{:?}", file_size);
     let transferred: usize = 0;
-    let mut transfer_id = [0u8; 32];
-    rand::rng().fill_bytes(&mut transfer_id);
-    let transfer_id: String = transfer_id
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
     let progress = ProgressUpdatePayload {
-        id: transfer_id,
+        id: file_data.filename.clone(),
         progress: 0,
     };
     dbg!(&progress.id);
