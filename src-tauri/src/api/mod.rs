@@ -34,12 +34,11 @@ pub struct FileData {
 }
 
 impl FileData {
-    fn from<R: Runtime>(filepath: SafeFilePath, window: &Window<R>) -> Self {
+    fn from<R: Runtime>(filepath: SafeFilePath, filename: String, window: &Window<R>) -> Self {
         let mut file_id = [0u8; 32];
         rand::rng().fill_bytes(&mut file_id);
         let id: String = file_id.iter().map(|byte| format!("{byte:02x}")).collect();
         let (file, _) = open_file(&filepath, window);
-        let filename = window.fs().file_name(filepath.clone()).unwrap();
         let filesize = file.metadata().unwrap().len();
         Self {
             id,
@@ -59,13 +58,27 @@ pub enum TransferMode {
 
 /// Starts server in `send` mode
 ///
-/// Assumes filepath is a valid path to the user selected file, or a content URI in case of android.
+/// Assumes filepath is a valid path to the user-selected file, or a content URI in case of Android
 ///
-/// Return value:
-/// ```javascript
+/// ### Parameters (from JavaScript/TypeScript):
+///
+/// - `files`: Array of `[path, name]` tuples:
+///
+/// Example:
+/// ```ts
+/// invoke('send_file', {
+///   files: [
+///     ['/Users/user/Pictures/photo.jpg', 'photo.jpg'],
+///     ['content://com.android.providers...', 'video.mp4']
+///   ]
+/// });
+/// ```
+///
+/// ### Return value:
+/// ```ts
 /// {
 ///   "Success": {
-///     "ip": String | Null, // Automatic IP detection may fail
+///     "ip": String | null, // Automatic IP detection may fail
 ///     "port": Number
 ///   }
 /// }
@@ -73,19 +86,19 @@ pub enum TransferMode {
 ///
 /// or
 ///
-/// ```javascript
+/// ```ts
 /// { "Error": "<error message>" }
 /// ```
 #[allow(dead_code)]
 #[tauri::command]
 pub fn send_file<R: Runtime>(
     window: tauri::Window<R>,
-    filepaths: Vec<SafeFilePath>,
+    files: Vec<(SafeFilePath, String)>,
 ) -> StartServerResponse {
     // TODO : Add file checks before starting server
-    let file_datas: Vec<FileData> = filepaths
+    let file_datas: Vec<FileData> = files
         .into_iter()
-        .map(|filepath| FileData::from(filepath, &window))
+        .map(|(filepath, filename)| FileData::from(filepath, filename, &window))
         .collect();
     let mode = TransferMode::Send(file_datas);
     start_server(window, mode)
