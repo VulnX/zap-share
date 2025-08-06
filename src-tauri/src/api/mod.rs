@@ -130,11 +130,11 @@ fn start_server<R: Runtime>(window: tauri::Window<R>, mode: TransferMode) -> Sta
     thread::spawn(|| {
         server::start_server(window, mode, tx);
     });
-    let port;
-    match rx.recv_timeout(Duration::from_secs(10)) {
-        Ok(n) => port = n,
+
+    let port = match rx.recv_timeout(Duration::from_secs(10)) {
+        Ok(n) => n,
         Err(_) => return StartServerResponse::Error("Timeout: Failed to start server".into()),
-    }
+    };
 
     // Attempt to automatically detect ip address. If this fails, then manually
     // probe every network interface and attempt to find one with ip address

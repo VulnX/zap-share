@@ -1,14 +1,10 @@
 use crate::api::{TransferMode, SERVER_HANDLE};
-use actix_web::{middleware::Logger, rt, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{middleware::Logger, rt, web, App, HttpServer};
 use std::sync::mpsc;
 use tauri::Runtime;
-mod send;
 
-#[allow(unreachable_code)]
-async fn upload() -> impl Responder {
-    unimplemented!();
-    HttpResponse::Ok().body("unimplemented")
-}
+mod recv;
+mod send;
 
 /// Starts an actix web server and enables required routes based on the given `mode`
 ///
@@ -35,9 +31,19 @@ pub fn start_server<R: Runtime>(
                     app = app
                         .route("/", web::get().to(send::download_frontend))
                         .route("/download/{id}", web::get().to(send::download_file))
+                        .route("/upload", web::get().to(recv::upload)) // remove this
+                        .route(
+                            "/upload/{filename}/{filesize}",
+                            web::post().to(recv::upload_file),
+                        ) // remove this
                         .app_data(web::Data::new(file_datas.clone()))
                 }
-                TransferMode::Receive => app = app.route("/upload", web::get().to(upload)),
+                TransferMode::Receive => {
+                    app = app.route("/upload", web::get().to(recv::upload)).route(
+                        "/upload/{filename}/{filesize}",
+                        web::post().to(recv::upload_file),
+                    )
+                }
             };
             app = app.app_data(window.clone());
             app

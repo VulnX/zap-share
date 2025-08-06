@@ -5,6 +5,7 @@ import { useTheme } from "../Choice/Theme";
 import Swal from "sweetalert2";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useNavigate } from "react-router-dom";
+import { basename } from "@tauri-apps/api/path";
 
 const swalWithBootstrapButtons = Swal.mixin({
   customClass: {
@@ -40,8 +41,16 @@ export function SendLogic() {
   const generateQRCode = useCallback(async (files: string[]) => {
     try {
       // Invoke Tauri command to send files
+      const filePairs: [string, string][] = await Promise.all(
+        files.map(async (file) => {
+          const name = await basename(file);
+          return [file, name];
+        })
+      );
+      console.log('File Pairs:', filePairs);
+      console.log('sending :', files);
       const response = await invoke<SendFileResponse>("send_file", {
-        filepaths: files,
+        files: filePairs
       });
 
       // Check if response has valid IP and port

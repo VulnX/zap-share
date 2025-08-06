@@ -61,9 +61,9 @@ pub async fn download_file(
     let file_name = file_data.filename.clone();
     let file_size = file_data.filesize;
 
-    println!("{:?}", file);
-    println!("{:?}", file_name);
-    println!("{:?}", file_size);
+    println!("{file:?}");
+    println!("{file_name:?}");
+    println!("{file_size:?}");
     let transferred: usize = 0;
     let progress = ProgressUpdatePayload {
         id: file_data.filename.clone(),
