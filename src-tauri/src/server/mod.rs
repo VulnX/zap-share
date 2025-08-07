@@ -31,15 +31,10 @@ pub fn start_server<R: Runtime>(
                     app = app
                         .route("/", web::get().to(send::download_frontend))
                         .route("/download/{id}", web::get().to(send::download_file))
-                        .route("/upload", web::get().to(recv::upload)) // remove this
-                        .route(
-                            "/upload/{filename}/{filesize}",
-                            web::post().to(recv::upload_file),
-                        ) // remove this
                         .app_data(web::Data::new(file_datas.clone()))
                 }
                 TransferMode::Receive => {
-                    app = app.route("/upload", web::get().to(recv::upload)).route(
+                    app = app.route("/", web::get().to(recv::upload)).route(
                         "/upload/{filename}/{filesize}",
                         web::post().to(recv::upload_file),
                     )

@@ -103,6 +103,38 @@ pub fn send_file<R: Runtime>(
     let mode = TransferMode::Send(file_datas);
     start_server(window, mode)
 }
+/// Starts server in `receive` mode
+///
+/// ### Parameters (from JavaScript/TypeScript):
+///
+/// No parameters are required.
+///
+/// Example:
+/// ```ts
+/// invoke('recv_file');
+/// ```
+///
+/// ### Return value:
+/// ```ts
+/// {
+///   "Success": {
+///     "ip": String | null, // Automatic IP detection may fail
+///     "port": Number
+///   }
+/// }
+/// ```
+///
+/// or
+///
+/// ```ts
+/// { "Error": "<error message>" }
+/// ```
+#[allow(dead_code)]
+#[tauri::command]
+pub fn recv_file<R: Runtime>(window: tauri::Window<R>) -> StartServerResponse {
+    let mode = TransferMode::Receive;
+    start_server(window, mode)
+}
 
 // pub fn pause() {
 //     let mut stdout = stdout();
