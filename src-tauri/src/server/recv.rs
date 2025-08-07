@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use actix_web::{web, HttpResponse, Responder};
 use futures_util::StreamExt;
 use log::debug;
@@ -21,8 +23,14 @@ pub async fn upload_file(
     debug!("{filename:#?}");
     debug!("{filesize:#?}");
 
-    let mut write_path = window.path().download_dir().unwrap();
+    // Fallback to static path on android since tauri does not detect the
+    // system downloads directory
+    let mut write_path = match tauri_plugin_os::platform() {
+        "android" => PathBuf::from("/storage/emulated/0/Download"),
+        _ => window.path().download_dir().unwrap(),
+    };
     write_path.push(filename);
+    debug!("saving file to {write_path:#?}");
 
     let file = fs::File::create(write_path).await.unwrap();
     let mut bufwriter = BufWriter::new(file);
