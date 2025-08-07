@@ -35,7 +35,10 @@ function App() {
                 path="/send/confirm"
                 element={<SendConfirmation />}
               ></Route>
-              <Route path="/send/qrcode" element={<QrCode />}></Route>
+              <Route
+                path="/send/qrcode"
+                element={<QrCode value={true} />}
+              ></Route>
               <Route path="/receive" element={<Recieve />}></Route>
             </Routes>
           </Router>

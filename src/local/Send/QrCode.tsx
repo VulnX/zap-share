@@ -84,7 +84,11 @@ export function ProgressBar() {
   );
 }
 
-export default function QrCode() {
+interface QrProps {
+  value: boolean;
+}
+
+export default function QrCode({ value }: QrProps) {
   const { isTheme } = useTheme();
   const { qrCode } = SendLogic();
   const navigate = useNavigate();
@@ -104,7 +108,9 @@ export default function QrCode() {
           src={isTheme ? darkBack : lightBack}
           alt="back"
           className="h-[40px]"
-          onClick={() => navigate("/send", { replace: true })}
+          onClick={() =>
+            navigate(value ? "/send" : "/", { replace: true })
+          }
         />
         <ToggleThemeButton />
       </nav>
@@ -124,7 +130,7 @@ export default function QrCode() {
             <p>Generating Qr Code....</p>
           )}
         </div>
-        <ProgressBar />
+        {value ? <ProgressBar /> : ""}
       </div>
     </div>
   );
