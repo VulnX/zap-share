@@ -1,5 +1,5 @@
 import { listen, TauriEvent } from "@tauri-apps/api/event";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Navigation from "../Choice/Navigation";
 import { SendLogic } from "./SendLogic";
@@ -13,48 +13,52 @@ export default function SendDesktop() {
   const { openFileSelector, generateQRCode } = SendLogic();
   const { isTheme } = useTheme();
   const navigate = useNavigate();
+  const hasRun = useRef(false);
 
   useEffect(() => {
-    const setupDragEvents = async () => {
-      const dragEnterUnlisten = await listen<TauriEvent>(
-        TauriEvent.DRAG_ENTER,
-        () => {
-          //   console.log("Drag entered", event.payload);
-        }
-      );
-      const dragLeaveUnlisten = await listen<TauriEvent>(
-        TauriEvent.DRAG_LEAVE,
-        () => {
-          //   console.log("Drag left", event.payload);
-        }
-      );
-      const dragOverUnlisten = await listen<TauriEvent>(
-        TauriEvent.DRAG_OVER,
-        () => {
-          //   console.log("Dragging over", event.payload);
-        }
-      );
-      const dragDropUnlisten = await listen<DragDropPayload>(
-        TauriEvent.DRAG_DROP,
-        (event) => {
-          console.log("File dropped", event.payload);
+    if (!hasRun.current) {
+      const setupDragEvents = async () => {
+        const dragEnterUnlisten = await listen<TauriEvent>(
+          TauriEvent.DRAG_ENTER,
+          () => {
+            //   console.log("Drag entered", event.payload);
+          }
+        );
+        const dragLeaveUnlisten = await listen<TauriEvent>(
+          TauriEvent.DRAG_LEAVE,
+          () => {
+            //   console.log("Drag left", event.payload);
+          }
+        );
+        const dragOverUnlisten = await listen<TauriEvent>(
+          TauriEvent.DRAG_OVER,
+          () => {
+            //   console.log("Dragging over", event.payload);
+          }
+        );
+        const dragDropUnlisten = await listen<DragDropPayload>(
+          TauriEvent.DRAG_DROP,
+          (event) => {
+            console.log("File dropped", event.payload);
 
-          // idk why error occurs here
-          const { paths } = event.payload;
-          generateQRCode(paths);
-          navigate("/send/confirm", { replace: true });
-        }
-      );
+            // idk why error occurs here
+            const { paths } = event.payload;
+            generateQRCode(paths);
+            navigate("/send/confirm", { replace: true });
+          }
+        );
 
-      return () => {
-        dragEnterUnlisten();
-        dragLeaveUnlisten();
-        dragOverUnlisten();
-        dragDropUnlisten();
+        return () => {
+          dragEnterUnlisten();
+          dragLeaveUnlisten();
+          dragOverUnlisten();
+          dragDropUnlisten();
+        };
       };
-    };
 
-    setupDragEvents();
+      setupDragEvents();
+      hasRun.current = true;
+    }
   }, []);
 
   return (

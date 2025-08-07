@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { Progress, Typography } from "@material-tailwind/react";
 import { useTheme } from "../Choice/Theme";
@@ -15,35 +15,39 @@ interface ProgressUpdatePayload {
 
 export function ProgressBar() {
   const [progressMap, setProgressMap] = useState<Record<string, number>>({});
+  const hasRun = useRef(false);
 
   useEffect(() => {
     const setupListener = async () => {
-      try {
-        const unlisten = await listen<ProgressUpdatePayload>(
-          "progress-update",
-          (event) => {
-            console.log("Progress event payload:", event.payload);
+      if (!hasRun.current) {
+        try {
+          const unlisten = await listen<ProgressUpdatePayload>(
+            "progress-update",
+            (event) => {
+              console.log("Progress event payload:", event.payload);
 
-            // Update progress for specific transfer ID
-            setProgressMap((prevMap) => ({
-              ...prevMap,
-              [event.payload.id]: event.payload.progress,
-            }));
-          }
-        );
+              // Update progress for specific transfer ID
+              setProgressMap((prevMap) => ({
+                ...prevMap,
+                [event.payload.id]: event.payload.progress,
+              }));
+            }
+          );
 
-        return unlisten;
-      } catch (error) {
-        console.error("Error loading progress:", error);
+          return unlisten;
+        } catch (error) {
+          console.error("Error loading progress:", error);
+        }
       }
-    };
 
-    const unlistenPromise = setupListener();
+      const unlistenPromise = setupListener();
+      hasRun.current = true;
 
-    return () => {
-      unlistenPromise.then((unlisten) => {
-        if (unlisten) unlisten();
-      });
+      return () => {
+        unlistenPromise.then((unlisten) => {
+          if (unlisten) unlisten();
+        });
+      };
     };
   }, []);
 
@@ -90,12 +94,16 @@ interface QrProps {
 
 export default function QrCode({ value }: QrProps) {
   const { isTheme } = useTheme();
-  const { qrCode } = SendLogic();
+  const { qrCode, qrText } = SendLogic();
   const navigate = useNavigate();
+  const hasRun = useRef(false);
 
   useEffect(() => {
-    console.log("QR Code URL updated:", qrCode);
-  }, [qrCode]);
+    if (!hasRun.current) {
+      console.log("QR Code URL updated:", qrCode);
+      hasRun.current = true;
+    }
+  }, []);
 
   return (
     <div
@@ -108,13 +116,12 @@ export default function QrCode({ value }: QrProps) {
           src={isTheme ? darkBack : lightBack}
           alt="back"
           className="h-[40px]"
-          onClick={() =>
-            navigate(value ? "/send" : "/", { replace: true })
-          }
+          onClick={() => navigate(value ? "/send" : "/", { replace: true })}
         />
         <ToggleThemeButton />
       </nav>
       <div className="flex flex-col items-center mt-[15vh]">
+        <h2>{qrText}</h2>
         <div
           className={`${
             isTheme ? "bg-dark-qrBg" : "bg-light-qrBg"

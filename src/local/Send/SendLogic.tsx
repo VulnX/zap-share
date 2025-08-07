@@ -1,11 +1,12 @@
 import QRCode from "qrcode";
 import { invoke } from "@tauri-apps/api/core";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "../Choice/Theme";
 import Swal from "sweetalert2";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useNavigate } from "react-router-dom";
 import { basename } from "@tauri-apps/api/path";
+import { flushSync } from "react-dom";
 
 const swalWithBootstrapButtons = Swal.mixin({
   customClass: {
@@ -28,6 +29,7 @@ export function SendLogic() {
     // Retrieve QR code from session storage on initial load
     sessionStorage.getItem("persistedQrCode")
   );
+  const [qrText, setQrText] = useState<string | null>();
   const navigate = useNavigate();
 
   // Save QR code to session storage whenever it changes
@@ -38,7 +40,7 @@ export function SendLogic() {
   }, [qrCode]);
 
   // Enhanced QR code generation function
-  const generateQRCode = useCallback(async (files: string[]) => {
+  const generateQRCode = async (files: string[]) => {
     try {
       // Invoke Tauri command to send files
       const filePairs: [string, string][] = await Promise.all(
@@ -47,23 +49,25 @@ export function SendLogic() {
           return [file, name];
         })
       );
-      console.log('File Pairs:', filePairs);
-      console.log('sending :', files);
+      console.log("File Pairs:", filePairs);
+      console.log("sending :", files);
       const response = await invoke<SendFileResponse>("send_file", {
-        files: filePairs
+        files: filePairs,
       });
 
       // Check if response has valid IP and port
       if (response.Success && response.Success.ip) {
         const { ip, port } = response.Success;
-        const qrText = `http://${ip}:${port}`;
-
-        console.log("Generating QR for URL:", qrText);
+        const qr = `http://${ip}:${port}`;
+        flushSync(() => {
+          setQrText(qr);
+        });
+        console.log("Generating QR for URL:", qr);
 
         // Generate QR code URL
-        const url = await QRCode.toDataURL(qrText);
+        const url = await QRCode.toDataURL(qr);
 
-        console.log("Generated QR Code URL:", url);
+        // console.log("Generated QR Code URL:", url);
 
         // Update state and persist to session storage
         setQrCode(url);
@@ -82,10 +86,10 @@ export function SendLogic() {
       sessionStorage.removeItem("persistedQrCode");
       return null;
     }
-  }, []);
+  };
 
   // Improved file selector with integrated QR code generation
-  const openFileSelector = useCallback(async () => {
+  const openFileSelector = async () => {
     try {
       const file = await open({
         multiple: true,
@@ -126,12 +130,13 @@ export function SendLogic() {
         confirmButtonText: "OK",
       });
     }
-  }, [generateQRCode, navigate]);
+  };
 
   return {
     isTheme,
     qrCode,
     openFileSelector,
     generateQRCode,
+    qrText,
   };
 }
