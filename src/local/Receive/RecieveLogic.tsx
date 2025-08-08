@@ -1,4 +1,5 @@
 import QRCode from "qrcode";
+import { flushSync } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 
@@ -14,6 +15,7 @@ export function RecvLogic() {
     // Retrieve QR code from session storage on initial load
     sessionStorage.getItem("persistedQrCode")
   );
+  const [qrText, setQrText] = useState<string | null>();
 
   // Save QR code to session storage whenever it changes
   useEffect(() => {
@@ -32,14 +34,16 @@ export function RecvLogic() {
       // Check if response has valid IP and port
       if (response.Success && response.Success.ip) {
         const { ip, port } = response.Success;
-        const qrText = `http://${ip}:${port}`;
+        const qr = `http://${ip}:${port}`;
 
-        console.log("Generating QR for URL:", qrText);
-
+        flushSync(() => {
+          setQrText(qr);
+        });
+        console.log("Generating QR for URL:", qr);
         // Generate QR code URL
-        const url = await QRCode.toDataURL(qrText);
+        const url = await QRCode.toDataURL(qr);
 
-        console.log("Generated QR Code URL:", url);
+        // console.log("Generated QR Code URL:", url);
 
         // Update state and persist to session storage
         setQrCode(url);
@@ -63,5 +67,6 @@ export function RecvLogic() {
   return {
     qrCode,
     generateQRCode,
+    qrText,
   };
 }
