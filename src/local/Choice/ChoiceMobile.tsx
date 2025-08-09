@@ -5,12 +5,33 @@ import darkBack from '../images/darkBack.svg'
 import { ToggleThemeButton } from "./Navigation";
 import { useTheme } from './Theme';
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { SendLogic } from '../Send/SendLogic';
 
 
 export default function ChoiceMobile() {
 
     const { isTheme } = useTheme()
     const navigate = useNavigate()
+    const { proceedWithSend } = SendLogic();
+
+    const hasRun = useRef(false);
+
+    useEffect(() => {
+        if (!hasRun.current) {
+            (async () => {
+                hasRun.current = true;
+                var files: string[] = await invoke('get_shared_uri_list');
+                files = files.filter(s => s != "");
+                console.log(files);
+                if (0 < files.length) {
+                    console.log('calling proceed');
+                    proceedWithSend(files);
+                }
+            })();
+        }
+    }, []);
 
     return (
         <div className={`${isTheme ? `bg-mobile-dark-background` : `bg-mobile-light-background`} || min-h-screen ${isTheme ? `text-[#C9C9C9]` : `text-black`}

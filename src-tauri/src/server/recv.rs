@@ -65,7 +65,9 @@ pub async fn upload_file(
         let chunk = chunk.unwrap();
         bufwriter.write_all(&chunk).await.unwrap();
         written += chunk.len();
-        window.emit("progress-update", written as f64 * 100.0 / filesize as f64).unwrap();
+        window
+            .emit("progress-update", written as f64 * 100.0 / filesize as f64)
+            .unwrap();
     }
     debug!("saved on disk");
 

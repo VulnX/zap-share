@@ -91,36 +91,11 @@ export function SendLogic() {
   // Improved file selector with integrated QR code generation
   const openFileSelector = async () => {
     try {
-      const file = await open({
+      const files = await open({
         multiple: true,
         directory: false,
       });
-
-      if (file) {
-        const files = Array.isArray(file) ? file : [file];
-
-        // Generate QR code and navigate on success
-        const qrCodeResult = await generateQRCode(files);
-
-        if (qrCodeResult) {
-          navigate("/send/confirm", { replace: true });
-        } else {
-          swalWithBootstrapButtons.fire({
-            title: "QR Code Generation Failed",
-            text: "Unable to generate QR code for file transfer",
-            icon: "error",
-            confirmButtonText: "OK",
-          });
-        }
-      } else {
-        swalWithBootstrapButtons.fire({
-          title: "File not selected",
-          text: "Please select a file to transfer",
-          icon: "warning",
-          confirmButtonText: "OK",
-          reverseButtons: true,
-        });
-      }
+      proceedWithSend(files);
     } catch (err) {
       console.error("File selection error:", err);
       swalWithBootstrapButtons.fire({
@@ -132,11 +107,37 @@ export function SendLogic() {
     }
   };
 
+  const proceedWithSend = async (files: string[] | null) => {
+    if (files && 0 < files.length) {
+      // Generate QR code and navigate on success
+      const qrCodeResult = await generateQRCode(files);
+      if (qrCodeResult) {
+        navigate("/send/confirm", { replace: true });
+      } else {
+        swalWithBootstrapButtons.fire({
+          title: "QR Code Generation Failed",
+          text: "Unable to generate QR code for file transfer",
+          icon: "error",
+          confirmButtonText: "OK",
+        });
+      }
+    } else {
+      swalWithBootstrapButtons.fire({
+        title: "File not selected",
+        text: "Please select a file to transfer",
+        icon: "warning",
+        confirmButtonText: "OK",
+        reverseButtons: true,
+      });
+    }
+  }
+
   return {
     isTheme,
     qrCode,
     openFileSelector,
     generateQRCode,
     qrText,
+    proceedWithSend,
   };
 }

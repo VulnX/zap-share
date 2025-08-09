@@ -2,15 +2,18 @@ use crate::server;
 use actix_web::dev::ServerHandle;
 use rand::RngCore;
 use serde::Serialize;
-use tauri_plugin_ipd::IpdExt;
 use std::{
     path::PathBuf,
-    sync::{mpsc, Mutex},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        mpsc, Mutex,
+    },
     thread,
     time::Duration,
 };
 use tauri::{Runtime, Window};
 use tauri_plugin_fs::{FsExt, SafeFilePath};
+use tauri_plugin_ipd::IpdExt;
 
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 
@@ -54,6 +57,22 @@ impl FileData {
 pub enum TransferMode {
     Send(Vec<FileData>),
     Receive,
+}
+
+static SHARED_URI_LIST_SENT: AtomicBool = AtomicBool::new(false);
+
+#[allow(dead_code)]
+#[tauri::command]
+pub async fn get_shared_uri_list<R: Runtime>(window: Window<R>) -> Vec<String> {
+    if SHARED_URI_LIST_SENT.swap(true, Ordering::SeqCst) {
+        return vec![];
+    }
+    let res = window.ipd().get_shared_uri_list().unwrap().uri_list;
+    // Parse [XXX, YYY] from `res`
+    res.trim_matches(|c| c == '[' || c == ']')
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .collect()
 }
 
 /// Starts server in `send` mode
