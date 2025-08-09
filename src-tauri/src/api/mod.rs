@@ -133,8 +133,6 @@ pub fn send_file<R: Runtime>(
 #[allow(dead_code)]
 #[tauri::command]
 pub fn recv_file<R: Runtime>(window: tauri::Window<R>) -> StartServerResponse {
-    let result = window.ipd().get_shared_uri_list();
-    dbg!(&result);
     let mode = TransferMode::Receive;
     start_server(window, mode)
 }

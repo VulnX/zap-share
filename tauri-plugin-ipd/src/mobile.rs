@@ -25,10 +25,10 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
 pub struct Ipd<R: Runtime>(PluginHandle<R>);
 
 impl<R: Runtime> Ipd<R> {
-  pub fn getSharedUriList(&self) -> crate::Result<PingResponse> {
+  pub fn get_shared_uri_list(&self) -> crate::Result<GetSharedUriListResponse> {
     self
       .0
-      .run_mobile_plugin("getSharedUriList")
+      .run_mobile_plugin("getSharedUriList", ())
       .map_err(Into::into)
   }
 }

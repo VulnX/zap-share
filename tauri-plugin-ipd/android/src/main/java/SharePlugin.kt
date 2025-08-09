@@ -9,7 +9,6 @@ import app.tauri.plugin.JSObject
 import app.tauri.plugin.Plugin
 import app.tauri.plugin.Invoke
 
-
 @TauriPlugin
 class SharePlugin(private val activity: Activity): Plugin(activity) {
 
