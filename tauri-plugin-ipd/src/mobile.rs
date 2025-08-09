@@ -15,7 +15,7 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
   api: PluginApi<R, C>,
 ) -> crate::Result<Ipd<R>> {
   #[cfg(target_os = "android")]
-  let handle = api.register_android_plugin("", "ExamplePlugin")?;
+  let handle = api.register_android_plugin("com.plugin.ipd", "SharePlugin")?;
   #[cfg(target_os = "ios")]
   let handle = api.register_ios_plugin(init_plugin_ipd)?;
   Ok(Ipd(handle))
@@ -25,10 +25,10 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
 pub struct Ipd<R: Runtime>(PluginHandle<R>);
 
 impl<R: Runtime> Ipd<R> {
-  pub fn ping(&self, payload: PingRequest) -> crate::Result<PingResponse> {
+  pub fn getSharedUriList(&self) -> crate::Result<PingResponse> {
     self
       .0
-      .run_mobile_plugin("ping", payload)
+      .run_mobile_plugin("getSharedUriList")
       .map_err(Into::into)
   }
 }

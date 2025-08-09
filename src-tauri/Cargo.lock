@@ -2178,6 +2178,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-dialog",
  "tauri-plugin-fs",
+ "tauri-plugin-ipd",
  "tauri-plugin-opener",
  "tauri-plugin-os",
  "tokio",
@@ -4352,6 +4353,16 @@ dependencies = [
  "thiserror 2.0.9",
  "toml 0.8.19",
  "url",
+]
+
+[[package]]
+name = "tauri-plugin-ipd"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.9",
 ]
 
 [[package]]

@@ -2,6 +2,7 @@ use crate::server;
 use actix_web::dev::ServerHandle;
 use rand::RngCore;
 use serde::Serialize;
+use tauri_plugin_ipd::IpdExt;
 use std::{
     path::PathBuf,
     sync::{mpsc, Mutex},
@@ -49,7 +50,6 @@ impl FileData {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Clone)]
 pub enum TransferMode {
     Send(Vec<FileData>),
@@ -103,6 +103,7 @@ pub fn send_file<R: Runtime>(
     let mode = TransferMode::Send(file_datas);
     start_server(window, mode)
 }
+
 /// Starts server in `receive` mode
 ///
 /// ### Parameters (from JavaScript/TypeScript):
@@ -132,6 +133,8 @@ pub fn send_file<R: Runtime>(
 #[allow(dead_code)]
 #[tauri::command]
 pub fn recv_file<R: Runtime>(window: tauri::Window<R>) -> StartServerResponse {
+    let result = window.ipd().get_shared_uri_list();
+    dbg!(&result);
     let mode = TransferMode::Receive;
     start_server(window, mode)
 }

@@ -14,9 +14,9 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
 pub struct Ipd<R: Runtime>(AppHandle<R>);
 
 impl<R: Runtime> Ipd<R> {
-  pub fn ping(&self, payload: PingRequest) -> crate::Result<PingResponse> {
-    Ok(PingResponse {
-      value: payload.value,
+  pub fn get_shared_uri_list(&self) -> crate::Result<GetSharedUriListResponse> {
+    Ok(GetSharedUriListResponse {
+      uri_list: "[]".into()
     })
   }
 }

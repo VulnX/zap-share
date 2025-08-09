@@ -5,9 +5,8 @@ use crate::Result;
 use crate::IpdExt;
 
 #[command]
-pub(crate) async fn ping<R: Runtime>(
-    app: AppHandle<R>,
-    payload: PingRequest,
-) -> Result<PingResponse> {
-    app.ipd().ping(payload)
+pub(crate) async fn get_shared_uri_list<R: Runtime>(
+    app: AppHandle<R>
+) -> Result<GetSharedUriListResponse> {
+    app.ipd().get_shared_uri_list()
 }
