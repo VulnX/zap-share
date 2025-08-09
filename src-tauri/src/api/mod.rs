@@ -61,6 +61,22 @@ pub enum TransferMode {
 
 static SHARED_URI_LIST_SENT: AtomicBool = AtomicBool::new(false);
 
+/// Retrieves the list of content URIs sent to the app when opened via the
+/// Android share menu, ensuring that this list is only retrieved once per
+/// application run.
+///
+/// # Parameters
+/// - None
+///
+/// # Returns
+/// A `Vec<String>` containing the parsed shared URIs. If the list has already been
+/// retrieved previously, returns an empty vector.
+///
+/// # Notes
+/// - This function uses a global atomic flag `SHARED_URI_LIST_SENT` to ensure the shared URI list
+///   is only accessed once. Subsequent calls will return an empty vector.
+/// - The returned `res` string is expected to be in the format `"[uri1, uri2, ...]"`.
+///   It trims the square brackets and splits the string by commas.
 #[allow(dead_code)]
 #[tauri::command]
 pub async fn get_shared_uri_list<R: Runtime>(window: Window<R>) -> Vec<String> {
@@ -72,6 +88,7 @@ pub async fn get_shared_uri_list<R: Runtime>(window: Window<R>) -> Vec<String> {
     res.trim_matches(|c| c == '[' || c == ']')
         .split(',')
         .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
         .collect()
 }
 
@@ -79,7 +96,7 @@ pub async fn get_shared_uri_list<R: Runtime>(window: Window<R>) -> Vec<String> {
 ///
 /// Assumes filepath is a valid path to the user-selected file, or a content URI in case of Android
 ///
-/// ### Parameters (from JavaScript/TypeScript):
+/// # Parameters (from JavaScript/TypeScript):
 ///
 /// - `files`: Array of `[path, name]` tuples:
 ///
@@ -93,7 +110,7 @@ pub async fn get_shared_uri_list<R: Runtime>(window: Window<R>) -> Vec<String> {
 /// });
 /// ```
 ///
-/// ### Return value:
+/// # Return value:
 /// ```ts
 /// {
 ///   "Success": {
@@ -125,7 +142,7 @@ pub fn send_file<R: Runtime>(
 
 /// Starts server in `receive` mode
 ///
-/// ### Parameters (from JavaScript/TypeScript):
+/// # Parameters (from JavaScript/TypeScript):
 ///
 /// No parameters are required.
 ///
@@ -134,7 +151,7 @@ pub fn send_file<R: Runtime>(
 /// invoke('recv_file');
 /// ```
 ///
-/// ### Return value:
+/// # Return value:
 /// ```ts
 /// {
 ///   "Success": {
