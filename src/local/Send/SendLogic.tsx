@@ -1,12 +1,13 @@
 import QRCode from "qrcode";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTheme } from "../Choice/Theme";
 import Swal from "sweetalert2";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useNavigate } from "react-router-dom";
 import { basename } from "@tauri-apps/api/path";
 import { flushSync } from "react-dom";
+import { useQrContext } from "./QrContext";
 
 const swalWithBootstrapButtons = Swal.mixin({
   customClass: {
@@ -25,11 +26,7 @@ interface SendFileResponse {
 
 export function SendLogic() {
   const { isTheme } = useTheme();
-  const [qrCode, setQrCode] = useState<string | null>(
-    // Retrieve QR code from session storage on initial load
-    sessionStorage.getItem("persistedQrCode")
-  );
-  const [qrText, setQrText] = useState<string | null>();
+  const { qrCode, setQrCode, qrText, setQrText } = useQrContext();
   const navigate = useNavigate();
 
   // Save QR code to session storage whenever it changes
@@ -38,6 +35,13 @@ export function SendLogic() {
       sessionStorage.setItem("persistedQrCode", qrCode);
     }
   }, [qrCode]);
+
+  // Save QR text to session storage whenever it changes
+  useEffect(() => {
+    if (qrText) {
+      sessionStorage.setItem("persistedQrText", qrText);
+    }
+  }, [qrText]);
 
   // Enhanced QR code generation function
   const generateQRCode = async (files: string[]) => {
