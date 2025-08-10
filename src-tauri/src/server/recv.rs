@@ -55,10 +55,11 @@ pub async fn upload_file(
         "android" => PathBuf::from("/storage/emulated/0/Download"),
         _ => window.path().download_dir().unwrap(),
     };
-    write_path.push(filename);
-    debug!("saving file to {write_path:#?}");
 
-    let file = fs::File::create(write_path).await.unwrap();
+    get_unique_file_path(&mut write_path, filename);
+
+    let file = fs::File::create(&write_path).await.unwrap();
+    debug!("saving file to {write_path:#?}");
     let mut bufwriter = BufWriter::new(file);
     let mut written = 0;
     while let Some(chunk) = body.next().await {
@@ -72,4 +73,28 @@ pub async fn upload_file(
     debug!("saved on disk");
 
     HttpResponse::Ok()
+}
+
+fn get_unique_file_path(write_path: &mut PathBuf, filename: String) {
+    if !write_path.join(&filename).exists() {
+        write_path.push(&filename);
+        return;
+    }
+
+    let (name, ext) = match filename.rsplit_once('.') {
+        Some((name, ext)) => (name.to_string(), Some(ext.to_string())),
+        None => (filename, None),
+    };
+
+    for i in 1.. {
+        let new_name = match &ext {
+            Some(ext) => format!("{name} ({i}).{ext}"),
+            None => format!("{name} ({i})"),
+        };
+        if !write_path.join(&new_name).exists() {
+            write_path.push(new_name);
+            return;
+        }
+    }
+    unreachable!("Infinite loop should always find a unique name");
 }
