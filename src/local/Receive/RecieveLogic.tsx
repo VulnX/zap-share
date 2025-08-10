@@ -1,7 +1,8 @@
 import QRCode from "qrcode";
 import { flushSync } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useQrContext } from "../Send/QrContext";
 
 interface RecvFileResponse {
   Success: {
@@ -11,24 +12,23 @@ interface RecvFileResponse {
 }
 
 export function RecvLogic() {
-  const [qrCode, setQrCode] = useState<string | null>(
-    // Retrieve QR code from session storage on initial load
-    sessionStorage.getItem("persistedQrCode")
-  );
-  const [qrText, setQrText] = useState<string | null>();
+  const { qrCode, setQrCode, qrText, setQrText } = useQrContext();
 
   // Save QR code to session storage whenever it changes
   useEffect(() => {
     if (qrCode) {
       sessionStorage.setItem("persistedQrCode", qrCode);
     }
-  }, [qrCode]);
+    if (qrText) {
+      sessionStorage.setItem("persistedQrText", qrText);
+      console.log(qrText);
+    }
+  }, [qrCode, qrText]);
 
   // Enhanced QR code generation function
   const generateQRCode = async () => {
     try {
       // Invoke Tauri command to Recv files
-
       const response = await invoke<RecvFileResponse>("recv_file");
 
       // Check if response has valid IP and port
@@ -43,23 +43,26 @@ export function RecvLogic() {
         // Generate QR code URL
         const url = await QRCode.toDataURL(qr);
 
-        // console.log("Generated QR Code URL:", url);
-
         // Update state and persist to session storage
         setQrCode(url);
         sessionStorage.setItem("persistedQrCode", url);
+        sessionStorage.setItem("persistedQrText", qr);
 
         return url;
       } else {
         console.error("Invalid response or missing IP");
         setQrCode(null);
+        setQrText(null);
         sessionStorage.removeItem("persistedQrCode");
+        sessionStorage.removeItem("persistedQrText");
         return null;
       }
     } catch (err) {
       console.error("Error generating QR code:", err);
       setQrCode(null);
+      setQrText(null);
       sessionStorage.removeItem("persistedQrCode");
+      sessionStorage.removeItem("persistedQrText");
       return null;
     }
   };

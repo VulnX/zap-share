@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { Progress, Typography } from "@material-tailwind/react";
 import { useTheme } from "../Choice/Theme";
-import { SendLogic } from "./SendLogic";
+import { useQrContext } from "./QrContext";
 import lightBack from "../images/lightBack.svg";
 import darkBack from "../images/darkBack.svg";
 import { ToggleThemeButton } from "../Choice/Navigation";
@@ -15,39 +15,32 @@ interface ProgressUpdatePayload {
 
 export function ProgressBar() {
   const [progressMap, setProgressMap] = useState<Record<string, number>>({});
-  const hasRun = useRef(false);
 
   useEffect(() => {
+    let unlisten: (() => void) | undefined;
+
     const setupListener = async () => {
-      if (!hasRun.current) {
-        try {
-          const unlisten = await listen<ProgressUpdatePayload>(
-            "progress-update",
-            (event) => {
-              console.log("Progress event payload:", event.payload);
+      try {
+        unlisten = await listen<ProgressUpdatePayload>(
+          "progress-update",
+          (event) => {
+            console.log("Progress event payload:", event.payload);
 
-              // Update progress for specific transfer ID
-              setProgressMap((prevMap) => ({
-                ...prevMap,
-                [event.payload.id]: event.payload.progress,
-              }));
-            }
-          );
-
-          return unlisten;
-        } catch (error) {
-          console.error("Error loading progress:", error);
-        }
+            setProgressMap((prevMap) => ({
+              ...prevMap,
+              [event.payload.id]: event.payload.progress,
+            }));
+          }
+        );
+      } catch (error) {
+        console.error("Error loading progress:", error);
       }
+    };
 
-      const unlistenPromise = setupListener();
-      hasRun.current = true;
+    setupListener();
 
-      return () => {
-        unlistenPromise.then((unlisten) => {
-          if (unlisten) unlisten();
-        });
-      };
+    return () => {
+      if (unlisten) unlisten();
     };
   }, []);
 
@@ -88,19 +81,16 @@ export function ProgressBar() {
   );
 }
 
-interface QrProps {
-  value: boolean;
-}
-
-export default function QrCode({ value }: QrProps) {
+export default function QrCode() {
   const { isTheme } = useTheme();
-  const { qrCode, qrText } = SendLogic();
+  const { qrCode, qrText } = useQrContext();
   const navigate = useNavigate();
   const hasRun = useRef(false);
 
   useEffect(() => {
     if (!hasRun.current) {
       console.log("QR Code URL updated:", qrCode);
+      console.log(qrText);
       hasRun.current = true;
     }
   }, []);
@@ -116,7 +106,7 @@ export default function QrCode({ value }: QrProps) {
           src={isTheme ? darkBack : lightBack}
           alt="back"
           className="h-[40px]"
-          onClick={() => navigate(value ? "/send" : "/", { replace: true })}
+          onClick={() => navigate("/send", { replace: true })}
         />
         <ToggleThemeButton />
       </nav>
@@ -137,7 +127,7 @@ export default function QrCode({ value }: QrProps) {
             <p>Generating Qr Code....</p>
           )}
         </div>
-        {value ? <ProgressBar /> : ""}
+        <ProgressBar />
       </div>
     </div>
   );

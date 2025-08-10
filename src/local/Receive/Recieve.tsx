@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { RecvLogic } from "./RecieveLogic";
 import { useNavigate } from "react-router-dom";
 import { ToggleThemeButton } from "../Choice/Navigation";
+import { ProgressBar } from "../Send/QrCode";
 
 export default function Recieve() {
   const { isTheme } = useTheme();
@@ -14,6 +15,7 @@ export default function Recieve() {
 
   useEffect(() => {
     const fetch = async () => {
+      // const existingQrCode = sessionStorage.getItem("persistedQrCode");
       if (!hasRun.current) {
         await generateQRCode();
       }
@@ -40,8 +42,7 @@ export default function Recieve() {
       <div className="flex flex-col items-center mt-[15vh]">
         <h2>{qrText}</h2>
         <div
-          className={`${
-            isTheme ? "bg-dark-qrBg" : "bg-light-qrBg"
+          className={`${isTheme ? "bg-dark-qrBg" : "bg-light-qrBg"
           } mb-10 rounded-2xl`}
         >
           {qrCode ? (
@@ -54,6 +55,7 @@ export default function Recieve() {
             <p>Generating Qr Code....</p>
           )}
         </div>
+        <ProgressBar />
       </div>
     </div>
   );
