@@ -9,6 +9,8 @@ use tokio::{
     io::{AsyncWriteExt, BufWriter},
 };
 
+use crate::server::common;
+
 /// Handles the `/` route in RECEIVE mode
 ///
 /// Serves an HTML form (from `static/upload.html`) allowing the user to
@@ -56,26 +58,33 @@ pub async fn upload_file(
         _ => window.path().download_dir().unwrap(),
     };
 
-    get_unique_file_path(&mut write_path, filename);
+    get_unique_file_path(&mut write_path, &filename);
 
     let file = fs::File::create(&write_path).await.unwrap();
     debug!("saving file to {write_path:#?}");
     let mut bufwriter = BufWriter::new(file);
     let mut written = 0;
+    let mut payload = common::ProgressUpdatePayload {
+        id: filename,
+        progress: 0.0,
+    };
     while let Some(chunk) = body.next().await {
         let chunk = chunk.unwrap();
         bufwriter.write_all(&chunk).await.unwrap();
         written += chunk.len();
-        window
-            .emit("progress-update", written as f64 * 100.0 / filesize as f64)
-            .unwrap();
+        let new_progress = written as f32 * 100.0 / filesize as f32;
+        let rounded_progress = (new_progress * 10.0).round() / 10.0;
+        if payload.progress < rounded_progress {
+            payload.progress = rounded_progress;
+            window.emit("progress-update", &payload).unwrap();
+        }
     }
     debug!("saved on disk");
 
     HttpResponse::Ok()
 }
 
-fn get_unique_file_path(write_path: &mut PathBuf, filename: String) {
+fn get_unique_file_path(write_path: &mut PathBuf, filename: &String) {
     if !write_path.join(&filename).exists() {
         write_path.push(&filename);
         return;
@@ -83,7 +92,7 @@ fn get_unique_file_path(write_path: &mut PathBuf, filename: String) {
 
     let (name, ext) = match filename.rsplit_once('.') {
         Some((name, ext)) => (name.to_string(), Some(ext.to_string())),
-        None => (filename, None),
+        None => (filename.clone(), None),
     };
 
     for i in 1.. {

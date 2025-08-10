@@ -5,6 +5,7 @@ use tauri::Runtime;
 
 mod recv;
 mod send;
+mod common;
 
 /// Starts an actix web server and enables required routes based on the given `mode`
 ///

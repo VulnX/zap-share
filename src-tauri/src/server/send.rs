@@ -4,19 +4,13 @@ use actix_web::{
     web, Error, HttpRequest, HttpResponse, Responder,
 };
 use futures_util::stream;
-use serde::Serialize;
+use log::debug;
 use tauri::{Emitter, Window};
 use tokio::io::AsyncReadExt;
 
-use crate::api;
+use crate::{api, server::common};
 
 const CHUNK_SIZE: usize = 1024 * 1024; // 1 MiB
-
-#[derive(Serialize, Clone, Debug)]
-struct ProgressUpdatePayload {
-    id: String,
-    progress: usize,
-}
 
 pub async fn download_frontend(file_datas: web::Data<Vec<api::FileData>>) -> impl Responder {
     let file_datas = file_datas.into_inner();
@@ -61,33 +55,34 @@ pub async fn download_file(
     let file_name = file_data.filename.clone();
     let file_size = file_data.filesize;
 
-    println!("{file:?}");
-    println!("{file_name:?}");
-    println!("{file_size:?}");
+    debug!("{file:#?}");
+    debug!("{file_name:#?}");
+    debug!("{file_size:#?}");
     let transferred: usize = 0;
-    let progress = ProgressUpdatePayload {
+    let payload = common::ProgressUpdatePayload {
         id: file_data.filename.clone(),
-        progress: 0,
+        progress: 0.0,
     };
-    dbg!(&progress.id);
+    debug!("{:#?}", payload.id);
     let data_stream = stream::unfold(
-        (file, transferred, progress, window),
-        move |(mut file, mut transferred, mut progress, window)| async move {
+        (file, transferred, payload, window),
+        move |(mut file, mut transferred, mut payload, window)| async move {
             let mut chunk = vec![0; CHUNK_SIZE];
             match file.read(&mut chunk).await {
                 Ok(0) => None,
                 Ok(n) => {
                     chunk.truncate(n);
                     transferred += n;
-                    let new_progress = transferred * 100 / file_size as usize;
-                    if new_progress > progress.progress {
-                        progress.progress = new_progress;
-                        window.emit("progress-update", &progress).unwrap();
-                        dbg!(&progress.progress);
+                    let new_progress = transferred as f32 * 100.0 / file_size as f32;
+                    let rounded_progress = (new_progress * 10.0).round() / 10.0;
+                    if payload.progress < rounded_progress {
+                        payload.progress = rounded_progress;
+                        window.emit("progress-update", &payload).unwrap();
+                        debug!("{:#?}", payload.progress);
                     }
                     Some((
                         Ok::<_, Error>(web::Bytes::from(chunk)),
-                        (file, transferred, progress, window),
+                        (file, transferred, payload, window),
                     ))
                 }
                 Err(e) => {
