@@ -99,7 +99,13 @@
       <div class="title-container">
         <span class="title">Upload a file</span>
       </div>
-      <input type="file" id="fileInput" onchange="fileUpdated()" name="file" multiple/>
+      <input
+        type="file"
+        id="fileInput"
+        onchange="fileUpdated(null)"
+        name="file"
+        multiple
+      />
       <div class="modified-input-btn-container">
         <span id="fileSelectedMessage">No file selected</span>
         <button onclick="selectFile()">Select file</button>
@@ -117,10 +123,12 @@
       function selectFile() {
         document.querySelector("#fileInput").click();
       }
-      function fileUpdated() {
+      function fileUpdated(name) {
         document.querySelector("#fileSelectedMessage").innerText =
           !document.querySelector("#fileInput").files[0]
             ? "No file selected"
+            : name
+            ? name
             : document.querySelector("#fileInput").files[0].name;
 
         document.querySelector("#status-actual").innerText = "";
@@ -131,6 +139,8 @@
       async function uploadFile() {
         var files = document.querySelector("#fileInput").files;
         for (const file of files) {
+    
+          await fileUpdated(file.name);
           var progressBar = document.querySelector("#progress");
           var statusBar = document.querySelector(".status-container");
           var status = document.querySelector("#status-actual");
@@ -169,7 +179,8 @@
                 "Not enough space on filesystem, please choose a smaller file"
               );
             } else {
-              alert(xhr.status);
+              // alert(xhr.status);
+              console.log(xhr.status);
             }
             uploadBtn.removeAttribute("disabled");
           };
@@ -178,7 +189,7 @@
             alert("File upload failed.");
           };
 
-          xhr.send(file);
+          await xhr.send(file);
         }
       }
     </script>

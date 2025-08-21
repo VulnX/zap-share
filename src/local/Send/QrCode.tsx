@@ -24,7 +24,7 @@ export function ProgressBar() {
         unlisten = await listen<ProgressUpdatePayload>(
           "progress-update",
           (event) => {
-            console.log("Progress event payload:", event.payload);
+            // console.log("Progress event payload:", event.payload);
 
             setProgressMap((prevMap) => ({
               ...prevMap,
