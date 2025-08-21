@@ -1,197 +1,208 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Upload</title>
-  </head>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      font-size: 1.2rem;
-      transition: 0.1s;
-      font-family: sans-serif;
-      color: white;
-    }
 
-    body {
-      max-width: 100vw;
-      max-height: 100vh;
-      background-color: #1b1b1b;
-      overflow: hidden;
-    }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload</title>
+</head>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    font-size: 1.2rem;
+    transition: 0.1s;
+    font-family: sans-serif;
+    color: white;
+  }
 
-    .container {
-      display: flex;
-      flex-direction: column;
-      padding: 15px;
-    }
+  body {
+    max-width: 100vw;
+    max-height: 100vh;
+    background-color: #1b1b1b;
+    overflow: hidden;
+  }
 
-    .container * {
-      margin: 20px 0;
-    }
+  .container {
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+  }
 
-    .title-container {
-      text-align: center;
-    }
+  .container * {
+    margin: 20px 0;
+  }
 
-    .title {
-      font-weight: bold;
-      border-bottom: thin solid white;
-    }
+  .title-container {
+    text-align: center;
+  }
 
-    #fileInput {
-      display: none;
-    }
+  .title {
+    font-weight: bold;
+    border-bottom: thin solid white;
+  }
 
-    #progress {
-      opacity: 0;
-      height: 10px;
-      background-color: #09f;
-      border-radius: 10px;
-    }
+  #fileInput {
+    display: none;
+  }
 
-    .status-container {
-      background-color: #333;
-      border-left: 5px solid #555;
-      padding: 10px;
-      border-radius: 5px;
-      opacity: 0;
-    }
+  #progress {
+    opacity: 0;
+    height: 10px;
+    background-color: #09f;
+    border-radius: 10px;
+  }
 
-    .status-prefix {
-      font-weight: bold;
-      border-bottom: thin solid black;
-    }
+  .status-container {
+    background-color: #333;
+    border-left: 5px solid #555;
+    padding: 10px;
+    border-radius: 5px;
+    opacity: 0;
+  }
 
-    button {
-      outline: none;
-      border: none;
-      border-radius: 5px;
-      background-color: #09f;
-      padding: 10px;
-      color: white;
-      font-weight: bold;
-      text-transform: uppercase;
-    }
+  .status-prefix {
+    font-weight: bold;
+    border-bottom: thin solid black;
+  }
 
-    button:hover,
-    button:active,
-    button:disabled {
-      background-color: #07f;
-    }
+  button {
+    outline: none;
+    border: none;
+    border-radius: 5px;
+    background-color: #09f;
+    padding: 10px;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
 
-    .modified-input-btn-container {
-      display: flex;
-      flex-direction: column;
-    }
+  button:hover,
+  button:active,
+  button:disabled {
+    background-color: #07f;
+  }
 
-    #fileSelectedMessage {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  </style>
+  .modified-input-btn-container {
+    display: flex;
+    flex-direction: column;
+  }
 
-  <body>
-    <div class="container">
-      <div class="title-container">
-        <span class="title">Upload a file</span>
-      </div>
-      <input
-        type="file"
-        id="fileInput"
-        onchange="fileUpdated(null)"
-        name="file"
-        multiple
-      />
-      <div class="modified-input-btn-container">
-        <span id="fileSelectedMessage">No file selected</span>
-        <button onclick="selectFile()">Select file</button>
-      </div>
-      <div class="status-container">
-        <span class="status-prefix">STATUS:</span>
-        <span id="status-actual"></span>
-      </div>
-      <div id="progress" value="0" max="100"></div>
-      <button id="uploadBtn" onclick="setTimeout(uploadFile, 100)">
-        Upload
-      </button>
+  #fileSelectedMessage {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+
+<body>
+  <div class="container">
+    <div class="title-container">
+      <span class="title">Upload a file</span>
     </div>
-    <script>
-      function selectFile() {
-        document.querySelector("#fileInput").click();
-      }
-      function fileUpdated(name) {
-        document.querySelector("#fileSelectedMessage").innerText =
-          !document.querySelector("#fileInput").files[0]
-            ? "No file selected"
-            : name
+    <input type="file" id="fileInput" onchange="fileUpdated(null)" name="file" multiple />
+    <div class="modified-input-btn-container">
+      <span id="fileSelectedMessage">No file selected</span>
+      <button onclick="selectFile()">Select file</button>
+    </div>
+    <div class="status-container">
+      <span class="status-prefix">STATUS:</span>
+      <span id="status-actual"></span>
+    </div>
+    <div id="progress" value="0" max="100"></div>
+    <button id="uploadBtn" onclick="setTimeout(uploadFile, 100)">
+      Upload
+    </button>
+  </div>
+  <script>
+    function selectFile() {
+      document.querySelector("#fileInput").click();
+    }
+    function fileUpdated(name) {
+      document.querySelector("#fileSelectedMessage").innerText =
+        !document.querySelector("#fileInput").files[0]
+          ? "No file selected"
+          : name
             ? name
             : document.querySelector("#fileInput").files[0].name;
 
-        document.querySelector("#status-actual").innerText = "";
-        document.querySelector(".status-container").style.opacity = "0";
-        document.querySelector("#progress").style.opacity = "0";
-        document.querySelector("#progress").style.width = "0";
-      }
-      async function uploadFile() {
-        var files = document.querySelector("#fileInput").files;
-        for (const file of files) {
-    
-          await fileUpdated(file.name);
-          var progressBar = document.querySelector("#progress");
-          var statusBar = document.querySelector(".status-container");
-          var status = document.querySelector("#status-actual");
-          var uploadBtn = document.querySelector("#uploadBtn");
-          if (!file) {
-            alert("Please select a file");
-            return;
-          }
+      document.querySelector("#status-actual").innerText = "";
+      document.querySelector(".status-container").style.opacity = "0";
+      document.querySelector("#progress").style.opacity = "0";
+      document.querySelector("#progress").style.width = "0";
+    }
+    async function uploadFile() {
+      const files = document.querySelector("#fileInput").files;
+      const progressBar = document.querySelector("#progress");
+      const statusBar = document.querySelector(".status-container");
+      const status = document.querySelector("#status-actual");
+      const uploadBtn = document.querySelector("#uploadBtn");
 
-          var xhr = new XMLHttpRequest();
-          xhr.open(
-            "POST",
-            "/upload/" +
-              encodeURIComponent(file.name) +
-              "/" +
-              encodeURIComponent(file.size),
-            true
-          );
+      uploadBtn.setAttribute("disabled", "true");
 
-          xhr.upload.onprogress = function (event) {
-            if (event.lengthComputable) {
-              progressBar.style.opacity = "1";
-              statusBar.style.opacity = "1";
-              var percentage = (event.loaded / event.total) * 100;
-              progressBar.style.width = Math.round(percentage) + "%";
-              uploadBtn.setAttribute("disabled", "true");
-              status.innerText = "Uploading..." + Math.round(percentage) + "%";
-            }
-          };
+      for (const file of files) {
+        fileUpdated(file.name);
+        if (!file) {
+          alert("Please select a file");
+          return;
+        }
 
-          xhr.onload = function () {
-            if (xhr.status === 200) {
-              status.innerText = "Uploaded";
-            } else if (xhr.status === 413) {
-              alert(
-                "Not enough space on filesystem, please choose a smaller file"
-              );
-            } else {
-              // alert(xhr.status);
-              console.log(xhr.status);
-            }
-            uploadBtn.removeAttribute("disabled");
-          };
-
-          xhr.onerror = function () {
-            alert("File upload failed.");
-          };
-
-          await xhr.send(file);
+        try {
+          await uploadSingleFile(file, progressBar, statusBar, status);
+        } catch (err) {
+          alert("Upload failed for " + file.name);
         }
       }
-    </script>
-  </body>
+
+      uploadBtn.removeAttribute("disabled");
+    }
+
+    function uploadSingleFile(file, progressBar, statusBar, status) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.open(
+          "POST",
+          "/upload/" +
+          encodeURIComponent(file.name) +
+          "/" +
+          encodeURIComponent(file.size),
+          true
+        );
+
+        xhr.upload.onprogress = function (event) {
+          if (event.lengthComputable) {
+            progressBar.style.opacity = "1";
+            statusBar.style.opacity = "1";
+            const percentage = (event.loaded / event.total) * 100;
+            progressBar.style.width = Math.round(percentage) + "%";
+            status.innerText = "Uploading..." + Math.round(percentage) + "%";
+          }
+        };
+
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            status.innerText = "Uploaded";
+            resolve();
+          } else if (xhr.status === 413) {
+            alert("Not enough space on filesystem, please choose a smaller file");
+            reject();
+          } else {
+            alert("Upload error: " + xhr.status);
+            reject();
+          }
+        };
+
+        xhr.onerror = function () {
+          alert("File upload failed.");
+          reject();
+        };
+
+        xhr.send(file);
+      });
+    }
+
+  </script>
+</body>
+
 </html>

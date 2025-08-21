@@ -79,6 +79,7 @@ pub async fn upload_file(
             window.emit("progress-update", &payload).unwrap();
         }
     }
+    bufwriter.flush().await.unwrap();
     debug!("saved on disk");
 
     HttpResponse::Ok()
