@@ -1,5 +1,20 @@
 import logo from '../images/a6cc6028300b7e1165a46f9b41bec24c.png'
 import { useTheme } from './Theme';
+import { useState } from 'react';
+
+const meaningfulWords = [
+  "Voyager", "Pioneer", "Explorer", "Seeker", "Wanderer",
+  "Creator", "Builder", "Maker", "Innovator", "Dreamer",
+  "Guardian", "Keeper", "Sentinel", "Watcher", "Guide",
+  "Phoenix", "Dragon", "Griffin", "Pegasus", "Atlas",
+  "Nova", "Stellar", "Cosmic", "Astro", "Nebula"
+];
+
+function generateUsername() {
+  const randomWord = meaningfulWords[Math.floor(Math.random() * meaningfulWords.length)];
+  const randomId = Math.floor(1000 + Math.random() * 9000); // 4-digit number
+  return `${randomWord}#${randomId}`;
+}
 
 
 
@@ -44,8 +59,59 @@ export function ToggleThemeButton() {
 
 
 
-export function LogoTitle() {
+export function ProfileButton() {
+    const { isTheme } = useTheme();
+    const [showUsername, setShowUsername] = useState(false);
+    const [username] = useState(() => {
+        const saved = localStorage.getItem('username');
+        if (saved) return saved;
+        const newUsername = generateUsername();
+        localStorage.setItem('username', newUsername);
+        return newUsername;
+    });
 
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setShowUsername(!showUsername)}
+                className={`p-2 rounded-full ${
+                    isTheme 
+                        ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                        : 'bg-gray-200 text-black hover:bg-gray-300'
+                } transition-colors flex items-center justify-center`}
+                title={username}
+            >
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-6 w-6" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                >
+                    <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
+                    />
+                </svg>
+            </button>
+            {showUsername && (
+                <div 
+                    className={`absolute right-0 mt-2 py-2 px-4 rounded-lg shadow-lg ${
+                        isTheme 
+                            ? 'bg-gray-700 text-white' 
+                            : 'bg-white text-black'
+                    }`}
+                >
+                    {username}
+                </div>
+            )}
+        </div>
+    );
+}
+
+export function LogoTitle() {
     const { isTheme } = useTheme();
 
     return (
@@ -71,7 +137,8 @@ export default function Navigation() {
                 <div className="flex w-10/12">
                     <LogoTitle />
                 </div>
-                <div className="flex w-2/12 items-center justify-center">
+                <div className="flex w-2/12 items-center justify-center gap-4">
+                    <ProfileButton />
                     <ToggleThemeButton />
                 </div>
             </nav>

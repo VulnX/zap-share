@@ -2,7 +2,7 @@ import send from './Send.svg'
 import receive from './Receive.svg'
 import lightBack from '../images/lightBack.svg'
 import darkBack from '../images/darkBack.svg'
-import { ToggleThemeButton } from "./Navigation";
+import { ToggleThemeButton, ProfileButton } from "./Navigation";
 import { useTheme } from './Theme';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useRef } from 'react';
@@ -36,9 +36,12 @@ export default function ChoiceMobile() {
     return (
         <div className={`${isTheme ? `bg-mobile-dark-background` : `bg-mobile-light-background`} || min-h-screen ${isTheme ? `text-[#C9C9C9]` : `text-black`}
         `}>
-            <nav className="flex justify-between p-6">
+            <nav className="flex justify-between items-center p-6">
                 <img src={isTheme ? darkBack : lightBack} alt="back" className="h-[40px]" />
-                <ToggleThemeButton />
+                <div className="flex items-center gap-4">
+                    <ProfileButton />
+                    <ToggleThemeButton />
+                </div>
             </nav>
 
             <div className="flex flex-col justify-evenly items-center h-[82vh]">

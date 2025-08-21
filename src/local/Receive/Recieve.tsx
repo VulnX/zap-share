@@ -4,7 +4,7 @@ import darkBack from "../images/darkBack.svg";
 import { useEffect, useRef } from "react";
 import { RecvLogic } from "./RecieveLogic";
 import { useNavigate } from "react-router-dom";
-import { ToggleThemeButton } from "../Choice/Navigation";
+import { ToggleThemeButton, ProfileButton } from "../Choice/Navigation";
 import { ProgressBar } from "../Send/QrCode";
 
 export default function Recieve() {
@@ -30,14 +30,17 @@ export default function Recieve() {
         isTheme ? "bg-dark-background" : "bg-light-background"
       }`}
     >
-      <nav className="flex justify-between p-6">
+      <nav className="flex justify-between items-center p-6 w-full">
         <img
           src={isTheme ? darkBack : lightBack}
           alt="back"
-          className="h-[40px]"
+          className="h-[40px] cursor-pointer"
           onClick={() => navigate("/", { replace: true })}
         />
-        <ToggleThemeButton />
+        <div className="flex items-center gap-4">
+          <ProfileButton />
+          <ToggleThemeButton />
+        </div>
       </nav>
       <div className="flex flex-col items-center mt-[15vh]">
         <h2>{qrText}</h2>
