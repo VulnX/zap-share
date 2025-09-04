@@ -15,6 +15,8 @@ use tauri::{Runtime, Window};
 use tauri_plugin_fs::{FsExt, SafeFilePath};
 use tauri_plugin_ipd::IpdExt;
 
+mod mcast;
+
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 
 #[derive(Debug, Serialize)]
@@ -131,6 +133,7 @@ pub fn send_file<R: Runtime>(
     window: tauri::Window<R>,
     files: Vec<(SafeFilePath, String)>,
 ) -> StartServerResponse {
+    thread::spawn(|| mcast::recv_emitted_info());
     // TODO : Add file checks before starting server
     let file_datas: Vec<FileData> = files
         .into_iter()
@@ -169,16 +172,10 @@ pub fn send_file<R: Runtime>(
 #[allow(dead_code)]
 #[tauri::command]
 pub fn recv_file<R: Runtime>(window: tauri::Window<R>) -> StartServerResponse {
+    thread::spawn(|| mcast::emit_info());
     let mode = TransferMode::Receive;
     start_server(window, mode)
 }
-
-// pub fn pause() {
-//     let mut stdout = stdout();
-//     stdout.write(b"Press Enter to continue...").unwrap();
-//     stdout.flush().unwrap();
-//     stdin().read(&mut [0]).unwrap();
-// }
 
 /// Starts (or re-starts existing) actix web server in separate thread
 ///
