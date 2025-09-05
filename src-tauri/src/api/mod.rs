@@ -1,6 +1,5 @@
 use crate::server;
 use actix_web::dev::ServerHandle;
-use rand::RngCore;
 use serde::Serialize;
 use std::{
     path::PathBuf,
@@ -21,7 +20,7 @@ pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 
 #[derive(Debug, Serialize)]
 pub struct Url {
-    ip: Option<String>,
+    ip: String,
     port: u16,
 }
 
@@ -41,9 +40,7 @@ pub struct FileData {
 
 impl FileData {
     fn from<R: Runtime>(filepath: SafeFilePath, filename: String, window: &Window<R>) -> Self {
-        let mut file_id = [0u8; 32];
-        rand::rng().fill_bytes(&mut file_id);
-        let id: String = file_id.iter().map(|byte| format!("{byte:02x}")).collect();
+        let id = uuid::Uuid::new_v4().to_string();
         let (file, _) = open_file(&filepath, window);
         let filesize = file.metadata().unwrap().len();
         Self {
@@ -130,10 +127,9 @@ pub async fn get_shared_uri_list<R: Runtime>(window: Window<R>) -> Vec<String> {
 #[allow(dead_code)]
 #[tauri::command]
 pub fn send_file<R: Runtime>(
-    window: tauri::Window<R>,
+    window: Window<R>,
     files: Vec<(SafeFilePath, String)>,
 ) -> StartServerResponse {
-    thread::spawn(|| mcast::recv_emitted_info());
     // TODO : Add file checks before starting server
     let file_datas: Vec<FileData> = files
         .into_iter()
@@ -171,8 +167,7 @@ pub fn send_file<R: Runtime>(
 /// ```
 #[allow(dead_code)]
 #[tauri::command]
-pub fn recv_file<R: Runtime>(window: tauri::Window<R>) -> StartServerResponse {
-    thread::spawn(|| mcast::emit_info());
+pub fn recv_file<R: Runtime>(window: Window<R>) -> StartServerResponse {
     let mode = TransferMode::Receive;
     start_server(window, mode)
 }
@@ -182,7 +177,7 @@ pub fn recv_file<R: Runtime>(window: tauri::Window<R>) -> StartServerResponse {
 /// If the server has started successfully then the `port` number and (optionally detected) `ip` address will be returned
 ///
 /// In case of any detected errors, corresponding `Error` type will be returned
-fn start_server<R: Runtime>(window: tauri::Window<R>, mode: TransferMode) -> StartServerResponse {
+fn start_server<R: Runtime>(window: Window<R>, mode: TransferMode) -> StartServerResponse {
     // Stop any running server instance before starting a new one
     let mut handle_guard = SERVER_HANDLE.lock().unwrap();
     if let Some(server_handle) = handle_guard.take() {
@@ -193,8 +188,12 @@ fn start_server<R: Runtime>(window: tauri::Window<R>, mode: TransferMode) -> Sta
     }
 
     let (tx, rx) = mpsc::channel::<u16>();
-    thread::spawn(|| {
-        server::start_server(window, mode, tx);
+    thread::spawn({
+        let mode = mode.clone();
+        let window = window.clone();
+        move || {
+            server::start_server(window, mode, tx);
+        }
     });
 
     let port = match rx.recv_timeout(Duration::from_secs(10)) {
@@ -220,7 +219,12 @@ fn start_server<R: Runtime>(window: tauri::Window<R>, mode: TransferMode) -> Sta
                         .map(|(_, ipaddr)| *ipaddr)
                 })
         })
-        .map(|ipaddr| ipaddr.to_string());
+        .map(|ipaddr| ipaddr.to_string())
+        .unwrap();
+    match mode {
+        TransferMode::Receive => thread::spawn(move || mcast::emit_info(port)),
+        TransferMode::Send(_) => thread::spawn(|| mcast::recv_emitted_info(window)),
+    };
     StartServerResponse::Success(Url { ip, port })
 }
 

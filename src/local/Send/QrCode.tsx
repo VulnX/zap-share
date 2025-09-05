@@ -32,6 +32,10 @@ export function ProgressBar() {
             }));
           }
         );
+
+        await listen<string>("device-list-updated", (event) => {
+          console.log("DEVICE LIST UPDATED", event.payload);
+        });
       } catch (error) {
         console.error("Error loading progress:", error);
       }

@@ -86,8 +86,8 @@ pub async fn upload_file(
 }
 
 fn get_unique_file_path(write_path: &mut PathBuf, filename: &String) {
-    if !write_path.join(&filename).exists() {
-        write_path.push(&filename);
+    if !write_path.join(filename).exists() {
+        write_path.push(filename);
         return;
     }
 

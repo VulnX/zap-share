@@ -3,9 +3,9 @@ use actix_web::{middleware::Logger, rt, web, App, HttpServer};
 use std::sync::mpsc;
 use tauri::Runtime;
 
+mod common;
 mod recv;
 mod send;
-mod common;
 
 /// Starts an actix web server and enables required routes based on the given `mode`
 ///
