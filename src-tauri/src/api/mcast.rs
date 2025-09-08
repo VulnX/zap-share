@@ -49,11 +49,9 @@ pub fn recv_emitted_info<R: Runtime>(window: Window<R>) {
                 ip: from.ip().to_string(),
                 port: payload.port,
             };
-            if !devices.contains(&server_config) {
-                debug!("NEW DEVICE DETECTED: {server_config:#?}");
-                devices.insert(server_config);
-                window.emit("device-list-updated", &devices).unwrap();
-            }
+            devices.insert(server_config);
+            let data = serde_json::to_string(&devices).unwrap();
+            window.emit("device-list-updated", data).unwrap();
         };
     }
 }

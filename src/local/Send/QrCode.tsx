@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
+import React, { useEffect, useRef, useState } from "react";
+import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { Progress, Typography } from "@material-tailwind/react";
 import { useTheme } from "../Choice/Theme";
 import { useQrContext } from "./QrContext";
@@ -12,6 +12,11 @@ interface ProgressUpdatePayload {
   id: string; // Changed to string instead of String
   progress: number;
 }
+
+type ServerConfiguration = {
+  ip: string;
+  port: number;
+};
 
 export function ProgressBar() {
   const [progressMap, setProgressMap] = useState<Record<string, number>>({});
@@ -32,10 +37,6 @@ export function ProgressBar() {
             }));
           }
         );
-
-        await listen<string>("device-list-updated", (event) => {
-          console.log("DEVICE LIST UPDATED", event.payload);
-        });
       } catch (error) {
         console.error("Error loading progress:", error);
       }
@@ -85,8 +86,31 @@ export function ProgressBar() {
   );
 }
 
-export function DeviceList() {
+export const DeviceList: React.FC = () => {
   const { isTheme } = useTheme();
+  const hasRun = useRef(false);
+  const [nearbyDevices, setNearbyDevices] = useState<ServerConfiguration[]>([]);
+
+  useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
+    let listeners: UnlistenFn[] = [];
+    const setupListener = async () => {
+      console.log("setting up listener");
+      const listener = await listen<string>("device-list-updated", (event) => {
+        console.log("DEVICE LIST UPDATED", event.payload);
+        const parsedDevices: ServerConfiguration[] = JSON.parse(event.payload);
+        setNearbyDevices(parsedDevices);
+      });
+      listeners.push(listener);
+      console.log("listener setup");
+    };
+
+    setupListener();
+  }, []);
+
+  // TODO : make function to upload file
 
   return (
     <div className="m-auto flex flex-col items-center w-full max-w-md mt-4">
@@ -99,10 +123,17 @@ export function DeviceList() {
           }rounded-lg shadow-lg overflow-hidden`}
         >
           <div className="px-4 py-3 border-gray-200 font-semibold">
-            <h3 className="text-sm font-medium">Nearby Devices</h3>
+            <h3
+              className="text-sm font-medium"
+              onClick={() => {
+                console.log(nearbyDevices);
+              }}
+            >
+              Nearby Devices
+            </h3>
           </div>
           <div className="divide-y">
-            {["Device 1", "Device 2"].map((device, index) => (
+            {nearbyDevices.map((device, index) => (
               <div
                 key={index}
                 className={`flex items-center justify-between px-4 py-3 my-2 rounded-lg${
@@ -110,10 +141,13 @@ export function DeviceList() {
                     ? "bg-gray-700 text-white hover:bg-gray-600"
                     : "bg-gray-200 text-black hover:bg-gray-300"
                 }`}
+                onClick={() => {
+                  console.log("sending to:", device);
+                }}
               >
                 <div className="flex items-center">
                   <div className="h-2 w-2 rounded-full bg-green-500 mr-3"></div>
-                  <span className="text-sm ">{device}</span>
+                  <span className="text-sm ">{`#${index} ${device.ip}:${device.port}`}</span>
                 </div>
                 <span className="text-xs text-gray-500">Connected</span>
               </div>
@@ -123,7 +157,7 @@ export function DeviceList() {
       </div>
     </div>
   );
-}
+};
 
 export default function QrCode() {
   const { isTheme } = useTheme();
@@ -134,9 +168,9 @@ export default function QrCode() {
 
   useEffect(() => {
     if (!hasRun.current) {
+      hasRun.current = true;
       console.log("QR Code URL updated:", qrCode);
       console.log(qrText);
-      hasRun.current = true;
     }
   }, []);
 
