@@ -53,7 +53,7 @@ export function SendLogic() {
         files.map(async (file) => {
           const name = await basename(file);
           return [file, name];
-        })
+        }),
       );
       console.log("File Pairs:", filePairs);
       console.log("sending :", files);
@@ -137,7 +137,7 @@ export function SendLogic() {
         reverseButtons: true,
       });
     }
-  }
+  };
 
   return {
     isTheme,

@@ -11,7 +11,7 @@ use std::{
     thread,
     time::Duration,
 };
-use tauri::{Runtime, Window};
+use tauri::{Manager, Runtime, Window};
 use tauri_plugin_fs::{FsExt, SafeFilePath};
 use tauri_plugin_ipd::IpdExt;
 
@@ -167,7 +167,10 @@ pub fn recv_file<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
 /// If the server has started successfully then the `port` number and (optionally detected) `ip` address will be returned
 ///
 /// In case of any detected errors, corresponding `Error` type will be returned
-fn start_server<R: Runtime>(window: Window<R>, mode: models::TransferMode) -> models::StartServerResponse {
+fn start_server<R: Runtime>(
+    window: Window<R>,
+    mode: models::TransferMode,
+) -> models::StartServerResponse {
     // Stop any running server instance before starting a new one
     let mut handle_guard = SERVER_HANDLE.lock().unwrap();
     if let Some(server_handle) = handle_guard.take() {
@@ -188,7 +191,9 @@ fn start_server<R: Runtime>(window: Window<R>, mode: models::TransferMode) -> mo
 
     let port = match rx.recv_timeout(Duration::from_secs(10)) {
         Ok(n) => n,
-        Err(_) => return models::StartServerResponse::Error("Timeout: Failed to start server".into()),
+        Err(_) => {
+            return models::StartServerResponse::Error("Timeout: Failed to start server".into())
+        }
     };
 
     // Attempt to automatically detect ip address. If this fails, then manually
@@ -211,9 +216,12 @@ fn start_server<R: Runtime>(window: Window<R>, mode: models::TransferMode) -> mo
         })
         .map(|ipaddr| ipaddr.to_string())
         .unwrap();
+    let config_file_path = window.path().app_config_dir().unwrap().join("config.json");
+    let config_json = std::fs::read_to_string(config_file_path).unwrap();
+    let config: models::DeviceConfig = serde_json::from_str(&config_json).unwrap();
     match mode {
-        models::TransferMode::Receive => thread::spawn(move || mcast::emit_info(port)),
-        models::TransferMode::Send(_) => thread::spawn(|| mcast::recv_emitted_info(window)),
+        models::TransferMode::Receive => thread::spawn(move || mcast::emit_info(port, config)),
+        models::TransferMode::Send(_) => thread::spawn(|| mcast::recv_emitted_info(window, config)),
     };
     models::StartServerResponse::Success(models::Url { ip, port })
 }

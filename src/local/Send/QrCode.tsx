@@ -38,7 +38,7 @@ export function ProgressBar() {
               ...prevMap,
               [event.payload.id]: event.payload.progress,
             }));
-          }
+          },
         );
       } catch (error) {
         console.error("Error loading progress:", error);
@@ -120,35 +120,36 @@ export const DeviceList: React.FC = () => {
     <div className="m-auto flex flex-col items-center w-full max-w-md mt-4">
       <div className="w-full px-4">
         <div
-          className={`${isTheme
-            ? "bg-gray-700 text-white hover:bg-gray-600"
-            : "bg-gray-200 text-black hover:bg-gray-300"
-            }rounded-lg shadow-lg overflow-hidden`}
+          className={`${
+            isTheme
+              ? "bg-gray-700 text-white hover:bg-gray-600"
+              : "bg-gray-200 text-black hover:bg-gray-300"
+          }rounded-lg shadow-lg overflow-hidden`}
         >
           <div className="px-4 py-3 border-gray-200 font-semibold">
-            <h3
-              className="text-sm font-medium"
-            >
-              Nearby Devices
-            </h3>
+            <h3 className="text-sm font-medium">Nearby Devices</h3>
           </div>
           <div className="divide-y">
             {nearbyDevices.map((device, index) => (
               <div
                 key={index}
-                className={`flex items-center justify-between px-4 py-3 my-2 rounded-lg${isTheme
-                  ? "bg-gray-700 text-white hover:bg-gray-600"
-                  : "bg-gray-200 text-black hover:bg-gray-300"
-                  }`}
+                className={`flex items-center justify-between px-4 py-3 my-2 rounded-lg${
+                  isTheme
+                    ? "bg-gray-700 text-white hover:bg-gray-600"
+                    : "bg-gray-200 text-black hover:bg-gray-300"
+                }`}
                 onClick={async () => {
                   const filePairs: [string, string][] = await Promise.all(
                     fileList.map(async (file) => {
                       const name = await basename(file);
                       return [file, name];
-                    })
+                    }),
                   );
                   console.log("sending: ", filePairs, "\nto:", device);
-                  await invoke('send_files_to', { files: filePairs, to: device });
+                  await invoke("send_files_to", {
+                    files: filePairs,
+                    to: device,
+                  });
                 }}
               >
                 <div className="flex items-center">
@@ -182,8 +183,9 @@ export default function QrCode() {
 
   return (
     <div
-      className={`min-h-screen flex flex-col  ${isTheme ? "bg-dark-background" : "bg-light-background"
-        }`}
+      className={`min-h-screen flex flex-col  ${
+        isTheme ? "bg-dark-background" : "bg-light-background"
+      }`}
     >
       <nav className="flex justify-between items-center p-6 w-full">
         <img
@@ -200,10 +202,11 @@ export default function QrCode() {
       <div className="flex flex-col items-center mt-[10vh]">
         <button
           onClick={() => setShowQR(!showQR)}
-          className={`mb-4 px-6 py-2 rounded-lg font-medium transition-colors ${isTheme
-            ? "bg-gray-700 text-white hover:bg-gray-600"
-            : "bg-gray-200 text-black hover:bg-gray-300"
-            }`}
+          className={`mb-4 px-6 py-2 rounded-lg font-medium transition-colors ${
+            isTheme
+              ? "bg-gray-700 text-white hover:bg-gray-600"
+              : "bg-gray-200 text-black hover:bg-gray-300"
+          }`}
         >
           {showQR ? "Hide QR Code" : "Show QR Code"}
         </button>
@@ -211,14 +214,16 @@ export default function QrCode() {
         {showQR && (
           <>
             <h2
-              className={`text-lg ${isTheme ? "text-white" : "text-black"
-                } mb-2`}
+              className={`text-lg ${
+                isTheme ? "text-white" : "text-black"
+              } mb-2`}
             >
               {qrText}
             </h2>
             <div
-              className={`${isTheme ? "bg-dark-qrBg" : "bg-light-qrBg"
-                } mb-10 rounded-2xl p-4 shadow-lg transition-all duration-300 ease-in-out`}
+              className={`${
+                isTheme ? "bg-dark-qrBg" : "bg-light-qrBg"
+              } mb-10 rounded-2xl p-4 shadow-lg transition-all duration-300 ease-in-out`}
             >
               {qrCode ? (
                 <img
@@ -228,8 +233,9 @@ export default function QrCode() {
                 />
               ) : (
                 <p
-                  className={`text-center ${isTheme ? "text-gray-300" : "text-gray-700"
-                    }`}
+                  className={`text-center ${
+                    isTheme ? "text-gray-300" : "text-gray-700"
+                  }`}
                 >
                   Generating QR Code...
                 </p>

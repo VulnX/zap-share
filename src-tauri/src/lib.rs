@@ -1,6 +1,7 @@
 mod api;
-mod server;
 mod models;
+mod server;
+mod util;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,6 +17,7 @@ pub fn run() {
             api::recv_file,
             api::get_shared_uri_list
         ])
+        .setup(|app| util::create_device_config(app.handle()))
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

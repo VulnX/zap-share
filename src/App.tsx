@@ -30,20 +30,20 @@ function App() {
         <ThemeProvider>
           <FileListProvider>
             <QrProvider>
-            <Router>
-              <Routes>
-                {/* <Route path='/' element={}></Route> */}
-                <Route path="/" element={<Choice />}></Route>
-                <Route path="/send" element={<Send />}></Route>
-                <Route
-                  path="/send/confirm"
-                  element={<SendConfirmation />}
-                ></Route>
-                <Route path="/send/qrcode" element={<QrCode />}></Route>
-                <Route path="/receive" element={<Recieve />}></Route>
-              </Routes>
-            </Router>
-          </QrProvider>
+              <Router>
+                <Routes>
+                  {/* <Route path='/' element={}></Route> */}
+                  <Route path="/" element={<Choice />}></Route>
+                  <Route path="/send" element={<Send />}></Route>
+                  <Route
+                    path="/send/confirm"
+                    element={<SendConfirmation />}
+                  ></Route>
+                  <Route path="/send/qrcode" element={<QrCode />}></Route>
+                  <Route path="/receive" element={<Recieve />}></Route>
+                </Routes>
+              </Router>
+            </QrProvider>
           </FileListProvider>
         </ThemeProvider>
       </DeviceProvider.Provider>

@@ -45,7 +45,8 @@ export default function Recieve() {
       <div className="flex flex-col items-center mt-[15vh]">
         <h2>{qrText}</h2>
         <div
-          className={`${isTheme ? "bg-dark-qrBg" : "bg-light-qrBg"
+          className={`${
+            isTheme ? "bg-dark-qrBg" : "bg-light-qrBg"
           } mb-10 rounded-2xl`}
         >
           {qrCode ? (
