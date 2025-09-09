@@ -35,3 +35,4 @@ log = "0.4.27"
 tauri-plugin-os = "2"
 tauri-plugin-ipd = { path = "../tauri-plugin-ipd" }
 uuid = { version = "1.18.1", features = ["v4"] }
+reqwest = "0.12.23"

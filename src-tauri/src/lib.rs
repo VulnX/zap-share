@@ -11,6 +11,7 @@ pub fn run() {
         .plugin(tauri_plugin_ipd::init())
         .invoke_handler(tauri::generate_handler![
             api::send_file,
+            api::send_files_to,
             api::recv_file,
             api::get_shared_uri_list
         ])

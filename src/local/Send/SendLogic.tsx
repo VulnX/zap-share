@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { basename } from "@tauri-apps/api/path";
 import { flushSync } from "react-dom";
 import { useQrContext } from "./QrContext";
+import { useFileListContext } from "./FileListContext";
 
 const swalWithBootstrapButtons = Swal.mixin({
   customClass: {
@@ -28,6 +29,7 @@ export function SendLogic() {
   const { isTheme } = useTheme();
   const { qrCode, setQrCode, qrText, setQrText } = useQrContext();
   const navigate = useNavigate();
+  const { setFileList } = useFileListContext();
 
   // Save QR code to session storage whenever it changes
   useEffect(() => {
@@ -114,6 +116,7 @@ export function SendLogic() {
   const proceedWithSend = async (files: string[] | null) => {
     if (files && 0 < files.length) {
       // Generate QR code and navigate on success
+      setFileList(files);
       const qrCodeResult = await generateQRCode(files);
       if (qrCodeResult) {
         navigate("/send/confirm", { replace: true });

@@ -8,6 +8,7 @@ import { createContext, useEffect, useState } from "react";
 import SendConfirmation from "./local/Send/SendConfirmation";
 import QrCode from "./local/Send/QrCode";
 import { QrProvider } from "./local/Send/QrContext";
+import { FileListProvider } from "./local/Send/FileListContext";
 
 interface Device {
   isMobile: boolean;
@@ -27,7 +28,8 @@ function App() {
     <div>
       <DeviceProvider.Provider value={{ isMobile: isMobile ?? false }}>
         <ThemeProvider>
-          <QrProvider>
+          <FileListProvider>
+            <QrProvider>
             <Router>
               <Routes>
                 {/* <Route path='/' element={}></Route> */}
@@ -42,6 +44,7 @@ function App() {
               </Routes>
             </Router>
           </QrProvider>
+          </FileListProvider>
         </ThemeProvider>
       </DeviceProvider.Provider>
     </div>

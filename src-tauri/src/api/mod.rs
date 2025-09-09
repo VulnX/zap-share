@@ -1,7 +1,9 @@
 use crate::server;
 use actix_web::dev::ServerHandle;
+use log::debug;
 use serde::Serialize;
 use std::{
+    io::Read,
     path::PathBuf,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -137,6 +139,35 @@ pub fn send_file<R: Runtime>(
         .collect();
     let mode = TransferMode::Send(file_datas);
     start_server(window, mode)
+}
+
+#[allow(dead_code)]
+#[tauri::command]
+pub async fn send_files_to<R: Runtime>(
+    window: Window<R>,
+    files: Vec<(SafeFilePath, String)>,
+    to: mcast::ServerConfiguration,
+) {
+    for (filepath, filename) in files {
+        let (mut file, _) = open_file(&filepath, &window);
+        let client = reqwest::Client::new();
+        let endpoint = format!(
+            "http://{}:{}/upload/{}/{}",
+            to.ip,
+            to.port,
+            filename,
+            file.metadata().unwrap().len()
+        );
+        debug!("sending {file:#?} to {endpoint:#?}");
+        let mut file_contents = Vec::new();
+        file.read_to_end(&mut file_contents).unwrap();
+        client
+            .post(endpoint)
+            .body(file_contents)
+            .send()
+            .await
+            .unwrap();
+    }
 }
 
 /// Starts server in `receive` mode
