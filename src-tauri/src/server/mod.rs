@@ -1,9 +1,8 @@
-use crate::api::{TransferMode, SERVER_HANDLE};
+use crate::{api::SERVER_HANDLE, models};
 use actix_web::{middleware::Logger, rt, web, App, HttpServer};
 use std::sync::mpsc;
 use tauri::Runtime;
 
-mod common;
 mod recv;
 mod send;
 
@@ -16,7 +15,7 @@ mod send;
 /// `SERVER_HANDLE` will be registered after server starts successfully
 pub fn start_server<R: Runtime>(
     window: tauri::Window<R>,
-    mode: TransferMode,
+    mode: models::TransferMode,
     tx: mpsc::Sender<u16>,
 ) {
     let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("debug"));
@@ -28,13 +27,13 @@ pub fn start_server<R: Runtime>(
             let app = App::new();
             let mut app = app.wrap(Logger::default());
             match &mode {
-                TransferMode::Send(file_datas) => {
+                models::TransferMode::Send(file_datas) => {
                     app = app
                         .route("/", web::get().to(send::download_frontend))
                         .route("/download/{id}", web::get().to(send::download_file))
                         .app_data(web::Data::new(file_datas.clone()))
                 }
-                TransferMode::Receive => {
+                models::TransferMode::Receive => {
                     app = app.route("/", web::get().to(recv::upload)).route(
                         "/upload/{filename}/{filesize}",
                         web::post().to(recv::upload_file),

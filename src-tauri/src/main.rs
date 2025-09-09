@@ -3,6 +3,7 @@
 
 mod api;
 mod server;
+mod models;
 
 fn main() {
     ipd_lib::run()

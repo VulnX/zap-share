@@ -9,7 +9,7 @@ use tokio::{
     io::{AsyncWriteExt, BufWriter},
 };
 
-use crate::server::common;
+use crate::models;
 
 /// Handles the `/` route in RECEIVE mode
 ///
@@ -64,7 +64,7 @@ pub async fn upload_file(
     debug!("saving file to {write_path:#?}");
     let mut bufwriter = BufWriter::new(file);
     let mut written = 0;
-    let mut payload = common::ProgressUpdatePayload {
+    let mut payload = models::ProgressUpdatePayload {
         id: filename,
         progress: 0.0,
     };

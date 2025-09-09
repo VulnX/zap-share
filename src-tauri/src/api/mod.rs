@@ -1,7 +1,6 @@
-use crate::server;
+use crate::{models, server};
 use actix_web::dev::ServerHandle;
 use log::debug;
-use serde::Serialize;
 use std::{
     io::Read,
     path::PathBuf,
@@ -19,46 +18,6 @@ use tauri_plugin_ipd::IpdExt;
 mod mcast;
 
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
-
-#[derive(Debug, Serialize)]
-pub struct Url {
-    ip: String,
-    port: u16,
-}
-
-#[derive(Debug, Serialize)]
-pub enum StartServerResponse {
-    Success(Url),
-    Error(String),
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct FileData {
-    pub id: String,
-    pub filepath: SafeFilePath,
-    pub filename: String,
-    pub filesize: u64,
-}
-
-impl FileData {
-    fn from<R: Runtime>(filepath: SafeFilePath, filename: String, window: &Window<R>) -> Self {
-        let id = uuid::Uuid::new_v4().to_string();
-        let (file, _) = open_file(&filepath, window);
-        let filesize = file.metadata().unwrap().len();
-        Self {
-            id,
-            filepath,
-            filename,
-            filesize,
-        }
-    }
-}
-
-#[derive(Clone)]
-pub enum TransferMode {
-    Send(Vec<FileData>),
-    Receive,
-}
 
 static SHARED_URI_LIST_SENT: AtomicBool = AtomicBool::new(false);
 
@@ -131,13 +90,13 @@ pub async fn get_shared_uri_list<R: Runtime>(window: Window<R>) -> Vec<String> {
 pub fn send_file<R: Runtime>(
     window: Window<R>,
     files: Vec<(SafeFilePath, String)>,
-) -> StartServerResponse {
+) -> models::StartServerResponse {
     // TODO : Add file checks before starting server
-    let file_datas: Vec<FileData> = files
+    let file_datas: Vec<models::FileData> = files
         .into_iter()
-        .map(|(filepath, filename)| FileData::from(filepath, filename, &window))
+        .map(|(filepath, filename)| models::FileData::from(filepath, filename, &window))
         .collect();
-    let mode = TransferMode::Send(file_datas);
+    let mode = models::TransferMode::Send(file_datas);
     start_server(window, mode)
 }
 
@@ -146,7 +105,7 @@ pub fn send_file<R: Runtime>(
 pub async fn send_files_to<R: Runtime>(
     window: Window<R>,
     files: Vec<(SafeFilePath, String)>,
-    to: mcast::ServerConfiguration,
+    to: models::ServerConfiguration,
 ) {
     for (filepath, filename) in files {
         let (mut file, _) = open_file(&filepath, &window);
@@ -198,8 +157,8 @@ pub async fn send_files_to<R: Runtime>(
 /// ```
 #[allow(dead_code)]
 #[tauri::command]
-pub fn recv_file<R: Runtime>(window: Window<R>) -> StartServerResponse {
-    let mode = TransferMode::Receive;
+pub fn recv_file<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
+    let mode = models::TransferMode::Receive;
     start_server(window, mode)
 }
 
@@ -208,7 +167,7 @@ pub fn recv_file<R: Runtime>(window: Window<R>) -> StartServerResponse {
 /// If the server has started successfully then the `port` number and (optionally detected) `ip` address will be returned
 ///
 /// In case of any detected errors, corresponding `Error` type will be returned
-fn start_server<R: Runtime>(window: Window<R>, mode: TransferMode) -> StartServerResponse {
+fn start_server<R: Runtime>(window: Window<R>, mode: models::TransferMode) -> models::StartServerResponse {
     // Stop any running server instance before starting a new one
     let mut handle_guard = SERVER_HANDLE.lock().unwrap();
     if let Some(server_handle) = handle_guard.take() {
@@ -229,7 +188,7 @@ fn start_server<R: Runtime>(window: Window<R>, mode: TransferMode) -> StartServe
 
     let port = match rx.recv_timeout(Duration::from_secs(10)) {
         Ok(n) => n,
-        Err(_) => return StartServerResponse::Error("Timeout: Failed to start server".into()),
+        Err(_) => return models::StartServerResponse::Error("Timeout: Failed to start server".into()),
     };
 
     // Attempt to automatically detect ip address. If this fails, then manually
@@ -253,10 +212,10 @@ fn start_server<R: Runtime>(window: Window<R>, mode: TransferMode) -> StartServe
         .map(|ipaddr| ipaddr.to_string())
         .unwrap();
     match mode {
-        TransferMode::Receive => thread::spawn(move || mcast::emit_info(port)),
-        TransferMode::Send(_) => thread::spawn(|| mcast::recv_emitted_info(window)),
+        models::TransferMode::Receive => thread::spawn(move || mcast::emit_info(port)),
+        models::TransferMode::Send(_) => thread::spawn(|| mcast::recv_emitted_info(window)),
     };
-    StartServerResponse::Success(Url { ip, port })
+    models::StartServerResponse::Success(models::Url { ip, port })
 }
 
 pub fn open_file<R: Runtime>(
