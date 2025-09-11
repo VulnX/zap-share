@@ -10,12 +10,13 @@ use tauri::{Emitter, Runtime, Window};
 
 use crate::models;
 
-static MCAST_ADDR: Ipv4Addr = Ipv4Addr::new(239, 255, 255, 250);
-static MCAST_PORT: u16 = 37020;
+static BCAST_ADDR: Ipv4Addr = Ipv4Addr::new(255, 255, 255, 255);
+static BCAST_PORT: u16 = 54321;
 
 pub fn emit_info(port: u16, config: models::DeviceConfig) {
     let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
-    let target = SocketAddrV4::new(MCAST_ADDR, MCAST_PORT);
+    socket.set_broadcast(true).unwrap();
+    let target = SocketAddrV4::new(BCAST_ADDR, BCAST_PORT);
     let payload = models::MulticastPayload {
         port,
         fingerprint: config.fingerprint,
@@ -29,10 +30,7 @@ pub fn emit_info(port: u16, config: models::DeviceConfig) {
 }
 
 pub fn recv_emitted_info<R: Runtime>(window: Window<R>, config: models::DeviceConfig) {
-    let socket = UdpSocket::bind(("0.0.0.0", MCAST_PORT)).unwrap();
-    socket
-        .join_multicast_v4(&MCAST_ADDR, &Ipv4Addr::UNSPECIFIED)
-        .unwrap();
+    let socket = UdpSocket::bind(("0.0.0.0", BCAST_PORT)).unwrap();
     let mut buf = [0u8; 0x1000];
     let mut devices = HashSet::new();
     loop {
@@ -40,7 +38,7 @@ pub fn recv_emitted_info<R: Runtime>(window: Window<R>, config: models::DeviceCo
         if let Ok(payload) = serde_json::from_slice::<models::MulticastPayload>(&buf[..amt]) {
             if payload.fingerprint == config.fingerprint {
                 // Self device detected
-                continue;
+                // continue;
             }
             let server_config = models::ServerConfiguration {
                 ip: from.ip().to_string(),
