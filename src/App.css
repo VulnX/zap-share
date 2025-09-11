@@ -3,12 +3,12 @@
 @tailwind utilities;
 
 * {
-    user-select: none;
-    zoom: 0%;
+  user-select: none;
+  zoom: 0%;
 }
 
 :hover {
-    .clickable {
-        cursor: pointer;
-    }
+  .clickable {
+    cursor: pointer;
+  }
 }

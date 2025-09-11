@@ -9,9 +9,15 @@ interface QrContextType {
 
 const QrContext = createContext<QrContextType | undefined>(undefined);
 
-export const QrProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [qrCode, setQrCode] = useState<string | null>(sessionStorage.getItem("persistedQrCode"));
-  const [qrText, setQrText] = useState<string | null>(sessionStorage.getItem("persistedQrText"));
+export const QrProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [qrCode, setQrCode] = useState<string | null>(
+    sessionStorage.getItem("persistedQrCode"),
+  );
+  const [qrText, setQrText] = useState<string | null>(
+    sessionStorage.getItem("persistedQrText"),
+  );
 
   return (
     <QrContext.Provider value={{ qrCode, setQrCode, qrText, setQrText }}>

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Navigation from "../Choice/Navigation";
 import { SendLogic } from "./SendLogic";
 import { useTheme } from "../Choice/Theme";
+import { useFileListContext } from "./FileListContext";
 
 interface DragDropPayload {
   paths: string[];
@@ -11,6 +12,7 @@ interface DragDropPayload {
 
 export default function SendDesktop() {
   const { openFileSelector, generateQRCode } = SendLogic();
+  const { setFileList } = useFileListContext();
   const { isTheme } = useTheme();
   const navigate = useNavigate();
   const hasRun = useRef(false);
@@ -39,6 +41,7 @@ export default function SendDesktop() {
         const dragDropUnlisten = await listen<DragDropPayload>(
           TauriEvent.DRAG_DROP,
           (event) => {
+            setFileList(event.payload.paths);
             console.log("File dropped", event.payload);
 
             // idk why error occurs here

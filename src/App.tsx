@@ -8,6 +8,7 @@ import { createContext, useEffect, useState } from "react";
 import SendConfirmation from "./local/Send/SendConfirmation";
 import QrCode from "./local/Send/QrCode";
 import { QrProvider } from "./local/Send/QrContext";
+import { FileListProvider } from "./local/Send/FileListContext";
 
 interface Device {
   isMobile: boolean;
@@ -27,21 +28,23 @@ function App() {
     <div>
       <DeviceProvider.Provider value={{ isMobile: isMobile ?? false }}>
         <ThemeProvider>
-          <QrProvider>
-            <Router>
-              <Routes>
-                {/* <Route path='/' element={}></Route> */}
-                <Route path="/" element={<Choice />}></Route>
-                <Route path="/send" element={<Send />}></Route>
-                <Route
-                  path="/send/confirm"
-                  element={<SendConfirmation />}
-                ></Route>
-                <Route path="/send/qrcode" element={<QrCode />}></Route>
-                <Route path="/receive" element={<Recieve />}></Route>
-              </Routes>
-            </Router>
-          </QrProvider>
+          <FileListProvider>
+            <QrProvider>
+              <Router>
+                <Routes>
+                  {/* <Route path='/' element={}></Route> */}
+                  <Route path="/" element={<Choice />}></Route>
+                  <Route path="/send" element={<Send />}></Route>
+                  <Route
+                    path="/send/confirm"
+                    element={<SendConfirmation />}
+                  ></Route>
+                  <Route path="/send/qrcode" element={<QrCode />}></Route>
+                  <Route path="/receive" element={<Recieve />}></Route>
+                </Routes>
+              </Router>
+            </QrProvider>
+          </FileListProvider>
         </ThemeProvider>
       </DeviceProvider.Provider>
     </div>

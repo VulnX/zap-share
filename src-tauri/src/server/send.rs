@@ -8,11 +8,11 @@ use log::debug;
 use tauri::{Emitter, Window};
 use tokio::io::AsyncReadExt;
 
-use crate::{api, server::common};
+use crate::{api, models};
 
 const CHUNK_SIZE: usize = 1024 * 1024; // 1 MiB
 
-pub async fn download_frontend(file_datas: web::Data<Vec<api::FileData>>) -> impl Responder {
+pub async fn download_frontend(file_datas: web::Data<Vec<models::FileData>>) -> impl Responder {
     let file_datas = file_datas.into_inner();
     let file_datas_json = serde_json::to_string(&file_datas).unwrap();
     let file_datas_json = urlencoding::encode(&file_datas_json);
@@ -38,7 +38,7 @@ pub async fn download_frontend(file_datas: web::Data<Vec<api::FileData>>) -> imp
 ///
 /// if after adding a new chunk the overall progress difference is greater than 1%
 pub async fn download_file(
-    file_datas: web::Data<Vec<api::FileData>>,
+    file_datas: web::Data<Vec<models::FileData>>,
     window: web::Data<Window>,
     req: HttpRequest,
 ) -> impl Responder {
@@ -59,7 +59,7 @@ pub async fn download_file(
     debug!("{file_name:#?}");
     debug!("{file_size:#?}");
     let transferred: usize = 0;
-    let payload = common::ProgressUpdatePayload {
+    let payload = models::ProgressUpdatePayload {
         id: file_data.filename.clone(),
         progress: 0.0,
     };

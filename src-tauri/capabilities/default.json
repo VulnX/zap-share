@@ -10,6 +10,8 @@
     "opener:default",
     "dialog:default",
     "fs:default",
+    "fs:allow-open",
+    "fs:allow-fstat",
     "os:default"
   ]
 }
