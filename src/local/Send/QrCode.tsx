@@ -10,16 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { useFileListContext } from "./FileListContext";
 import { invoke } from "@tauri-apps/api/core";
 import { basename } from "@tauri-apps/api/path";
-
-interface ProgressUpdatePayload {
-  id: string; // Changed to string instead of String
-  progress: number;
-}
-
-type ServerConfiguration = {
-  ip: string;
-  port: number;
-};
+import { ProgressUpdatePayload, ServerConfiguration } from "../types";
 
 export function ProgressBar() {
   const [progressMap, setProgressMap] = useState<Record<string, number>>({});
@@ -154,7 +145,7 @@ export const DeviceList: React.FC = () => {
               >
                 <div className="flex items-center">
                   <div className="h-2 w-2 rounded-full bg-green-500 mr-3"></div>
-                  <span className="text-sm ">{`#${index} ${device.ip}:${device.port}`}</span>
+                  <span className="text-sm ">{`${device.name}`}</span>
                 </div>
                 <span className="text-xs text-gray-500">Connected</span>
               </div>

@@ -1,6 +1,41 @@
+use rand::{seq::IndexedRandom, Rng};
 use tauri::{AppHandle, Manager};
 
 use crate::models;
+
+fn generate_device_name() -> String {
+    let words = [
+        "Voyager",
+        "Pioneer",
+        "Explorer",
+        "Seeker",
+        "Wanderer",
+        "Creator",
+        "Builder",
+        "Maker",
+        "Innovator",
+        "Dreamer",
+        "Guardian",
+        "Keeper",
+        "Sentinel",
+        "Watcher",
+        "Guide",
+        "Phoenix",
+        "Dragon",
+        "Griffin",
+        "Pegasus",
+        "Atlas",
+        "Nova",
+        "Stellar",
+        "Cosmic",
+        "Astro",
+        "Nebula",
+    ];
+    let mut rng = rand::rng();
+    let random_word = words.choose(&mut rng).unwrap();
+    let random_number = rng.random_range(1000..=9999);
+    format!("{random_word}#{random_number}")
+}
 
 pub fn create_device_config(
     app_handle: &AppHandle,
@@ -15,6 +50,7 @@ pub fn create_device_config(
     // Default config does not exist yet, create it
     let config = models::DeviceConfig {
         fingerprint: uuid::Uuid::new_v4().to_string(),
+        name: generate_device_name(),
     };
     let config_json = serde_json::to_string(&config)?;
     println!("Saving config: {config_json:#?}\nto {config_dir:#?}");
