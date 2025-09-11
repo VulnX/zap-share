@@ -129,6 +129,16 @@ pub async fn send_files_to<R: Runtime>(
     }
 }
 
+#[allow(dead_code)]
+#[tauri::command]
+pub fn get_device_config<R: Runtime>(window: Window<R>) -> models::DeviceConfig {
+    let config_dir = window.path().app_config_dir().unwrap();
+    let config_file_path = config_dir.join("config.json");
+    let config_file_string = std::fs::read_to_string(config_file_path).unwrap();
+    let config: models::DeviceConfig = serde_json::from_str(&config_file_string).unwrap();
+    config
+}
+
 /// Starts server in `receive` mode
 ///
 /// # Parameters (from JavaScript/TypeScript):

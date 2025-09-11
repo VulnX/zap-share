@@ -20,6 +20,7 @@ pub fn emit_info(port: u16, config: models::DeviceConfig) {
     let payload = models::MulticastPayload {
         port,
         fingerprint: config.fingerprint,
+        name: config.name,
     };
     let payload = serde_json::to_string(&payload).unwrap();
     debug!("sending {payload}");
@@ -43,6 +44,7 @@ pub fn recv_emitted_info<R: Runtime>(window: Window<R>, config: models::DeviceCo
             let server_config = models::ServerConfiguration {
                 ip: from.ip().to_string(),
                 port: payload.port,
+                name: payload.name,
             };
             devices.insert(server_config);
             let data = serde_json::to_string(&devices).unwrap();

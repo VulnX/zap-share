@@ -1,41 +1,8 @@
 import logo from "../images/a6cc6028300b7e1165a46f9b41bec24c.png";
 import { useTheme } from "./Theme";
-import { useState } from "react";
-
-const meaningfulWords = [
-  "Voyager",
-  "Pioneer",
-  "Explorer",
-  "Seeker",
-  "Wanderer",
-  "Creator",
-  "Builder",
-  "Maker",
-  "Innovator",
-  "Dreamer",
-  "Guardian",
-  "Keeper",
-  "Sentinel",
-  "Watcher",
-  "Guide",
-  "Phoenix",
-  "Dragon",
-  "Griffin",
-  "Pegasus",
-  "Atlas",
-  "Nova",
-  "Stellar",
-  "Cosmic",
-  "Astro",
-  "Nebula",
-];
-
-function generateUsername() {
-  const randomWord =
-    meaningfulWords[Math.floor(Math.random() * meaningfulWords.length)];
-  const randomId = Math.floor(1000 + Math.random() * 9000); // 4-digit number
-  return `${randomWord}#${randomId}`;
-}
+import { useEffect, useRef, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { DeviceConfig } from "../types";
 
 export function ToggleThemeButton() {
   const { isTheme, toggleTheme } = useTheme();
@@ -83,25 +50,32 @@ export function ToggleThemeButton() {
 
 export function ProfileButton() {
   const { isTheme } = useTheme();
-  const [showUsername, setShowUsername] = useState(false);
-  const [username] = useState(() => {
-    const saved = localStorage.getItem("username");
-    if (saved) return saved;
-    const newUsername = generateUsername();
-    localStorage.setItem("username", newUsername);
-    return newUsername;
-  });
+  const [showDeviceName, setShowDeviceName] = useState(false);
+  const [deviceName, setDeviceName] = useState("");
+  const hasRun = useRef(false);
+
+  useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
+    async function getDeviceName() {
+      const config: DeviceConfig = await invoke("get_device_config");
+      setDeviceName(config.name);
+    }
+
+    getDeviceName();
+  }, []);
 
   return (
     <div className="relative">
       <button
-        onClick={() => setShowUsername(!showUsername)}
+        onClick={() => setShowDeviceName(!showDeviceName)}
         className={`p-2 rounded-full ${
           isTheme
             ? "bg-gray-700 text-white hover:bg-gray-600"
             : "bg-gray-200 text-black hover:bg-gray-300"
         } transition-colors flex items-center justify-center`}
-        title={username}
+        title={deviceName}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -118,13 +92,13 @@ export function ProfileButton() {
           />
         </svg>
       </button>
-      {showUsername && (
+      {showDeviceName && (
         <div
           className={`absolute right-0 mt-2 py-2 px-4 rounded-lg shadow-lg ${
             isTheme ? "bg-gray-700 text-white" : "bg-white text-black"
           }`}
         >
-          {username}
+          {deviceName}
         </div>
       )}
     </div>
@@ -139,12 +113,16 @@ export function LogoTitle() {
       <img src={logo} alt="Zap Share" className="h-36 w-36" />
       <div className="flex flex-col pt-5">
         <p
-          className={`text-5xl font-bold ${isTheme ? "  text-light-text" : "text-black "}`}
+          className={`text-5xl font-bold ${
+            isTheme ? "  text-light-text" : "text-black "
+          }`}
         >
           ZAP SHARE
         </p>
         <p
-          className={`text-2xl italic ${isTheme ? " text-light-text" : "text-black "}`}
+          className={`text-2xl italic ${
+            isTheme ? " text-light-text" : "text-black "
+          }`}
         >
           Lightning-fast sharing, minus the drama!
         </p>
