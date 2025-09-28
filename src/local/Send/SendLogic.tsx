@@ -9,6 +9,7 @@ import { basename } from "@tauri-apps/api/path";
 import { flushSync } from "react-dom";
 import { useQrContext } from "./QrContext";
 import { useFileListContext } from "./FileListContext";
+import { SendFileResponse, SendTextResponse } from "../types";
 
 const swalWithBootstrapButtons = Swal.mixin({
   customClass: {
@@ -18,12 +19,6 @@ const swalWithBootstrapButtons = Swal.mixin({
   buttonsStyling: true,
 });
 
-interface SendFileResponse {
-  Success: {
-    ip: string | null;
-    port: number;
-  };
-}
 
 export function SendLogic() {
   const { isTheme } = useTheme();
@@ -46,23 +41,28 @@ export function SendLogic() {
   }, [qrText]);
 
   // Enhanced QR code generation function
-  const generateQRCode = async (files: string[]) => {
+  const generateQRCode = async (text: string, files: string[]) => {
     try {
       // Invoke Tauri command to send files
-      const filePairs: [string, string][] = await Promise.all(
-        files.map(async (file) => {
-          const name = await basename(file);
-          return [file, name];
-        }),
-      );
-      console.log("File Pairs:", filePairs);
-      console.log("sending :", files);
-      const response = await invoke<SendFileResponse>("send_file", {
-        files: filePairs,
-      });
-
+      let response: SendFileResponse | SendTextResponse | null = null;
+      if (text === "") {
+        const filePairs: [string, string][] = await Promise.all(
+          files.map(async (file) => {
+            const name = await basename(file);
+            return [file, name];
+          })
+        );
+        console.log("File Pairs:", filePairs);
+        console.log("sending :", files);
+        response = await invoke<SendFileResponse>("send_file", {
+          files: filePairs,
+        });
+      } else {
+        // console.log("invoked send text:", text);
+        response = await invoke<SendTextResponse>("send_text", { text });
+      }
       // Check if response has valid IP and port
-      if (response.Success && response.Success.ip) {
+      if (response && response.Success && response.Success.ip) {
         const { ip, port } = response.Success;
         const qr = `http://${ip}:${port}`;
         flushSync(() => {
@@ -117,7 +117,7 @@ export function SendLogic() {
     if (files && 0 < files.length) {
       // Generate QR code and navigate on success
       setFileList(files);
-      const qrCodeResult = await generateQRCode(files);
+      const qrCodeResult = await generateQRCode("", files);
       if (qrCodeResult) {
         navigate("/send/confirm", { replace: true });
       } else {

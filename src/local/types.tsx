@@ -13,3 +13,16 @@ export type DeviceConfig = {
   fingerprint: string;
   name: string;
 };
+
+export interface SendFileResponse {
+  Success: {
+    ip: string | null;
+    port: number;
+  };
+}
+export interface SendTextResponse {
+  Success: {
+    ip: string | null;
+    port: number;
+  };
+}
