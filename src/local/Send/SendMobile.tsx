@@ -34,13 +34,17 @@ export function SendMobile() {
       <div className="flex flex-col items-center w-full px-6">
         <div className="flex space-x-6 bg-white rounded-full p-2 shadow-md mb-8">
           <div
-            className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${sendFile ? 'bg-gray-200 text-gray-800' : 'text-gray-500'}`}
+            className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
+              sendFile ? "bg-gray-200 text-gray-800" : "text-gray-500"
+            }`}
             onClick={() => setSendFile(true)}
           >
             File
           </div>
           <div
-            className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${!sendFile ? 'bg-gray-200 text-gray-800' : 'text-gray-500'}`}
+            className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
+              !sendFile ? "bg-gray-200 text-gray-800" : "text-gray-500"
+            }`}
             onClick={() => setSendFile(false)}
           >
             Text
@@ -77,11 +81,18 @@ export function SendMobile() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Type your message here..."
-              className={`w-full h-[40vh] p-4 rounded-lg resize-none outline-none ${isTheme ? 'bg-[#3C3C3C] text-white' : 'bg-[#D6FEFF]'}`}
+              className={`w-full h-[40vh] p-4 rounded-lg resize-none outline-none ${
+                isTheme ? "bg-[#3C3C3C] text-white" : "bg-[#D6FEFF]"
+              }`}
             />
             <button
-              onClick={() => generateQRCode(text, [])}
-              className={`mt-6 px-8 py-3 bg-blue-500 text-white rounded-lg font-medium hover:shadow-lg transition-all ${isTheme ? 'hover:bg-blue-600' : 'hover:bg-blue-400'}`}
+              onClick={() => {
+                generateQRCode(text, []);
+                navigate("/send/qrcode", { replace: true });
+              }}
+              className={`mt-6 px-8 py-3 bg-blue-500 text-white rounded-lg font-medium hover:shadow-lg transition-all ${
+                isTheme ? "hover:bg-blue-600" : "hover:bg-blue-400"
+              }`}
             >
               Send
             </button>

@@ -58,6 +58,7 @@ const TextSender = () => {
   const { generateQRCode } = SendLogic();
   const { isTheme } = useTheme();
   const [text, setText] = useState<string>("");
+  const navigate = useNavigate();
 
   return (
     <div className="mt-[10vh] min-w-screen mx-auto flex flex-col items-center">
@@ -72,7 +73,10 @@ const TextSender = () => {
         />
       </div>
       <button
-        onClick={() => generateQRCode(text, [])}
+        onClick={() => {
+          generateQRCode(text, []);
+          navigate("/send/qrcode", { replace: true });
+        }}
         className={`mt-4 px-8 py-3 bg-gray-600 text-white rounded-lg font-medium hover:shadow-lg transition-all ${
           isTheme ? "hover:bg-gray-500" : "hover:bg-gray-800"
         }`}
@@ -168,10 +172,14 @@ export default function SendDesktop() {
         {/* QR Code or File Picker */}
 
         {/* Switch for text and file sending */}
-        <div className={`flex space-x-6 ${isTheme ? "bg-gray-300" : "bg-gray-100"} rounded-full p-2 shadow-md mb-2 w-40 mx-auto font-semibold`}>
+        <div
+          className={`flex space-x-6 ${
+            isTheme ? "bg-gray-300" : "bg-gray-100"
+          } rounded-full p-2 shadow-md mb-2 w-40 mx-auto font-semibold`}
+        >
           <div
             className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
-              sendFile ? 'bg-gray-200 text-gray-800' : 'text-gray-500'
+              sendFile ? "bg-gray-200 text-gray-800" : "text-gray-500"
             }`}
             onClick={() => setSendFile(true)}
           >
@@ -179,7 +187,7 @@ export default function SendDesktop() {
           </div>
           <div
             className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
-              !sendFile ? 'bg-gray-200 text-gray-800' : 'text-gray-500'
+              !sendFile ? "bg-gray-200 text-gray-800" : "text-gray-500"
             }`}
             onClick={() => setSendFile(false)}
           >
