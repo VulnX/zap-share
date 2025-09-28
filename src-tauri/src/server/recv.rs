@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{
+    web::{self, BytesMut},
+    HttpResponse, Responder,
+};
 use futures_util::StreamExt;
 use log::debug;
 use tauri::{Emitter, Manager, Window};
@@ -13,10 +16,10 @@ use crate::models;
 
 /// Handles the `/` route in RECEIVE mode
 ///
-/// Serves an HTML form (from `static/upload.html`) allowing the user to
+/// Serves an HTML form (from `static/upload-file.html`) allowing the user to
 /// upload a file via POST request.
 pub async fn upload() -> impl Responder {
-    HttpResponse::Ok().body(include_str!("../static/upload.html"))
+    HttpResponse::Ok().body(include_str!("../static/upload-file.html"))
 }
 
 /// Handles the `/upload/{filename}/{filesize}` POST route
@@ -107,4 +110,21 @@ fn get_unique_file_path(write_path: &mut PathBuf, filename: &String) {
         }
     }
     unreachable!("Infinite loop should always find a unique name");
+}
+
+pub async fn handle_text() -> impl Responder {
+    HttpResponse::Ok().body(include_str!("../static/upload-text.html"))
+}
+
+pub async fn handle_text_upload(
+    window: web::Data<Window>,
+    mut body: web::Payload,
+) -> impl Responder {
+    let mut body_bytes = BytesMut::new();
+    while let Some(Ok(chunk)) = body.next().await {
+        body_bytes.extend_from_slice(&chunk);
+    }
+    let body_str = String::from_utf8_lossy(&body_bytes);
+    window.emit("received-text", body_str).unwrap();
+    HttpResponse::Ok()
 }

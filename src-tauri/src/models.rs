@@ -63,6 +63,7 @@ pub enum TransferMode {
     SendFile(Vec<FileData>),
     ReceiveFile,
     SendText(String),
+    ReceiveText,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -18,6 +18,7 @@ pub fn run() {
             api::get_shared_uri_list,
             api::get_device_config,
             api::send_text,
+            api::recv_text,
         ])
         .setup(|app| util::create_device_config(app.handle()))
         .run(tauri::generate_context!())

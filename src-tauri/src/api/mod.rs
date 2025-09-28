@@ -179,6 +179,13 @@ pub fn send_text<R: Runtime>(window: Window<R>, text: String) -> models::StartSe
     start_server(window, mode)
 }
 
+#[allow(dead_code)]
+#[tauri::command]
+pub fn recv_text<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
+    let mode = models::TransferMode::ReceiveText;
+    start_server(window, mode)
+}
+
 /// Starts (or re-starts existing) actix web server in separate thread
 ///
 /// If the server has started successfully then the `port` number and (optionally detected) `ip` address will be returned
@@ -237,13 +244,14 @@ fn start_server<R: Runtime>(
     let config_json = std::fs::read_to_string(config_file_path).unwrap();
     let config: models::DeviceConfig = serde_json::from_str(&config_json).unwrap();
     match mode {
-        models::TransferMode::ReceiveFile => thread::spawn(move || bcast::emit_info(port, config)),
         models::TransferMode::SendFile(_) => {
             thread::spawn(|| bcast::recv_emitted_info(window, config))
         }
+        models::TransferMode::ReceiveFile => thread::spawn(move || bcast::emit_info(port, config)),
         models::TransferMode::SendText(_) => {
             thread::spawn(|| bcast::recv_emitted_info(window, config))
         }
+        models::TransferMode::ReceiveText => thread::spawn(move || bcast::emit_info(port, config)),
     };
     models::StartServerResponse::Success(models::Url { ip, port })
 }
