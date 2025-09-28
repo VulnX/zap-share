@@ -60,8 +60,9 @@ impl FileData {
 
 #[derive(Clone)]
 pub enum TransferMode {
-    Send(Vec<FileData>),
-    Receive,
+    SendFile(Vec<FileData>),
+    ReceiveFile,
+    SendText(String),
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -96,3 +96,7 @@ pub async fn download_file(
         .insert_header(ContentDisposition::attachment(file_name))
         .body(SizedStream::new(file_size, data_stream))
 }
+
+pub async fn handle_text(text: web::Data<String>) -> impl Responder {
+    HttpResponse::Ok().body(text.get_ref().clone())
+}

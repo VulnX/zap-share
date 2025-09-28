@@ -96,7 +96,7 @@ pub fn send_file<R: Runtime>(
         .into_iter()
         .map(|(filepath, filename)| models::FileData::from(filepath, filename, &window))
         .collect();
-    let mode = models::TransferMode::Send(file_datas);
+    let mode = models::TransferMode::SendFile(file_datas);
     start_server(window, mode)
 }
 
@@ -168,7 +168,14 @@ pub fn get_device_config<R: Runtime>(window: Window<R>) -> models::DeviceConfig 
 #[allow(dead_code)]
 #[tauri::command]
 pub fn recv_file<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
-    let mode = models::TransferMode::Receive;
+    let mode = models::TransferMode::ReceiveFile;
+    start_server(window, mode)
+}
+
+#[allow(dead_code)]
+#[tauri::command]
+pub fn send_text<R: Runtime>(window: Window<R>, text: String) -> models::StartServerResponse {
+    let mode = models::TransferMode::SendText(text);
     start_server(window, mode)
 }
 
@@ -230,8 +237,13 @@ fn start_server<R: Runtime>(
     let config_json = std::fs::read_to_string(config_file_path).unwrap();
     let config: models::DeviceConfig = serde_json::from_str(&config_json).unwrap();
     match mode {
-        models::TransferMode::Receive => thread::spawn(move || bcast::emit_info(port, config)),
-        models::TransferMode::Send(_) => thread::spawn(|| bcast::recv_emitted_info(window, config)),
+        models::TransferMode::ReceiveFile => thread::spawn(move || bcast::emit_info(port, config)),
+        models::TransferMode::SendFile(_) => {
+            thread::spawn(|| bcast::recv_emitted_info(window, config))
+        }
+        models::TransferMode::SendText(_) => {
+            thread::spawn(|| bcast::recv_emitted_info(window, config))
+        }
     };
     models::StartServerResponse::Success(models::Url { ip, port })
 }

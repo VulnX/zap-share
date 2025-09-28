@@ -27,17 +27,22 @@ pub fn start_server<R: Runtime>(
             let app = App::new();
             let mut app = app.wrap(Logger::default());
             match &mode {
-                models::TransferMode::Send(file_datas) => {
+                models::TransferMode::SendFile(file_datas) => {
                     app = app
                         .route("/", web::get().to(send::download_frontend))
                         .route("/download/{id}", web::get().to(send::download_file))
                         .app_data(web::Data::new(file_datas.clone()))
                 }
-                models::TransferMode::Receive => {
+                models::TransferMode::ReceiveFile => {
                     app = app.route("/", web::get().to(recv::upload)).route(
                         "/upload/{filename}/{filesize}",
                         web::post().to(recv::upload_file),
                     )
+                }
+                models::TransferMode::SendText(text) => {
+                    app = app
+                        .route("/", web::get().to(send::handle_text))
+                        .app_data(web::Data::new(text.clone()))
                 }
             };
             app = app.app_data(window.clone());
