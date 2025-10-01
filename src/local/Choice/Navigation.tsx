@@ -124,7 +124,7 @@ export function LogoTitle() {
             isTheme ? " text-light-text" : "text-black "
           }`}
         >
-          Lightning-fast sharing, minus the drama!
+          Prathmesh commit kyu nahi kiya ab tak
         </p>
       </div>
     </div>
