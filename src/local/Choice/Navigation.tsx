@@ -124,7 +124,7 @@ export function LogoTitle() {
             isTheme ? " text-light-text" : "text-black "
           }`}
         >
-          Prathmesh commit kyu nahi kiya ab tak
+          Prathmesh and Jay commit kyu nahi kiya ab tak
         </p>
       </div>
     </div>
