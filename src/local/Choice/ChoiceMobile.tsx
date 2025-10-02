@@ -20,13 +20,12 @@ export default function ChoiceMobile() {
     if (!hasRun.current) {
       (async () => {
         hasRun.current = true;
-        var files: string[] = await invoke("get_shared_uri_list");
-        files = files.filter((s) => s != "");
-        console.log(files);
-        if (0 < files.length) {
-          console.log("calling proceed");
-          proceedWithSend(files);
-        }
+        let data = await invoke("get_shared_data");
+        console.log('data start');
+        console.log(data);
+        console.log('data end');
+        // TODO: Handle both cases, of file(s) share
+        // and text share
       })();
     }
   }, []);
