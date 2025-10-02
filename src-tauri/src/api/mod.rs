@@ -1,13 +1,9 @@
 use crate::{models, server};
 use actix_web::dev::ServerHandle;
-use log::debug;
 use std::{
     io::Read,
     path::PathBuf,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        mpsc, Mutex,
-    },
+    sync::{mpsc, Mutex},
     thread,
     time::Duration,
 };
@@ -19,37 +15,53 @@ mod bcast;
 
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 
-static SHARED_URI_LIST_SENT: AtomicBool = AtomicBool::new(false);
+static SHARED_URI_LIST: Mutex<Option<Vec<String>>> = Mutex::new(None);
 
-/// Retrieves the list of content URIs sent to the app when opened via the
-/// Android share menu, ensuring that this list is only retrieved once per
-/// application run.
+/// Retrieves the list of content URIs sent to the app via the Android share menu.
 ///
-/// # Parameters
-/// - None
+/// This function ensures that the same list is not returned multiple times.
+/// It compares the newly retrieved list against the previously stored one, and only
+/// returns the list if it is different from the last one returned.
 ///
 /// # Returns
-/// A `Vec<String>` containing the parsed shared URIs. If the list has already been
-/// retrieved previously, returns an empty vector.
+/// A `Vec<String>` containing the parsed shared URIs. If the list is identical to the
+/// previously retrieved one, returns an empty vector.
+///
+/// # Behavior
+/// - On the first call (or if the list changes), returns the list of URIs.
+/// - On subsequent calls with the same list, returns an empty vector.
+/// - Internally stores the last seen list in a global `Mutex<Option<Vec<String>>>`.
 ///
 /// # Notes
-/// - This function uses a global atomic flag `SHARED_URI_LIST_SENT` to ensure the shared URI list
-///   is only accessed once. Subsequent calls will return an empty vector.
-/// - The returned `res` string is expected to be in the format `"[uri1, uri2, ...]"`.
-///   It trims the square brackets and splits the string by commas.
+/// - The raw string `res` returned by `window.ipd().get_shared_uri_list().unwrap().uri_list`
+///   is expected to be in the format `"[uri1, uri2, ...]"`.
+/// - The function trims square brackets and whitespace, then splits the string by commas.
 #[allow(dead_code)]
 #[tauri::command]
 pub async fn get_shared_uri_list<R: Runtime>(window: Window<R>) -> Vec<String> {
-    if SHARED_URI_LIST_SENT.swap(true, Ordering::SeqCst) {
-        return vec![];
-    }
     let res = window.ipd().get_shared_uri_list().unwrap().uri_list;
     // Parse [XXX, YYY] from `res`
-    res.trim_matches(|c| c == '[' || c == ']')
+    let current_list: Vec<String> = res
+        .trim_matches(|c| c == '[' || c == ']')
         .split(',')
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
-        .collect()
+        .collect();
+    let mut prev_shared_list = SHARED_URI_LIST.lock().unwrap();
+    match *prev_shared_list {
+        None => {
+            *prev_shared_list = Some(current_list.clone());
+            current_list
+        }
+        Some(ref prev_list) => {
+            if &current_list == prev_list {
+                vec![]
+            } else {
+                *prev_shared_list = Some(current_list.clone());
+                current_list
+            }
+        }
+    }
 }
 
 /// Starts server in `send` mode
@@ -117,7 +129,7 @@ pub async fn send_files_to<R: Runtime>(
             filename,
             file.metadata().unwrap().len()
         );
-        debug!("sending {file:#?} to {endpoint:#?}");
+        println!("sending {file:#?} to {endpoint:#?}");
         let mut file_contents = Vec::new();
         file.read_to_end(&mut file_contents).unwrap();
         client
