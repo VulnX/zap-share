@@ -1,31 +1,34 @@
 import React, { createContext, useContext, useState } from "react";
 
-interface FileListContextType {
+interface SharedDataContextType {
   fileList: string[];
   setFileList: React.Dispatch<React.SetStateAction<string[]>>;
+  text: string | undefined;
+  setText: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
-const FileListContext = createContext<FileListContextType | undefined>(
-  undefined,
+const SharedDataContext = createContext<SharedDataContextType | undefined>(
+  undefined
 );
 
-export const FileListProvider: React.FC<{ children: React.ReactNode }> = ({
+export const SharedDataProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [fileList, setFileList] = useState<string[]>([]);
+  const [text, setText] = useState<string | undefined>(undefined);
 
   return (
-    <FileListContext.Provider value={{ fileList, setFileList }}>
+    <SharedDataContext.Provider value={{ fileList, setFileList, text, setText }}>
       {children}
-    </FileListContext.Provider>
+    </SharedDataContext.Provider>
   );
 };
 
-export function useFileListContext() {
-  const ctx = useContext(FileListContext);
+export function useSharedDataContext() {
+  const ctx = useContext(SharedDataContext);
   if (!ctx)
     throw new Error(
-      "useFileListContext must be used within a FileListProvider",
+      "useSharedDataContext must be used within a SharedDataProvider"
     );
   return ctx;
 }

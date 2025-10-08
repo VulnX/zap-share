@@ -10,7 +10,7 @@ import { useState } from "react";
 
 export function SendMobile() {
   const navigate = useNavigate();
-  const { openFileSelector, generateQRCode } = SendLogic();
+  const { openFileSelector, proceedWithSend } = SendLogic();
   const { isTheme } = useTheme();
   const [sendFile, setSendFile] = useState(true);
   const [text, setText] = useState("");
@@ -87,7 +87,7 @@ export function SendMobile() {
             />
             <button
               onClick={() => {
-                generateQRCode(text, []);
+                proceedWithSend(null, text);
                 navigate("/send/qrcode", { replace: true });
               }}
               className={`mt-6 px-8 py-3 bg-blue-500 text-white rounded-lg font-medium hover:shadow-lg transition-all ${

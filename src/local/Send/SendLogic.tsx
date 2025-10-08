@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { basename } from "@tauri-apps/api/path";
 import { flushSync } from "react-dom";
 import { useQrContext } from "./QrContext";
-import { useFileListContext } from "./FileListContext";
+import { useSharedDataContext } from "./FileListContext";
 import { SendFileResponse, SendTextResponse } from "../types";
 
 const swalWithBootstrapButtons = Swal.mixin({
@@ -23,7 +23,7 @@ export function SendLogic() {
   const { isTheme } = useTheme();
   const { qrCode, setQrCode, qrText, setQrText } = useQrContext();
   const navigate = useNavigate();
-  const { setFileList } = useFileListContext();
+  const { setFileList, setText } = useSharedDataContext();
 
   // Save QR code to session storage whenever it changes
   useEffect(() => {
@@ -40,7 +40,7 @@ export function SendLogic() {
   }, [qrText]);
 
   // Enhanced QR code generation function
-  const generateQRCode = async (text: string, files: string[]) => {
+  const generateQRCode = async (text: string | null, files: string[]) => {
     try {
       // Invoke Tauri command to send files
       let response: SendFileResponse | SendTextResponse | null = null;
@@ -95,6 +95,16 @@ export function SendLogic() {
     }
   };
 
+  const saveSharedDataToState = (text: string | null, files: string[]) => {
+    if (text !== null) {
+      // Text was shared
+      setText(text);
+    } else {
+      // File(s) where shared
+      setFileList(files);
+    }
+  };
+
   // Improved file selector with integrated QR code generation
   const openFileSelector = async () => {
     try {
@@ -102,7 +112,7 @@ export function SendLogic() {
         multiple: true,
         directory: false,
       });
-      proceedWithSend(files, "");
+      proceedWithSend(files, null);
     } catch (err) {
       console.error("File selection error:", err);
       swalWithBootstrapButtons.fire({
@@ -114,9 +124,9 @@ export function SendLogic() {
     }
   };
 
-  const proceedWithSend = async (files: string[] | null, text: string) => {
+  const proceedWithSend = async (files: string[] | null, text: string | null) => {
       // Generate QR code and navigate on success
-      if (files) setFileList(files);
+      saveSharedDataToState(text, files!);
       const qrCodeResult = await generateQRCode(text, files || []);
       if (text !== "" && qrCodeResult) {
         navigate("/send/qrcode", { replace: true });

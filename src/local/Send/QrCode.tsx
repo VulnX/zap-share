@@ -7,7 +7,7 @@ import lightBack from "../images/lightBack.svg";
 import darkBack from "../images/darkBack.svg";
 import { ProfileButton, ToggleThemeButton } from "../Choice/Navigation";
 import { useNavigate } from "react-router-dom";
-import { useFileListContext } from "./FileListContext";
+import { useSharedDataContext } from "./FileListContext";
 import { invoke } from "@tauri-apps/api/core";
 import { basename } from "@tauri-apps/api/path";
 import { ProgressUpdatePayload, ServerConfiguration } from "../types";
@@ -29,7 +29,7 @@ export function ProgressBar() {
               ...prevMap,
               [event.payload.id]: event.payload.progress,
             }));
-          },
+          }
         );
       } catch (error) {
         console.error("Error loading progress:", error);
@@ -84,7 +84,7 @@ export const DeviceList: React.FC = () => {
   const { isTheme } = useTheme();
   const hasRun = useRef(false);
   const [nearbyDevices, setNearbyDevices] = useState<ServerConfiguration[]>([]);
-  const { fileList } = useFileListContext();
+  const { fileList, text } = useSharedDataContext();
 
   useEffect(() => {
     if (hasRun.current) return;
@@ -94,7 +94,7 @@ export const DeviceList: React.FC = () => {
     const setupListener = async () => {
       console.log("setting up listener");
       const listener = await listen<string>("device-list-updated", (event) => {
-        console.log("DEVICE LIST UPDATED", event.payload);
+        // console.log("DEVICE LIST UPDATED", event.payload);
         const parsedDevices: ServerConfiguration[] = JSON.parse(event.payload);
         setNearbyDevices(parsedDevices);
       });
@@ -130,17 +130,30 @@ export const DeviceList: React.FC = () => {
                     : "bg-gray-200 text-black hover:bg-gray-300"
                 }`}
                 onClick={async () => {
-                  const filePairs: [string, string][] = await Promise.all(
-                    fileList.map(async (file) => {
-                      const name = await basename(file);
-                      return [file, name];
-                    }),
-                  );
-                  console.log("sending: ", filePairs, "\nto:", device);
-                  await invoke("send_files_to", {
-                    files: filePairs,
-                    to: device,
-                  });
+                  console.log('okay preparing for send');
+                  console.log('text:', text);
+                  console.log('files:', fileList);
+                  if (text === undefined) {
+                    // File(s) were shared
+                    const filePairs: [string, string][] = await Promise.all(
+                      fileList.map(async (file) => {
+                        const name = await basename(file);
+                        return [file, name];
+                      })
+                    );
+                    console.log("sending: ", filePairs, "\nto:", device);
+                    await invoke("send_files_to", {
+                      files: filePairs,
+                      to: device,
+                    });
+                  } else {
+                    // Text was shared
+                    console.log("sending:", text, ", to:", device);
+                    await invoke("send_text_to", {
+                      text,
+                      to: device,
+                    });
+                  }
                 }}
               >
                 <div className="flex items-center">

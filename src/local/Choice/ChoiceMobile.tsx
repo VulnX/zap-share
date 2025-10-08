@@ -25,12 +25,12 @@ export default function ChoiceMobile() {
         console.log("data start");
         console.log(data);
         if (data && "SharedText" in data) {
+          // Text was shared
           console.log((data.SharedText ?? "").split("\n")[0].trim() || "");
-          proceedWithSend(
-            null,
-            (data.SharedText ?? "").split("\n")[0].replace(/^"|"$/g, "").trim() || ""
-          );
+          let sharedText = (data.SharedText ?? "").split("\n")[0].replace(/^"|"$/g, "").trim() || "";
+          proceedWithSend(null, sharedText);
         } else if (data && "URIList" in data && data.URIList) {
+          // File(s) were shared
           try {
             const uriString = data.URIList.toString();
             // Remove the brackets and split by comma-space
@@ -39,15 +39,13 @@ export default function ChoiceMobile() {
               .split(", ")
               .filter((uri) => uri.trim() !== "");
             console.log("Parsed URIs:", uriArray);
-            proceedWithSend(uriArray, "");
+            proceedWithSend(uriArray, null);
           } catch (err) {
             console.error("Failed to parse URIList:", err);
-            proceedWithSend(null, "");
+            proceedWithSend(null, null);
           }
         }
         console.log("data end");
-        // TODO: Handle both cases, of file(s) share
-        // and text share
       })();
     }
   }, []);

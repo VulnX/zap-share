@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import Navigation from "../Choice/Navigation";
 import { SendLogic } from "./SendLogic";
 import { useTheme } from "../Choice/Theme";
-import { useFileListContext } from "./FileListContext";
 
 interface DragDropPayload {
   paths: string[];
@@ -55,7 +54,7 @@ const FilePicker = () => {
 };
 
 const TextSender = () => {
-  const { generateQRCode } = SendLogic();
+  const { proceedWithSend } = SendLogic();
   const { isTheme } = useTheme();
   const [text, setText] = useState<string>("");
   const navigate = useNavigate();
@@ -74,7 +73,7 @@ const TextSender = () => {
       </div>
       <button
         onClick={() => {
-          generateQRCode(text, []);
+          proceedWithSend(null, text);
           navigate("/send/qrcode", { replace: true });
         }}
         className={`mt-4 px-8 py-3 bg-gray-600 text-white rounded-lg font-medium hover:shadow-lg transition-all ${
@@ -88,8 +87,7 @@ const TextSender = () => {
 };
 
 export default function SendDesktop() {
-  const { generateQRCode } = SendLogic();
-  const { setFileList } = useFileListContext();
+  const { proceedWithSend } = SendLogic();
   const { isTheme } = useTheme();
   const navigate = useNavigate();
   const hasRun = useRef(false);
@@ -119,12 +117,11 @@ export default function SendDesktop() {
         const dragDropUnlisten = await listen<DragDropPayload>(
           TauriEvent.DRAG_DROP,
           (event) => {
-            setFileList(event.payload.paths);
             console.log("File dropped", event.payload);
 
             // idk why error occurs here
             const { paths } = event.payload;
-            generateQRCode("", paths);
+            proceedWithSend(paths, null);
             navigate("/send/confirm", { replace: true });
           }
         );
