@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { SendLogic } from "../Send/SendLogic";
+import { SharedText, SharedFiles } from "../types";
 
 export default function ChoiceMobile() {
   const { isTheme } = useTheme();
@@ -20,10 +21,31 @@ export default function ChoiceMobile() {
     if (!hasRun.current) {
       (async () => {
         hasRun.current = true;
-        let data = await invoke("get_shared_data");
-        console.log('data start');
+        let data = await invoke<SharedText | SharedFiles>("get_shared_data");
+        console.log("data start");
         console.log(data);
-        console.log('data end');
+        if (data && "SharedText" in data) {
+          console.log((data.SharedText ?? "").split("\n")[0].trim() || "");
+          proceedWithSend(
+            null,
+            (data.SharedText ?? "").split("\n")[0].replace(/^"|"$/g, "").trim() || ""
+          );
+        } else if (data && "URIList" in data && data.URIList) {
+          try {
+            const uriString = data.URIList.toString();
+            // Remove the brackets and split by comma-space
+            const uriArray = uriString
+              .replace(/^\[|\]$/g, "")
+              .split(", ")
+              .filter((uri) => uri.trim() !== "");
+            console.log("Parsed URIs:", uriArray);
+            proceedWithSend(uriArray, "");
+          } catch (err) {
+            console.error("Failed to parse URIList:", err);
+            proceedWithSend(null, "");
+          }
+        }
+        console.log("data end");
         // TODO: Handle both cases, of file(s) share
         // and text share
       })();
@@ -32,7 +54,9 @@ export default function ChoiceMobile() {
 
   return (
     <div
-      className={`${isTheme ? `bg-mobile-dark-background` : `bg-mobile-light-background`} || min-h-screen ${isTheme ? `text-[#C9C9C9]` : `text-black`}
+      className={`${
+        isTheme ? `bg-mobile-dark-background` : `bg-mobile-light-background`
+      } || min-h-screen ${isTheme ? `text-[#C9C9C9]` : `text-black`}
         `}
     >
       <nav className="flex justify-between items-center p-6">
@@ -55,7 +79,9 @@ export default function ChoiceMobile() {
           <div
             className={`${isTheme ? `bg-[#577E6E]` : `bg-[#8DEDC280]`} ||
                 w-[25vh] h-[25vh] rounded-[25vh] | flex flex-col justify-center items-center
-                ${isTheme ? `border-[#64C19780]` : `border-[#8DEDC280]`} border-8
+                ${
+                  isTheme ? `border-[#64C19780]` : `border-[#8DEDC280]`
+                } border-8
                 `}
             onClick={() => navigate("/send", { replace: true })}
           >
@@ -70,7 +96,9 @@ export default function ChoiceMobile() {
           <div
             className={`${isTheme ? `bg-[#5B688E]` : `bg-[#A4B7EF]`} ||
                 w-[25vh] h-[25vh] rounded-[25vh] | flex justify-center items-center
-                ${isTheme ? `border-[#8095E780]` : `border-[#ABC6EB80]`} border-8
+                ${
+                  isTheme ? `border-[#8095E780]` : `border-[#ABC6EB80]`
+                } border-8
                 `}
             onClick={() => navigate("/receive", { replace: true })}
           >

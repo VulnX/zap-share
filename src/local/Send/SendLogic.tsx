@@ -19,7 +19,6 @@ const swalWithBootstrapButtons = Swal.mixin({
   buttonsStyling: true,
 });
 
-
 export function SendLogic() {
   const { isTheme } = useTheme();
   const { qrCode, setQrCode, qrText, setQrText } = useQrContext();
@@ -45,9 +44,11 @@ export function SendLogic() {
     try {
       // Invoke Tauri command to send files
       let response: SendFileResponse | SendTextResponse | null = null;
-      if (text === "") {
-        const filePairs: [string, string][] = await Promise.all(
-          files.map(async (file) => {
+      if (text === null || text === "") {
+        console.log(files);
+
+        const filePairs: string[][] = await Promise.all(
+          Array.from(files).map(async (file) => {
             const name = await basename(file);
             return [file, name];
           })
@@ -101,7 +102,7 @@ export function SendLogic() {
         multiple: true,
         directory: false,
       });
-      proceedWithSend(files);
+      proceedWithSend(files, "");
     } catch (err) {
       console.error("File selection error:", err);
       swalWithBootstrapButtons.fire({
@@ -113,12 +114,13 @@ export function SendLogic() {
     }
   };
 
-  const proceedWithSend = async (files: string[] | null) => {
-    if (files && 0 < files.length) {
+  const proceedWithSend = async (files: string[] | null, text: string) => {
       // Generate QR code and navigate on success
-      setFileList(files);
-      const qrCodeResult = await generateQRCode("", files);
-      if (qrCodeResult) {
+      if (files) setFileList(files);
+      const qrCodeResult = await generateQRCode(text, files || []);
+      if (text !== "" && qrCodeResult) {
+        navigate("/send/qrcode", { replace: true });
+      } else if (qrCodeResult) {
         navigate("/send/confirm", { replace: true });
       } else {
         swalWithBootstrapButtons.fire({
@@ -128,15 +130,6 @@ export function SendLogic() {
           confirmButtonText: "OK",
         });
       }
-    } else {
-      swalWithBootstrapButtons.fire({
-        title: "File not selected",
-        text: "Please select a file to transfer",
-        icon: "warning",
-        confirmButtonText: "OK",
-        reverseButtons: true,
-      });
-    }
   };
 
   return {

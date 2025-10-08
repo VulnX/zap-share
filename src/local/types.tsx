@@ -26,3 +26,10 @@ export interface SendTextResponse {
     port: number;
   };
 }
+
+export interface SharedText {
+  SharedText: string | null;
+}
+export interface SharedFiles {
+  URIList: string[] | null;
+}
