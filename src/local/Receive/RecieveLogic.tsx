@@ -10,6 +10,12 @@ interface RecvFileResponse {
     port: number;
   };
 }
+interface RecvTextResponse {
+  Success: {
+    ip: string | null;
+    port: number;
+  };
+}
 
 export function RecvLogic() {
   const { qrCode, setQrCode, qrText, setQrText } = useQrContext();
@@ -21,18 +27,24 @@ export function RecvLogic() {
     }
     if (qrText) {
       sessionStorage.setItem("persistedQrText", qrText);
-      console.log(qrText);
+      // console.log(qrText);
     }
   }, [qrCode, qrText]);
 
   // Enhanced QR code generation function
-  const generateQRCode = async () => {
+  const generateQRCode = async (text: String) => {
     try {
       // Invoke Tauri command to Recv files
-      const response = await invoke<RecvFileResponse>("recv_file");
+      let response;
+      if (text === "text") {
+        response = await invoke<RecvTextResponse>("recv_text");
+        
+      } else if (text === "file") {
+        response = await invoke<RecvFileResponse>("recv_file");
+      }
 
       // Check if response has valid IP and port
-      if (response.Success && response.Success.ip) {
+      if (response && response.Success && response.Success.ip) {
         const { ip, port } = response.Success;
         const qr = `http://${ip}:${port}`;
 

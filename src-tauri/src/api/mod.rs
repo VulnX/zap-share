@@ -15,50 +15,44 @@ mod bcast;
 
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 
-static SHARED_URI_LIST: Mutex<Option<Vec<String>>> = Mutex::new(None);
+static SHARED_DATA: Mutex<Option<Option<tauri_plugin_ipd::SharedData>>> = Mutex::new(None);
 
-/// Retrieves the list of content URIs sent to the app via the Android share menu.
+/// Retrieves the latest shared data (URIs and/or text) sent to the app via the Android share menu.
 ///
-/// This function ensures that the same list is not returned multiple times.
-/// It compares the newly retrieved list against the previously stored one, and only
-/// returns the list if it is different from the last one returned.
+/// This function checks for new incoming shared data (e.g., content URIs or text) provided
+/// through Android's share intents. It returns the data only if it has changed since the last call,
+/// preventing redundant processing of the same shared content.
 ///
 /// # Returns
-/// A `Vec<String>` containing the parsed shared URIs. If the list is identical to the
-/// previously retrieved one, returns an empty vector.
+/// - `Some(SharedData)` if new shared data (URIs or text) is received.
+/// - `None` if the shared data is the same as the previously returned value.
 ///
 /// # Behavior
-/// - On the first call (or if the list changes), returns the list of URIs.
-/// - On subsequent calls with the same list, returns an empty vector.
-/// - Internally stores the last seen list in a global `Mutex<Option<Vec<String>>>`.
+/// - On the first invocation, returns the shared data and stores it internally.
+/// - On subsequent invocations, compares the new data to the stored version.
+/// - If the data is unchanged, returns `None`.
+/// - If the data has changed, returns the new data and updates the stored version.
 ///
-/// # Notes
-/// - The raw string `res` returned by `window.ipd().get_shared_uri_list().unwrap().uri_list`
-///   is expected to be in the format `"[uri1, uri2, ...]"`.
-/// - The function trims square brackets and whitespace, then splits the string by commas.
+/// # Internals
+/// - Uses a global `Mutex<Option<SharedData>>` to track and compare the most recently returned data.
 #[allow(dead_code)]
 #[tauri::command]
-pub async fn get_shared_uri_list<R: Runtime>(window: Window<R>) -> Vec<String> {
-    let res = window.ipd().get_shared_uri_list().unwrap().uri_list;
-    // Parse [XXX, YYY] from `res`
-    let current_list: Vec<String> = res
-        .trim_matches(|c| c == '[' || c == ']')
-        .split(',')
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .collect();
-    let mut prev_shared_list = SHARED_URI_LIST.lock().unwrap();
-    match *prev_shared_list {
+pub async fn get_shared_data<R: Runtime>(
+    window: Window<R>,
+) -> Option<tauri_plugin_ipd::SharedData> {
+    let current_data = window.ipd().get_shared_data().unwrap().data;
+    let mut prev_data = SHARED_DATA.lock().unwrap();
+    match *prev_data {
         None => {
-            *prev_shared_list = Some(current_list.clone());
-            current_list
+            *prev_data = Some(current_data.clone());
+            current_data
         }
-        Some(ref prev_list) => {
-            if &current_list == prev_list {
-                vec![]
+        Some(ref prev_shared_data) => {
+            if &current_data == prev_shared_data {
+                None
             } else {
-                *prev_shared_list = Some(current_list.clone());
-                current_list
+                *prev_data = Some(current_data.clone());
+                current_data
             }
         }
     }
@@ -108,7 +102,7 @@ pub fn send_file<R: Runtime>(
         .into_iter()
         .map(|(filepath, filename)| models::FileData::from(filepath, filename, &window))
         .collect();
-    let mode = models::TransferMode::Send(file_datas);
+    let mode = models::TransferMode::SendFile(file_datas);
     start_server(window, mode)
 }
 
@@ -139,6 +133,15 @@ pub async fn send_files_to<R: Runtime>(
             .await
             .unwrap();
     }
+}
+
+#[allow(dead_code)]
+#[tauri::command]
+pub async fn send_text_to(text: String, to: models::ServerConfiguration) {
+    let client = reqwest::Client::new();
+    let endpoint = format!("http://{}:{}/upload", to.ip, to.port);
+    println!("sending {text:#?} to {endpoint:#?}");
+    client.post(endpoint).body(text).send().await.unwrap();
 }
 
 #[allow(dead_code)]
@@ -180,7 +183,21 @@ pub fn get_device_config<R: Runtime>(window: Window<R>) -> models::DeviceConfig 
 #[allow(dead_code)]
 #[tauri::command]
 pub fn recv_file<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
-    let mode = models::TransferMode::Receive;
+    let mode = models::TransferMode::ReceiveFile;
+    start_server(window, mode)
+}
+
+#[allow(dead_code)]
+#[tauri::command]
+pub fn send_text<R: Runtime>(window: Window<R>, text: String) -> models::StartServerResponse {
+    let mode = models::TransferMode::SendText(text);
+    start_server(window, mode)
+}
+
+#[allow(dead_code)]
+#[tauri::command]
+pub fn recv_text<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
+    let mode = models::TransferMode::ReceiveText;
     start_server(window, mode)
 }
 
@@ -242,8 +259,14 @@ fn start_server<R: Runtime>(
     let config_json = std::fs::read_to_string(config_file_path).unwrap();
     let config: models::DeviceConfig = serde_json::from_str(&config_json).unwrap();
     match mode {
-        models::TransferMode::Receive => thread::spawn(move || bcast::emit_info(port, config)),
-        models::TransferMode::Send(_) => thread::spawn(|| bcast::recv_emitted_info(window, config)),
+        models::TransferMode::SendFile(_) => {
+            thread::spawn(|| bcast::recv_emitted_info(window, config))
+        }
+        models::TransferMode::ReceiveFile => thread::spawn(move || bcast::emit_info(port, config)),
+        models::TransferMode::SendText(_) => {
+            thread::spawn(|| bcast::recv_emitted_info(window, config))
+        }
+        models::TransferMode::ReceiveText => thread::spawn(move || bcast::emit_info(port, config)),
     };
     models::StartServerResponse::Success(models::Url { ip, port })
 }

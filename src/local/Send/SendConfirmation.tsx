@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../Choice/Theme";
 import lightBack from "../images/lightBack.svg";
 import darkBack from "../images/darkBack.svg";
-import { useFileListContext } from "./FileListContext";
+import { useSharedDataContext } from "./FileListContext";
 import { basename } from "@tauri-apps/api/path";
 import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-fs";
@@ -11,7 +11,7 @@ import { open } from "@tauri-apps/plugin-fs";
 const SendConfirmation: React.FC = () => {
   const navigate = useNavigate();
   const { isTheme } = useTheme();
-  const { fileList } = useFileListContext();
+  const { fileList } = useSharedDataContext();
   const [fileNames, setFileNames] = useState("");
   const [totalSize, setTotalSize] = useState("");
 

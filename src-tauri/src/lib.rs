@@ -14,9 +14,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             api::send_file,
             api::send_files_to,
+            api::send_text_to,
             api::recv_file,
-            api::get_shared_uri_list,
+            api::get_shared_data,
             api::get_device_config,
+            api::send_text,
+            api::recv_text,
         ])
         .setup(|app| util::create_device_config(app.handle()))
         .run(tauri::generate_context!())

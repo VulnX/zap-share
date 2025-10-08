@@ -16,7 +16,7 @@ pub async fn download_frontend(file_datas: web::Data<Vec<models::FileData>>) -> 
     let file_datas = file_datas.into_inner();
     let file_datas_json = serde_json::to_string(&file_datas).unwrap();
     let file_datas_json = urlencoding::encode(&file_datas_json);
-    let download_page = include_str!("../static/index.html").to_string();
+    let download_page = include_str!("../static/download-file.html").to_string();
     let download_page = download_page.replace("<FILE_DATA_HERE>", &file_datas_json);
     HttpResponse::Ok().body(download_page)
 }
@@ -95,4 +95,8 @@ pub async fn download_file(
         .insert_header(ContentType::octet_stream())
         .insert_header(ContentDisposition::attachment(file_name))
         .body(SizedStream::new(file_size, data_stream))
+}
+
+pub async fn handle_text(text: web::Data<String>) -> impl Responder {
+    HttpResponse::Ok().body(text.get_ref().clone())
 }

@@ -35,7 +35,7 @@ impl<R: Runtime, T: Manager<R>> crate::IpdExt<R> for T {
 /// Initializes the plugin.
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
   Builder::new("ipd")
-    .invoke_handler(tauri::generate_handler![commands::get_shared_uri_list])
+    .invoke_handler(tauri::generate_handler![commands::get_shared_data_something])
     .setup(|app, api| {
       #[cfg(mobile)]
       let ipd = mobile::init(app, api)?;

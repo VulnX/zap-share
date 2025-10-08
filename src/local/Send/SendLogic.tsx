@@ -8,7 +8,8 @@ import { useNavigate } from "react-router-dom";
 import { basename } from "@tauri-apps/api/path";
 import { flushSync } from "react-dom";
 import { useQrContext } from "./QrContext";
-import { useFileListContext } from "./FileListContext";
+import { useSharedDataContext } from "./FileListContext";
+import { SendFileResponse, SendTextResponse } from "../types";
 
 const swalWithBootstrapButtons = Swal.mixin({
   customClass: {
@@ -18,18 +19,11 @@ const swalWithBootstrapButtons = Swal.mixin({
   buttonsStyling: true,
 });
 
-interface SendFileResponse {
-  Success: {
-    ip: string | null;
-    port: number;
-  };
-}
-
 export function SendLogic() {
   const { isTheme } = useTheme();
   const { qrCode, setQrCode, qrText, setQrText } = useQrContext();
   const navigate = useNavigate();
-  const { setFileList } = useFileListContext();
+  const { setFileList, setText } = useSharedDataContext();
 
   // Save QR code to session storage whenever it changes
   useEffect(() => {
@@ -46,23 +40,30 @@ export function SendLogic() {
   }, [qrText]);
 
   // Enhanced QR code generation function
-  const generateQRCode = async (files: string[]) => {
+  const generateQRCode = async (text: string | null, files: string[]) => {
     try {
       // Invoke Tauri command to send files
-      const filePairs: [string, string][] = await Promise.all(
-        files.map(async (file) => {
-          const name = await basename(file);
-          return [file, name];
-        }),
-      );
-      console.log("File Pairs:", filePairs);
-      console.log("sending :", files);
-      const response = await invoke<SendFileResponse>("send_file", {
-        files: filePairs,
-      });
+      let response: SendFileResponse | SendTextResponse | null = null;
+      if (text === null || text === "") {
+        console.log(files);
 
+        const filePairs: string[][] = await Promise.all(
+          Array.from(files).map(async (file) => {
+            const name = await basename(file);
+            return [file, name];
+          })
+        );
+        console.log("File Pairs:", filePairs);
+        console.log("sending :", files);
+        response = await invoke<SendFileResponse>("send_file", {
+          files: filePairs,
+        });
+      } else {
+        // console.log("invoked send text:", text);
+        response = await invoke<SendTextResponse>("send_text", { text });
+      }
       // Check if response has valid IP and port
-      if (response.Success && response.Success.ip) {
+      if (response && response.Success && response.Success.ip) {
         const { ip, port } = response.Success;
         const qr = `http://${ip}:${port}`;
         flushSync(() => {
@@ -94,6 +95,16 @@ export function SendLogic() {
     }
   };
 
+  const saveSharedDataToState = (text: string | null, files: string[]) => {
+    if (text !== null) {
+      // Text was shared
+      setText(text);
+    } else {
+      // File(s) where shared
+      setFileList(files);
+    }
+  };
+
   // Improved file selector with integrated QR code generation
   const openFileSelector = async () => {
     try {
@@ -101,7 +112,7 @@ export function SendLogic() {
         multiple: true,
         directory: false,
       });
-      proceedWithSend(files);
+      proceedWithSend(files, null);
     } catch (err) {
       console.error("File selection error:", err);
       swalWithBootstrapButtons.fire({
@@ -113,12 +124,13 @@ export function SendLogic() {
     }
   };
 
-  const proceedWithSend = async (files: string[] | null) => {
-    if (files && 0 < files.length) {
+  const proceedWithSend = async (files: string[] | null, text: string | null) => {
       // Generate QR code and navigate on success
-      setFileList(files);
-      const qrCodeResult = await generateQRCode(files);
-      if (qrCodeResult) {
+      saveSharedDataToState(text, files!);
+      const qrCodeResult = await generateQRCode(text, files || []);
+      if (text !== "" && qrCodeResult) {
+        navigate("/send/qrcode", { replace: true });
+      } else if (qrCodeResult) {
         navigate("/send/confirm", { replace: true });
       } else {
         swalWithBootstrapButtons.fire({
@@ -128,15 +140,6 @@ export function SendLogic() {
           confirmButtonText: "OK",
         });
       }
-    } else {
-      swalWithBootstrapButtons.fire({
-        title: "File not selected",
-        text: "Please select a file to transfer",
-        icon: "warning",
-        confirmButtonText: "OK",
-        reverseButtons: true,
-      });
-    }
   };
 
   return {

@@ -8,7 +8,7 @@ import { createContext, useEffect, useState } from "react";
 import SendConfirmation from "./local/Send/SendConfirmation";
 import QrCode from "./local/Send/QrCode";
 import { QrProvider } from "./local/Send/QrContext";
-import { FileListProvider } from "./local/Send/FileListContext";
+import { SharedDataProvider } from "./local/Send/FileListContext";
 
 interface Device {
   isMobile: boolean;
@@ -28,7 +28,7 @@ function App() {
     <div>
       <DeviceProvider.Provider value={{ isMobile: isMobile ?? false }}>
         <ThemeProvider>
-          <FileListProvider>
+          <SharedDataProvider>
             <QrProvider>
               <Router>
                 <Routes>
@@ -44,7 +44,7 @@ function App() {
                 </Routes>
               </Router>
             </QrProvider>
-          </FileListProvider>
+          </SharedDataProvider>
         </ThemeProvider>
       </DeviceProvider.Provider>
     </div>

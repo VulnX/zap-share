@@ -6,11 +6,14 @@ import darksend from "../images/darksend.svg";
 import lightsend from "../images/lightsend.svg";
 import { SendLogic } from "./SendLogic";
 import { useTheme } from "../Choice/Theme";
+import { useState } from "react";
 
 export function SendMobile() {
   const navigate = useNavigate();
-  const { openFileSelector } = SendLogic();
+  const { openFileSelector, proceedWithSend } = SendLogic();
   const { isTheme } = useTheme();
+  const [sendFile, setSendFile] = useState(true);
+  const [text, setText] = useState("");
   return (
     <div
       className={`${
@@ -28,28 +31,73 @@ export function SendMobile() {
         <ToggleThemeButton />
       </nav>
 
-      <div className="flex flex-col items-center">
-        <p className="text-[24px] mt-[12vh]">Click here to Select Files</p>
-        <div
-          className={`h-[30vh] w-[54vw] flex items-center justify-center || ${
-            isTheme ? `bg-[#3C3C3C]` : `bg-[#D6FEFF]`
-          } ${
-            isTheme ? `border-[#919191]` : `border-[#A1F3FF]`
-          } border-4 rounded-[20px] mt-[4vh]`}
-          onClick={openFileSelector}
-        >
+      <div className="flex flex-col items-center w-full px-6">
+        <div className="flex space-x-6 bg-white rounded-full p-2 shadow-md mb-8">
           <div
-            className={`h-[25vh] w-[45vw] ${
-              isTheme ? `bg-[#A1A1A1]` : `bg-[#A1F3FF]`
-            } || flex items-center justify-center rounded-[12px]`}
+            className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
+              sendFile ? "bg-gray-200 text-gray-800" : "text-gray-500"
+            }`}
+            onClick={() => setSendFile(true)}
           >
-            <img
-              src={isTheme ? darksend : lightsend}
-              alt=""
-              className="w-[37vw]"
-            />
+            File
+          </div>
+          <div
+            className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
+              !sendFile ? "bg-gray-200 text-gray-800" : "text-gray-500"
+            }`}
+            onClick={() => setSendFile(false)}
+          >
+            Text
           </div>
         </div>
+
+        {sendFile ? (
+          <>
+            <p className="text-[24px] mt-[8vh]">Click here to Select Files</p>
+            <div
+              className={`h-[30vh] w-[54vw] flex items-center justify-center || ${
+                isTheme ? `bg-[#3C3C3C]` : `bg-[#D6FEFF]`
+              } ${
+                isTheme ? `border-[#919191]` : `border-[#A1F3FF]`
+              } border-4 rounded-[20px] mt-[4vh]`}
+              onClick={openFileSelector}
+            >
+              <div
+                className={`h-[25vh] w-[45vw] ${
+                  isTheme ? `bg-[#A1A1A1]` : `bg-[#A1F3FF]`
+                } || flex items-center justify-center rounded-[12px]`}
+              >
+                <img
+                  src={isTheme ? darksend : lightsend}
+                  alt=""
+                  className="w-[37vw]"
+                />
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="w-full mt-[8vh] flex flex-col items-center">
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Type your message here..."
+              className={`w-full h-[40vh] p-4 rounded-lg resize-none outline-none ${
+                isTheme ? "bg-[#3C3C3C] text-white" : "bg-[#D6FEFF]"
+              }`}
+            />
+            <button
+              onClick={() => {
+                proceedWithSend(null, text);
+                navigate("/send/qrcode", { replace: true });
+              }}
+              className={`mt-6 px-8 py-3 bg-blue-500 text-white rounded-lg font-medium hover:shadow-lg transition-all ${
+                isTheme ? "hover:bg-blue-600" : "hover:bg-blue-400"
+              }`}
+            >
+              Send
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
