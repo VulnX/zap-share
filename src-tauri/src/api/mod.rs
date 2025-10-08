@@ -137,6 +137,15 @@ pub async fn send_files_to<R: Runtime>(
 
 #[allow(dead_code)]
 #[tauri::command]
+pub async fn send_text_to(text: String, to: models::ServerConfiguration) {
+    let client = reqwest::Client::new();
+    let endpoint = format!("http://{}:{}/upload", to.ip, to.port);
+    println!("sending {text:#?} to {endpoint:#?}");
+    client.post(endpoint).body(text).send().await.unwrap();
+}
+
+#[allow(dead_code)]
+#[tauri::command]
 pub fn get_device_config<R: Runtime>(window: Window<R>) -> models::DeviceConfig {
     let config_dir = window.path().app_config_dir().unwrap();
     let config_file_path = config_dir.join("config.json");

@@ -45,8 +45,9 @@ pub fn start_server<R: Runtime>(
                         .app_data(web::Data::new(text.clone()))
                 }
                 models::TransferMode::ReceiveText => {
-                    app = app.route("/", web::get().to(recv::handle_text))
-                    .route("/upload", web::post().to(recv::handle_text_upload))
+                    app = app
+                        .route("/", web::get().to(recv::handle_text))
+                        .route("/upload", web::post().to(recv::handle_text_upload))
                 }
             };
             app = app.app_data(window.clone());
