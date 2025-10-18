@@ -46,6 +46,7 @@ pub fn recv_emitted_info<R: Runtime>(window: Window<R>, config: models::DeviceCo
                 port: payload.port,
                 name: payload.name,
             };
+            devices.retain(|device: &models::ServerConfiguration| device.ip != server_config.ip);
             devices.insert(server_config);
             let data = serde_json::to_string(&devices).unwrap();
             window.emit("device-list-updated", data).unwrap();
