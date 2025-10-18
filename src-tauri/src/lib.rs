@@ -20,6 +20,7 @@ pub fn run() {
             api::get_device_config,
             api::send_text,
             api::recv_text,
+            api::stop_server
         ])
         .setup(|app| util::create_device_config(app.handle()))
         .run(tauri::generate_context!())

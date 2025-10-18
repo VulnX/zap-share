@@ -201,6 +201,18 @@ pub fn recv_text<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
     start_server(window, mode)
 }
 
+#[allow(dead_code)]
+#[tauri::command]
+pub fn stop_server() {
+    let mut handle_guard = SERVER_HANDLE.lock().unwrap();
+    if let Some(server_handle) = handle_guard.take() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            server_handle.stop(true).await;
+        });
+    }
+}
+
 /// Starts (or re-starts existing) actix web server in separate thread
 ///
 /// If the server has started successfully then the `port` number and (optionally detected) `ip` address will be returned
@@ -211,13 +223,7 @@ fn start_server<R: Runtime>(
     mode: models::TransferMode,
 ) -> models::StartServerResponse {
     // Stop any running server instance before starting a new one
-    let mut handle_guard = SERVER_HANDLE.lock().unwrap();
-    if let Some(server_handle) = handle_guard.take() {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        rt.block_on(async {
-            server_handle.stop(true).await;
-        });
-    }
+    stop_server();
 
     let (tx, rx) = mpsc::channel::<u16>();
     thread::spawn({
