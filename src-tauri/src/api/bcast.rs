@@ -1,6 +1,10 @@
 use std::{
     collections::HashSet,
     net::{Ipv4Addr, SocketAddrV4, UdpSocket},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
     thread,
     time::Duration,
 };
@@ -13,7 +17,7 @@ use crate::models;
 static BCAST_ADDR: Ipv4Addr = Ipv4Addr::new(255, 255, 255, 255);
 static BCAST_PORT: u16 = 54321;
 
-pub fn emit_info(port: u16, config: models::DeviceConfig) {
+pub fn emit_info(port: u16, config: models::DeviceConfig, shutdown: Arc<AtomicBool>) {
     let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
     socket.set_broadcast(true).unwrap();
     let target = SocketAddrV4::new(BCAST_ADDR, BCAST_PORT);
@@ -24,32 +28,50 @@ pub fn emit_info(port: u16, config: models::DeviceConfig) {
     };
     let payload = serde_json::to_string(&payload).unwrap();
     debug!("sending {payload}");
-    loop {
+    while !shutdown.load(Ordering::Relaxed) {
         socket.send_to(payload.as_bytes(), target).unwrap();
         thread::sleep(Duration::from_millis(500));
     }
 }
 
-pub fn recv_emitted_info<R: Runtime>(window: Window<R>, config: models::DeviceConfig) {
+pub fn recv_emitted_info<R: Runtime>(
+    window: Window<R>,
+    config: models::DeviceConfig,
+    shutdown: Arc<AtomicBool>,
+) {
     let socket = UdpSocket::bind(("0.0.0.0", BCAST_PORT)).unwrap();
     let mut buf = [0u8; 0x1000];
     let mut devices = HashSet::new();
-    loop {
-        let (amt, from) = socket.recv_from(&mut buf).unwrap();
-        if let Ok(payload) = serde_json::from_slice::<models::MulticastPayload>(&buf[..amt]) {
-            if payload.fingerprint == config.fingerprint {
-                // Self device detected
+    while !shutdown.load(Ordering::Relaxed) {
+        socket
+            .set_read_timeout(Some(Duration::from_secs(1)))
+            .unwrap();
+        match socket.recv_from(&mut buf) {
+            Ok((amt, from)) => {
+                if let Ok(payload) = serde_json::from_slice::<models::MulticastPayload>(&buf[..amt])
+                {
+                    if payload.fingerprint == config.fingerprint {
+                        // Self device detected
+                        continue;
+                    }
+                    let server_config = models::ServerConfiguration {
+                        ip: from.ip().to_string(),
+                        port: payload.port,
+                        name: payload.name,
+                    };
+                    devices.retain(|device: &models::ServerConfiguration| {
+                        device.ip != server_config.ip
+                    });
+                    devices.insert(server_config);
+                    let data = serde_json::to_string(&devices).unwrap();
+                    window.emit("device-list-updated", data).unwrap();
+                }
+            }
+            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                // timeout
                 continue;
             }
-            let server_config = models::ServerConfiguration {
-                ip: from.ip().to_string(),
-                port: payload.port,
-                name: payload.name,
-            };
-            devices.retain(|device: &models::ServerConfiguration| device.ip != server_config.ip);
-            devices.insert(server_config);
-            let data = serde_json::to_string(&devices).unwrap();
-            window.emit("device-list-updated", data).unwrap();
+            Err(e) => panic!("recv_from error: {e}"),
         };
     }
 }
