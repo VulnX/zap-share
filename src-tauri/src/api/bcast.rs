@@ -39,7 +39,7 @@ pub fn recv_emitted_info<R: Runtime>(window: Window<R>, config: models::DeviceCo
         if let Ok(payload) = serde_json::from_slice::<models::MulticastPayload>(&buf[..amt]) {
             if payload.fingerprint == config.fingerprint {
                 // Self device detected
-                // continue;
+                continue;
             }
             let server_config = models::ServerConfiguration {
                 ip: from.ip().to_string(),
