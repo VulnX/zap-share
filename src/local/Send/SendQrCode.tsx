@@ -130,9 +130,9 @@ export const DeviceList: React.FC = () => {
                     : "bg-gray-200 text-black hover:bg-gray-300"
                 }`}
                 onClick={async () => {
-                  console.log('okay preparing for send');
-                  console.log('text:', text);
-                  console.log('files:', fileList);
+                  console.log("okay preparing for send");
+                  console.log("text:", text);
+                  console.log("files:", fileList);
                   if (text === undefined) {
                     // File(s) were shared
                     const filePairs: [string, string][] = await Promise.all(
@@ -177,6 +177,16 @@ export default function QrCode() {
   const hasRun = useRef(false);
   const [showQR, setShowQR] = useState(false);
 
+  const stopServer = async () => {
+    try {
+      await invoke("stop_server");
+      console.log("Server Stopped");
+
+    } catch (error) {
+      console.error("Error stopping server:", error);
+    }
+  };
+
   useEffect(() => {
     if (!hasRun.current) {
       hasRun.current = true;
@@ -196,7 +206,10 @@ export default function QrCode() {
           src={isTheme ? darkBack : lightBack}
           alt="back"
           className="h-[40px] cursor-pointer"
-          onClick={() => navigate("/send", { replace: true })}
+          onClick={() => {
+            stopServer();
+            navigate("/send", { replace: true });
+          }}
         />
         <div className="flex items-center gap-4">
           <ProfileButton />

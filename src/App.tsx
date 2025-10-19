@@ -2,11 +2,11 @@ import "./App.css";
 import Choice from "./local/Choice/Choice";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Send from "./local/Send/Send";
-import Recieve from "./local/Receive/Recieve";
+import Recieve from "./local/Receive/RecieveQrCode";
 import { ThemeProvider } from "./local/Choice/Theme";
 import { createContext, useEffect, useState } from "react";
 import SendConfirmation from "./local/Send/SendConfirmation";
-import QrCode from "./local/Send/QrCode";
+import QrCode from "./local/Send/SendQrCode";
 import { QrProvider } from "./local/Send/QrContext";
 import { SharedDataProvider } from "./local/Send/FileListContext";
 

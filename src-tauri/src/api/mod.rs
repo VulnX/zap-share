@@ -3,8 +3,11 @@ use actix_web::dev::ServerHandle;
 use std::{
     io::Read,
     path::PathBuf,
-    sync::{mpsc, Mutex},
-    thread,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        mpsc, Arc, Mutex,
+    },
+    thread::{self},
     time::Duration,
 };
 use tauri::{Manager, Runtime, Window};
@@ -14,6 +17,7 @@ use tauri_plugin_ipd::IpdExt;
 mod bcast;
 
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
+pub static BCAST_THREAD: Mutex<Option<models::BroadcastThread>> = Mutex::new(None);
 
 static SHARED_DATA: Mutex<Option<Option<tauri_plugin_ipd::SharedData>>> = Mutex::new(None);
 
@@ -201,6 +205,24 @@ pub fn recv_text<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
     start_server(window, mode)
 }
 
+#[allow(dead_code)]
+#[tauri::command]
+pub fn stop_server() {
+    let mut handle_guard = SERVER_HANDLE.lock().unwrap();
+    if let Some(server_handle) = handle_guard.take() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            server_handle.stop(true).await;
+        });
+    }
+    let mut thread_guard = BCAST_THREAD.lock().unwrap();
+    if let Some(bcast_thread) = thread_guard.take() {
+        bcast_thread.shutdown.store(true, Ordering::Relaxed);
+        bcast_thread.handle.join().unwrap();
+        *thread_guard = None;
+    }
+}
+
 /// Starts (or re-starts existing) actix web server in separate thread
 ///
 /// If the server has started successfully then the `port` number and (optionally detected) `ip` address will be returned
@@ -211,13 +233,7 @@ fn start_server<R: Runtime>(
     mode: models::TransferMode,
 ) -> models::StartServerResponse {
     // Stop any running server instance before starting a new one
-    let mut handle_guard = SERVER_HANDLE.lock().unwrap();
-    if let Some(server_handle) = handle_guard.take() {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        rt.block_on(async {
-            server_handle.stop(true).await;
-        });
-    }
+    stop_server();
 
     let (tx, rx) = mpsc::channel::<u16>();
     thread::spawn({
@@ -258,16 +274,27 @@ fn start_server<R: Runtime>(
     let config_file_path = window.path().app_config_dir().unwrap().join("config.json");
     let config_json = std::fs::read_to_string(config_file_path).unwrap();
     let config: models::DeviceConfig = serde_json::from_str(&config_json).unwrap();
-    match mode {
+    let shutdown = Arc::new(AtomicBool::new(false));
+    let shutdown_clone = shutdown.clone();
+    let bcast_thread_handle = match mode {
         models::TransferMode::SendFile(_) => {
-            thread::spawn(|| bcast::recv_emitted_info(window, config))
+            thread::spawn(|| bcast::recv_emitted_info(window, config, shutdown_clone))
         }
-        models::TransferMode::ReceiveFile => thread::spawn(move || bcast::emit_info(port, config)),
+        models::TransferMode::ReceiveFile => {
+            thread::spawn(move || bcast::emit_info(port, config, shutdown_clone))
+        }
         models::TransferMode::SendText(_) => {
-            thread::spawn(|| bcast::recv_emitted_info(window, config))
+            thread::spawn(|| bcast::recv_emitted_info(window, config, shutdown_clone))
         }
-        models::TransferMode::ReceiveText => thread::spawn(move || bcast::emit_info(port, config)),
+        models::TransferMode::ReceiveText => {
+            thread::spawn(move || bcast::emit_info(port, config, shutdown_clone))
+        }
     };
+    let mut thread_guard = BCAST_THREAD.lock().unwrap();
+    *thread_guard = Some(models::BroadcastThread {
+        handle: bcast_thread_handle,
+        shutdown,
+    });
     models::StartServerResponse::Success(models::Url { ip, port })
 }
 

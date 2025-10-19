@@ -1,3 +1,8 @@
+use std::{
+    sync::{atomic::AtomicBool, Arc},
+    thread::JoinHandle,
+};
+
 use serde::{Deserialize, Serialize};
 use tauri::{Runtime, Window};
 use tauri_plugin_fs::SafeFilePath;
@@ -70,4 +75,10 @@ pub enum TransferMode {
 pub struct DeviceConfig {
     pub fingerprint: String,
     pub name: String,
+}
+
+#[derive(Debug)]
+pub struct BroadcastThread {
+    pub handle: JoinHandle<()>,
+    pub shutdown: Arc<AtomicBool>,
 }
