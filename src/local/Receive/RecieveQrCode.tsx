@@ -5,8 +5,9 @@ import { useEffect, useState, useRef } from "react";
 import { RecvLogic } from "./RecieveLogic";
 import { useNavigate } from "react-router-dom";
 import { ToggleThemeButton, ProfileButton } from "../Choice/Navigation";
-import { ProgressBar } from "../Send/QrCode";
+import { ProgressBar } from "../Send/SendQrCode";
 import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 
 export default function Recieve() {
   const { isTheme } = useTheme();
@@ -39,6 +40,14 @@ export default function Recieve() {
     };
   }, []);
 
+  const stopServer = async () => {
+    try {
+      await invoke("stop_server");
+      console.log("Server Stopped");
+    } catch (error) {
+      console.error("Error stopping server:", error);
+    }
+  };
   useEffect(() => {
     const fetch = async () => {
       if (!hasRun.current) {
@@ -60,7 +69,10 @@ export default function Recieve() {
           src={isTheme ? darkBack : lightBack}
           alt="back"
           className="h-[40px] cursor-pointer"
-          onClick={() => navigate("/", { replace: true })}
+          onClick={() => {
+            navigate("/", { replace: true });
+            stopServer();
+          }}
         />
         <div className="flex items-center gap-4">
           <ProfileButton />
