@@ -1,6 +1,7 @@
 use std::{
     collections::HashSet,
     net::{Ipv4Addr, SocketAddrV4, UdpSocket},
+    str::FromStr,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -9,18 +10,42 @@ use std::{
     time::Duration,
 };
 
-use log::debug;
+use log::{debug, info};
 use tauri::{Emitter, Runtime, Window};
 
-use crate::models;
+use crate::{api, models};
 
-static BCAST_ADDR: Ipv4Addr = Ipv4Addr::new(255, 255, 255, 255);
 static BCAST_PORT: u16 = 54321;
+
+fn detect_broadcast_target(socket: &UdpSocket) -> SocketAddrV4 {
+    let ip = api::get_local_ip();
+    let ip = Ipv4Addr::from_str(&ip).unwrap();
+    let [a, b, c, _d] = ip.octets();
+    let candidates = [
+        Ipv4Addr::new(a, b, c, 255),
+        Ipv4Addr::new(a, b, 255, 255),
+        Ipv4Addr::new(a, 255, 255, 255),
+        Ipv4Addr::new(255, 255, 255, 255),
+    ];
+    for addr in candidates {
+        let target = SocketAddrV4::new(addr, BCAST_PORT);
+        match socket.send_to(&[0u8; 1], target) {
+            Ok(_) => {
+                info!("using broadcast address: {addr}");
+                return target;
+            }
+            Err(e) => {
+                debug!("broadcast {addr} failed: {e}");
+            }
+        }
+    }
+
+    unreachable!("should have found a valid bcast candidate");
+}
 
 pub fn emit_info(port: u16, config: models::DeviceConfig, shutdown: Arc<AtomicBool>) {
     let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
     socket.set_broadcast(true).unwrap();
-    let target = SocketAddrV4::new(BCAST_ADDR, BCAST_PORT);
     let payload = models::MulticastPayload {
         port,
         fingerprint: config.fingerprint,
@@ -28,6 +53,7 @@ pub fn emit_info(port: u16, config: models::DeviceConfig, shutdown: Arc<AtomicBo
     };
     let payload = serde_json::to_string(&payload).unwrap();
     debug!("sending {payload}");
+    let target = detect_broadcast_target(&socket);
     while !shutdown.load(Ordering::Relaxed) {
         socket.send_to(payload.as_bytes(), target).unwrap();
         thread::sleep(Duration::from_millis(500));
