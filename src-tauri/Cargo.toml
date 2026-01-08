@@ -23,7 +23,7 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1.42.0", features = ["full"] }
-actix-web = "4.9.0"
+actix-web = { version = "4.9.0", features = ["rustls-0_23"] }
 local-ip-address = "0.6.3"
 futures-util = "0.3.31"
 env_logger = "0.11.6"
@@ -36,3 +36,6 @@ tauri-plugin-os = "2"
 tauri-plugin-ipd = { path = "../tauri-plugin-ipd" }
 uuid = { version = "1.18.1", features = ["v4"] }
 reqwest = { version = "0.12.23", default-features = false, features = ["json", "rustls-tls"] }
+rustls = "0.23.36"
+rcgen = "0.14.6"
+rustls-pki-types = "1.0"
