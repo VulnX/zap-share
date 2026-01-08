@@ -38,7 +38,6 @@ export function RecvLogic() {
       let response;
       if (text === "text") {
         response = await invoke<RecvTextResponse>("recv_text");
-        
       } else if (text === "file") {
         response = await invoke<RecvFileResponse>("recv_file");
       }

@@ -8,7 +8,7 @@ interface SharedDataContextType {
 }
 
 const SharedDataContext = createContext<SharedDataContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const SharedDataProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -18,7 +18,9 @@ export const SharedDataProvider: React.FC<{ children: React.ReactNode }> = ({
   const [text, setText] = useState<string | undefined>(undefined);
 
   return (
-    <SharedDataContext.Provider value={{ fileList, setFileList, text, setText }}>
+    <SharedDataContext.Provider
+      value={{ fileList, setFileList, text, setText }}
+    >
       {children}
     </SharedDataContext.Provider>
   );
@@ -28,7 +30,7 @@ export function useSharedDataContext() {
   const ctx = useContext(SharedDataContext);
   if (!ctx)
     throw new Error(
-      "useSharedDataContext must be used within a SharedDataProvider"
+      "useSharedDataContext must be used within a SharedDataProvider",
     );
   return ctx;
 }
