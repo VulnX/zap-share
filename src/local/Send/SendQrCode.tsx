@@ -13,7 +13,9 @@ import { basename } from "@tauri-apps/api/path";
 import { ProgressUpdatePayload, ServerConfiguration } from "../types";
 
 export function ProgressBar() {
-  const [progressMap, setProgressMap] = useState<Record<string, number>>({});
+  const [progressMap, setProgressMap] = useState<
+    Record<string, [string, number]>
+  >({});
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -27,7 +29,10 @@ export function ProgressBar() {
 
             setProgressMap((prevMap) => ({
               ...prevMap,
-              [event.payload.id]: event.payload.progress,
+              [event.payload.id]: [
+                event.payload.filename,
+                event.payload.progress,
+              ],
             }));
           },
         );
@@ -45,7 +50,7 @@ export function ProgressBar() {
 
   return (
     <div className="w-[50vw] space-y-4">
-      {Object.entries(progressMap).map(([id, progress]) => (
+      {Object.entries(progressMap).map(([id, [filename, progress]]) => (
         <div key={id} className="h-10">
           <div className="mb-2 flex items-center justify-between gap-4 text-wrap">
             <Typography
@@ -55,7 +60,7 @@ export function ProgressBar() {
               onPointerEnterCapture={undefined}
               onPointerLeaveCapture={undefined}
             >
-              Transfer {id}
+              Transfering {filename}
             </Typography>
             <Typography
               color="blue-gray"

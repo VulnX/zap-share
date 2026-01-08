@@ -68,7 +68,8 @@ pub async fn upload_file(
     let mut bufwriter = BufWriter::new(file);
     let mut written = 0;
     let mut payload = models::ProgressUpdatePayload {
-        id: filename,
+        id: uuid::Uuid::new_v4().to_string(),
+        filename,
         progress: 0.0,
     };
     while let Some(chunk) = body.next().await {

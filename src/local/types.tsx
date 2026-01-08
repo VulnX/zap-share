@@ -1,5 +1,6 @@
 export type ProgressUpdatePayload = {
   id: string;
+  filename: string;
   progress: number;
 };
 
