@@ -100,19 +100,19 @@ export default function SendDesktop() {
           TauriEvent.DRAG_ENTER,
           () => {
             //   console.log("Drag entered", event.payload);
-          }
+          },
         );
         const dragLeaveUnlisten = await listen<TauriEvent>(
           TauriEvent.DRAG_LEAVE,
           () => {
             //   console.log("Drag left", event.payload);
-          }
+          },
         );
         const dragOverUnlisten = await listen<TauriEvent>(
           TauriEvent.DRAG_OVER,
           () => {
             //   console.log("Dragging over", event.payload);
-          }
+          },
         );
         const dragDropUnlisten = await listen<DragDropPayload>(
           TauriEvent.DRAG_DROP,
@@ -123,7 +123,7 @@ export default function SendDesktop() {
             const { paths } = event.payload;
             proceedWithSend(paths, null);
             navigate("/send/confirm", { replace: true });
-          }
+          },
         );
 
         return () => {

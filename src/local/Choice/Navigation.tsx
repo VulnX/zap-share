@@ -124,7 +124,7 @@ export function LogoTitle() {
             isTheme ? " text-light-text" : "text-black "
           }`}
         >
-          Prathmesh and Jay commit kyu nahi kiya ab tak
+          Lightning-fast sharing, minus the drama!
         </p>
       </div>
     </div>

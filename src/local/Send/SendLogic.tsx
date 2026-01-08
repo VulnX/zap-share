@@ -51,7 +51,7 @@ export function SendLogic() {
           Array.from(files).map(async (file) => {
             const name = await basename(file);
             return [file, name];
-          })
+          }),
         );
         console.log("File Pairs:", filePairs);
         console.log("sending :", files);
@@ -124,22 +124,25 @@ export function SendLogic() {
     }
   };
 
-  const proceedWithSend = async (files: string[] | null, text: string | null) => {
-      // Generate QR code and navigate on success
-      saveSharedDataToState(text, files!);
-      const qrCodeResult = await generateQRCode(text, files || []);
-      if (text !== "" && qrCodeResult) {
-        navigate("/send/qrcode", { replace: true });
-      } else if (qrCodeResult) {
-        navigate("/send/confirm", { replace: true });
-      } else {
-        swalWithBootstrapButtons.fire({
-          title: "QR Code Generation Failed",
-          text: "Unable to generate QR code for file transfer",
-          icon: "error",
-          confirmButtonText: "OK",
-        });
-      }
+  const proceedWithSend = async (
+    files: string[] | null,
+    text: string | null,
+  ) => {
+    // Generate QR code and navigate on success
+    saveSharedDataToState(text, files!);
+    const qrCodeResult = await generateQRCode(text, files || []);
+    if (text !== "" && qrCodeResult) {
+      navigate("/send/qrcode", { replace: true });
+    } else if (qrCodeResult) {
+      navigate("/send/confirm", { replace: true });
+    } else {
+      swalWithBootstrapButtons.fire({
+        title: "QR Code Generation Failed",
+        text: "Unable to generate QR code for file transfer",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
   };
 
   return {

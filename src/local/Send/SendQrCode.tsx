@@ -29,7 +29,7 @@ export function ProgressBar() {
               ...prevMap,
               [event.payload.id]: event.payload.progress,
             }));
-          }
+          },
         );
       } catch (error) {
         console.error("Error loading progress:", error);
@@ -139,7 +139,7 @@ export const DeviceList: React.FC = () => {
                       fileList.map(async (file) => {
                         const name = await basename(file);
                         return [file, name];
-                      })
+                      }),
                     );
                     console.log("sending: ", filePairs, "\nto:", device);
                     await invoke("send_files_to", {
@@ -181,7 +181,6 @@ export default function QrCode() {
     try {
       await invoke("stop_server");
       console.log("Server Stopped");
-
     } catch (error) {
       console.error("Error stopping server:", error);
     }

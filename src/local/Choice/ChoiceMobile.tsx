@@ -27,7 +27,11 @@ export default function ChoiceMobile() {
         if (data && "SharedText" in data) {
           // Text was shared
           console.log((data.SharedText ?? "").split("\n")[0].trim() || "");
-          let sharedText = (data.SharedText ?? "").split("\n")[0].replace(/^"|"$/g, "").trim() || "";
+          let sharedText =
+            (data.SharedText ?? "")
+              .split("\n")[0]
+              .replace(/^"|"$/g, "")
+              .trim() || "";
           proceedWithSend(null, sharedText);
         } else if (data && "URIList" in data && data.URIList) {
           // File(s) were shared
