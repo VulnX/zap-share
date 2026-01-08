@@ -218,9 +218,33 @@ pub fn stop_server() {
     let mut thread_guard = BCAST_THREAD.lock().unwrap();
     if let Some(bcast_thread) = thread_guard.take() {
         bcast_thread.shutdown.store(true, Ordering::Relaxed);
-        bcast_thread.handle.join().unwrap();
+        // Ignore the error
+        let _ = bcast_thread.handle.join();
         *thread_guard = None;
     }
+}
+
+pub fn get_local_ip() -> String {
+    // Attempt to automatically detect ip address. If this fails, then manually
+    // probe every network interface and attempt to find one with ip address
+    // starting with "192.168.". The `local_ip_address` crate at the moment of
+    // writing this code is not able to automatically detect ip address in case
+    // host machine is using its own hotspot, thus this is a minimalistic (and
+    // possibly not the most appropriate) method to find a valid candidate.
+    local_ip_address::local_ip()
+        .ok()
+        .or_else(|| {
+            local_ip_address::list_afinet_netifas()
+                .ok()
+                .and_then(|network_interfaces| {
+                    network_interfaces
+                        .iter()
+                        .find(|(_, ipaddr)| ipaddr.to_string().starts_with("192.168."))
+                        .map(|(_, ipaddr)| *ipaddr)
+                })
+        })
+        .map(|ipaddr| ipaddr.to_string())
+        .unwrap() // Usually does NOT crash, so yeah, somewhat safe to use.
 }
 
 /// Starts (or re-starts existing) actix web server in separate thread
@@ -251,26 +275,7 @@ fn start_server<R: Runtime>(
         }
     };
 
-    // Attempt to automatically detect ip address. If this fails, then manually
-    // probe every network interface and attempt to find one with ip address
-    // starting with "192.168.". The `local_ip_address` crate at the moment of
-    // writing this code is not able to automatically detect ip address in case
-    // host machine is using its own hotspot, thus this is a minimalistic (and
-    // possibly not the most appropriate) method to find a valid candidate.
-    let ip = local_ip_address::local_ip()
-        .ok()
-        .or_else(|| {
-            local_ip_address::list_afinet_netifas()
-                .ok()
-                .and_then(|network_interfaces| {
-                    network_interfaces
-                        .iter()
-                        .find(|(_, ipaddr)| ipaddr.to_string().starts_with("192.168."))
-                        .map(|(_, ipaddr)| *ipaddr)
-                })
-        })
-        .map(|ipaddr| ipaddr.to_string())
-        .unwrap();
+    let ip = get_local_ip();
     let config_file_path = window.path().app_config_dir().unwrap().join("config.json");
     let config_json = std::fs::read_to_string(config_file_path).unwrap();
     let config: models::DeviceConfig = serde_json::from_str(&config_json).unwrap();
