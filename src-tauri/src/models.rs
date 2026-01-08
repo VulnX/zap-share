@@ -12,6 +12,7 @@ use crate::api;
 #[derive(Serialize, Clone, Debug)]
 pub struct ProgressUpdatePayload {
     pub id: String,
+    pub filename: String,
     pub progress: f32,
 }
 

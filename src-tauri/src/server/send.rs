@@ -60,7 +60,8 @@ pub async fn download_file(
     debug!("{file_size:#?}");
     let transferred: usize = 0;
     let payload = models::ProgressUpdatePayload {
-        id: file_data.filename.clone(),
+        id: uuid::Uuid::new_v4().to_string(),
+        filename: file_data.filename.clone(),
         progress: 0.0,
     };
     debug!("{:#?}", payload.id);
