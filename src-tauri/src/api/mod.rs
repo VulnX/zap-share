@@ -121,7 +121,7 @@ pub async fn send_files_to<R: Runtime>(
         let (mut file, _) = open_file(&filepath, &window);
         let client = reqwest::Client::new();
         let endpoint = format!(
-            "http://{}:{}/upload/{}/{}",
+            "https://{}:{}/upload/{}/{}",
             to.ip,
             to.port,
             filename,
@@ -143,7 +143,7 @@ pub async fn send_files_to<R: Runtime>(
 #[tauri::command]
 pub async fn send_text_to(text: String, to: models::ServerConfiguration) {
     let client = reqwest::Client::new();
-    let endpoint = format!("http://{}:{}/upload", to.ip, to.port);
+    let endpoint = format!("https://{}:{}/upload", to.ip, to.port);
     println!("sending {text:#?} to {endpoint:#?}");
     client.post(endpoint).body(text).send().await.unwrap();
 }

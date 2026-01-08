@@ -65,7 +65,7 @@ export function SendLogic() {
       // Check if response has valid IP and port
       if (response && response.Success && response.Success.ip) {
         const { ip, port } = response.Success;
-        const qr = `http://${ip}:${port}`;
+        const qr = `https://${ip}:${port}`;
         flushSync(() => {
           setQrText(qr);
         });
