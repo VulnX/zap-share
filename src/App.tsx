@@ -1,9 +1,9 @@
 import "./App.css";
-import Choice from "./local/Choice/Choice";
+import Choice from "./local/Common/Choice";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Send from "./local/Send/Send";
-import Recieve from "./local/Receive/RecieveQrCode";
-import { ThemeProvider } from "./local/Choice/Theme";
+import Recieve from "./local/Receive/Recieve";
+import { ThemeProvider } from "./local/Common/Theme";
 import { createContext, useEffect, useState } from "react";
 import SendConfirmation from "./local/Send/SendConfirmation";
 import QrCode from "./local/Send/SendQrCode";

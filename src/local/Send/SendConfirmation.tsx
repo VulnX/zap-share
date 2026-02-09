@@ -1,8 +1,6 @@
-import { ToggleThemeButton } from "../Choice/Navigation";
+// import { ToggleThemeButton } from "../Common/Navigation";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "../Choice/Theme";
-import lightBack from "../images/lightBack.svg";
-import darkBack from "../images/darkBack.svg";
+import { useTheme } from "../Common/Theme";
 import { useSharedDataContext } from "./FileListContext";
 import { basename } from "@tauri-apps/api/path";
 import { useEffect, useState } from "react";
@@ -51,7 +49,7 @@ const SendConfirmation: React.FC = () => {
         isTheme ? "bg-dark-background" : "bg-light-background"
       }`}
     >
-      <nav className="flex justify-between p-6">
+      {/* <nav className="flex justify-between p-6">
         <img
           src={isTheme ? darkBack : lightBack}
           alt="back"
@@ -59,7 +57,7 @@ const SendConfirmation: React.FC = () => {
           onClick={() => navigate("/send", { replace: true })}
         />
         <ToggleThemeButton />
-      </nav>
+      </nav> */}
       <div className=" flex flex-col items-center justify-center mt-24">
         <div className="bg-white p-8 rounded-lg shadow-lg">
           <h2 className="text-xl font-semibold mb-4">

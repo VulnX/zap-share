@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { Progress, Typography } from "@material-tailwind/react";
-import { useTheme } from "../Choice/Theme";
+import { useTheme } from "../Common/Theme";
 import { useQrContext } from "./QrContext";
-import lightBack from "../images/lightBack.svg";
-import darkBack from "../images/darkBack.svg";
-import { ProfileButton, ToggleThemeButton } from "../Choice/Navigation";
+import  {
+  ProfileButton,
+  ToggleThemeButton,
+} from "../Common/Navigation";
 import { useNavigate } from "react-router-dom";
 import { useSharedDataContext } from "./FileListContext";
 import { invoke } from "@tauri-apps/api/core";
@@ -205,16 +206,19 @@ export default function QrCode() {
         isTheme ? "bg-dark-background" : "bg-light-background"
       }`}
     >
+      {/* <nav>
+        <Navigation tab="send"/>
+      </nav> */}
       <nav className="flex justify-between items-center p-6 w-full">
-        <img
-          src={isTheme ? darkBack : lightBack}
-          alt="back"
+        <div
           className="h-[40px] cursor-pointer"
           onClick={() => {
             stopServer();
-            navigate("/send", { replace: true });
+            navigate("/", { replace: true });
           }}
-        />
+        >
+          Back
+        </div>
         <div className="flex items-center gap-4">
           <ProfileButton />
           <ToggleThemeButton />

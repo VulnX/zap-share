@@ -1,9 +1,8 @@
 import { listen, TauriEvent } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Navigation from "../Choice/Navigation";
 import { SendLogic } from "./SendLogic";
-import { useTheme } from "../Choice/Theme";
+import { useTheme } from "../Common/Theme";
 
 interface DragDropPayload {
   paths: string[];
@@ -142,12 +141,12 @@ export default function SendDesktop() {
   return (
     <div>
       <div
-        className={`min-h-screen flex flex-col  ${
+        className={`min-h-screen flex flex-col pt-10 ${
           isTheme ? "bg-dark-background" : "bg-light-background"
         }`}
       >
         {/* Navigation Bar */}
-        <nav className="flex items-center  h-[20vh]">
+        {/* <nav className="flex items-center  h-[20vh]">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             height="35px"
@@ -161,10 +160,8 @@ export default function SendDesktop() {
           >
             <path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z" />
           </svg>
-          <div className="w-full">
-            <Navigation />
-          </div>
-        </nav>
+          <div className="w-full"><Navigation /></div>
+        </nav> */}
 
         {/* QR Code or File Picker */}
 

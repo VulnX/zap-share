@@ -6,5 +6,7 @@ import { DeviceProvider } from "../../App";
 export default function Send() {
   const isMobile = useContext(DeviceProvider)?.isMobile;
 
-  return isMobile ? <SendMobile /> : <SendDesktop />;
+  // return isMobile ? <SendMobile /> : <SendDesktop />;
+  return <SendDesktop/>;
+  // return <SendMobile />;
 }

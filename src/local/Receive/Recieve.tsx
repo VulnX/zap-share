@@ -1,18 +1,14 @@
-import { useTheme } from "../Choice/Theme";
-import lightBack from "../images/lightBack.svg";
-import darkBack from "../images/darkBack.svg";
+import { useTheme } from "../Common/Theme";
 import { useEffect, useState, useRef } from "react";
 import { RecvLogic } from "./RecieveLogic";
-import { useNavigate } from "react-router-dom";
-import { ToggleThemeButton, ProfileButton } from "../Choice/Navigation";
 import { ProgressBar } from "../Send/SendQrCode";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { Button } from "@material-tailwind/react";
 
 export default function Recieve() {
   const { isTheme } = useTheme();
   const { qrCode, generateQRCode, qrText } = RecvLogic();
-  const navigate = useNavigate();
   const [recvFile, setRecvFile] = useState<boolean>(true);
   const [showQR, setShowQR] = useState(false);
   const [text, setText] = useState<string>("");
@@ -64,7 +60,7 @@ export default function Recieve() {
         isTheme ? "bg-dark-background" : "bg-light-background"
       }`}
     >
-      <nav className="flex justify-between items-center p-6 w-full">
+      {/* <nav className="flex justify-between items-center p-6 w-full">
         <img
           src={isTheme ? darkBack : lightBack}
           alt="back"
@@ -78,7 +74,7 @@ export default function Recieve() {
           <ProfileButton />
           <ToggleThemeButton />
         </div>
-      </nav>
+      </nav> */}
 
       <div className="flex flex-col items-center mt-[15vh]">
         <div
@@ -109,7 +105,6 @@ export default function Recieve() {
             Text
           </div>
         </div>
-
         <button
           onClick={() => setShowQR(!showQR)}
           className={`mb-4 mt-4 px-6 py-2 rounded-lg font-medium transition-colors ${
@@ -120,7 +115,15 @@ export default function Recieve() {
         >
           {showQR ? "Hide QR Code" : "Show QR Code"}
         </button>
-
+        <Button
+          color="red"
+          onClick={() => stopServer()}
+          placeholder={undefined}
+          onPointerEnterCapture={undefined}
+          onPointerLeaveCapture={undefined}
+        >
+          Stop
+        </Button>
         {showQR && (
           <>
             <h2

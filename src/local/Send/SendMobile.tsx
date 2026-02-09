@@ -1,11 +1,11 @@
-import { ToggleThemeButton } from "../Choice/Navigation";
+import { ToggleThemeButton } from "../Common/Navigation";
 import { useNavigate } from "react-router-dom";
 import lightBack from "../images/lightBack.svg";
 import darkBack from "../images/darkBack.svg";
 import darksend from "../images/darksend.svg";
 import lightsend from "../images/lightsend.svg";
 import { SendLogic } from "./SendLogic";
-import { useTheme } from "../Choice/Theme";
+import { useTheme } from "../Common/Theme";
 import { useState } from "react";
 
 export function SendMobile() {

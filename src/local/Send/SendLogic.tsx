@@ -1,7 +1,7 @@
 import QRCode from "qrcode";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect } from "react";
-import { useTheme } from "../Choice/Theme";
+import { useTheme } from "../Common/Theme";
 import Swal from "sweetalert2";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useNavigate } from "react-router-dom";
