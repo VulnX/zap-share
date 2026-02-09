@@ -16,7 +16,7 @@ export default function Choice({ children }: { children: React.ReactNode }) {
   const [tab, setTab] = useState("send");
 
   // Indicates whether we can switch tabs
-  const [canSwitch, setCanSwitch] = useState(false);
+  const [canSwitch, setCanSwitch] = useState(true);
 
   const hasRun = useRef(false);
 
