@@ -1,3 +1,16 @@
+//! HTTP Server Management
+//!
+//! This module handles the initialization and lifecycle management of the Actix-web
+//! HTTP server used for file and text transfers. It manages TLS certificate generation,
+//! route configuration, and server startup/shutdown.
+//!
+//! # Server Features
+//!
+//! - **Dynamic Port Assignment**: Automatically finds an available port
+//! - **TLS/HTTPS**: All transfers are encrypted using self-signed certificates
+//! - **Mode-Based Routing**: Routes are configured based on transfer mode
+//! - **Zero-Timeout Shutdown**: Allows immediate server stop when needed
+
 use crate::{
     api::{self, SERVER_HANDLE},
     models,
@@ -14,6 +27,21 @@ use tauri::Runtime;
 mod recv;
 mod send;
 
+/// Generates a self-signed TLS certificate for HTTPS support.
+///
+/// This function creates a new self-signed certificate on-the-fly for each
+/// server instance. The certificate is valid for the device's local IP address.
+///
+/// # Security Note
+///
+/// Self-signed certificates provide encryption but cannot be verified by
+/// a certificate authority. This is acceptable for local network transfers
+/// where the primary goal is preventing eavesdropping rather than establishing
+/// identity verification.
+///
+/// # Returns
+///
+/// A configured `ServerConfig` ready for use with Actix-web's HTTPS server.
 fn generate_tls_config() -> ServerConfig {
     debug!("generating tls config");
     let cert = rcgen::generate_simple_self_signed([api::get_local_ip()]).unwrap();
@@ -26,13 +54,40 @@ fn generate_tls_config() -> ServerConfig {
         .unwrap()
 }
 
-/// Starts an actix web server and enables required routes based on the given `mode`
+/// Starts an Actix-web HTTP server with routes configured for the specified transfer mode.
 ///
-/// Server will be exposed at : `0.0.0.0`
+/// This function initializes and runs the HTTP server in the current thread. It:
 ///
-/// Port will be randomly assigned and sent back to caller function via `tx` channel
+/// 1. Configures logging via `env_logger`
+/// 2. Generates a self-signed TLS certificate
+/// 3. Sets up routes based on the transfer mode
+/// 4. Binds to a random available port on `0.0.0.0`
+/// 5. Sends the assigned port back to the caller via the channel
+/// 6. Registers the server handle for graceful shutdown
+/// 7. Runs the server until shutdown is requested
 ///
-/// `SERVER_HANDLE` will be registered after server starts successfully
+/// # Arguments
+///
+/// - `window`: Tauri window (passed to route handlers for file access and events)
+/// - `mode`: Transfer mode determining which routes to enable
+/// - `tx`: Channel sender for communicating the assigned port number
+///
+/// # Transfer Modes and Routes
+///
+/// - **SendFile**: Serves a download page and file download endpoints
+/// - **ReceiveFile**: Serves an upload page and file upload endpoint
+/// - **SendText**: Serves the text content directly
+/// - **ReceiveText**: Serves an upload page for text and text upload endpoint
+///
+/// # Port Assignment
+///
+/// The server binds to port `0`, which tells the OS to assign any available port.
+/// This ensures the server can always start, even if specific ports are in use.
+///
+/// # Blocking Behavior
+///
+/// This function blocks until the server is stopped. It should always be called
+/// in a separate thread to avoid blocking the main application.
 pub fn start_server<R: Runtime>(
     window: tauri::Window<R>,
     mode: models::TransferMode,

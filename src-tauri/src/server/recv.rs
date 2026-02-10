@@ -1,3 +1,9 @@
+//! File and Text Receiving Handlers
+//!
+//! This module implements HTTP route handlers for receiving files and text from other devices.
+//! It handles streaming file uploads with progress tracking, automatic file naming to avoid
+//! collisions, and serves static HTML pages for the upload interface.
+
 use std::path::PathBuf;
 
 use actix_web::{
@@ -14,37 +20,83 @@ use tokio::{
 
 use crate::models;
 
-/// Handles the `/` route in RECEIVE mode
+/// Serves the file upload page.
 ///
-/// Serves an HTML form (from `static/upload-file.html`) allowing the user to
-/// upload a file via POST request.
+/// This handler returns an HTML page that allows users to select and upload files.
+/// The page is embedded directly in the binary.
+///
+/// # Route
+///
+/// `GET /` (when in ReceiveFile mode)
+///
+/// # Returns
+///
+/// HTTP response with the upload form HTML.
 pub async fn upload() -> impl Responder {
     HttpResponse::Ok().body(include_str!("../static/upload-file.html"))
 }
 
-/// Handles the `/upload/{filename}/{filesize}` POST route
+/// Handles file upload with streaming and progress tracking.
 ///
-/// Receives a streaming file upload via the request body and writes it
-/// directly to disk, chunk-by-chunk, at a platform-specific downloads path.
+/// This handler receives a file via streaming upload and writes it directly to disk
+/// chunk-by-chunk. It automatically saves files to the appropriate downloads directory
+/// based on the platform and handles filename collisions by appending a counter.
 ///
-/// On Android, the file is saved to:
-/// `/storage/emulated/0/Download/{filename}`
+/// # Route
 ///
-/// On other platforms, it is saved to the path resolved from:
-/// `window.path().download_dir()`
-///
-/// Emits a `progress-update` event to the window after writing each chunk,
-/// with the following payload:
-/// ```javascript
-/// Number // Progress percentage (0-100)
-/// ```
+/// `POST /upload/{filename}/{filesize}` (when in ReceiveFile mode)
 ///
 /// # Path Parameters
-/// - `filename`: The name of the file being uploaded.
-/// - `filesize`: The total size of the file in bytes (used to calculate progress).
 ///
-/// # Errors
-/// - Upload fails if a file by same name already exists (should be easy fix)
+/// - `filename`: Name of the file being uploaded
+/// - `filesize`: Total size of the file in bytes (for progress calculation)
+///
+/// # File Storage Locations
+///
+/// - **Android**: `/storage/emulated/0/Download/`
+/// - **Other platforms**: Platform-specific downloads directory (from Tauri path API)
+///
+/// # Filename Collision Handling
+///
+/// If a file with the same name already exists, the handler automatically appends
+/// a counter to create a unique filename:
+/// - `document.pdf` → `document (1).pdf`
+/// - `document (1).pdf` → `document (2).pdf`
+///
+/// This prevents accidental overwrites while maintaining clean filenames.
+///
+/// # Progress Events
+///
+/// Emits `progress-update` events to the window with payload:
+/// ```json
+/// {
+///   "id": "unique-session-id",
+///   "filename": "example.jpg",
+///   "progress": 45.3
+/// }
+/// ```
+///
+/// Progress updates are sent when the progress changes by at least 0.1%.
+///
+/// # Arguments
+///
+/// - `window`: Tauri window for emitting events and accessing path APIs
+/// - `path`: Path parameters (filename and filesize)
+/// - `body`: Streaming request body containing file data
+///
+/// # Returns
+///
+/// HTTP 200 OK response when upload completes successfully.
+///
+/// # Implementation Notes
+///
+/// - Uses buffered I/O for efficient disk writes
+/// - Processes the upload stream chunk-by-chunk to limit memory usage
+/// - Flushes the buffer after all chunks are written
+///
+/// # Known Issues
+///
+/// - On Android, hardcodes the downloads path since Tauri may not detect it correctly
 pub async fn upload_file(
     window: web::Data<Window>,
     path: web::Path<(String, u64)>,
@@ -54,8 +106,8 @@ pub async fn upload_file(
     debug!("{filename:#?}");
     debug!("{filesize:#?}");
 
-    // Fallback to static path on android since tauri does not detect the
-    // system downloads directory
+    // Fallback to static path on Android since Tauri does not detect the
+    // system downloads directory reliably
     let mut write_path = match tauri_plugin_os::platform() {
         "android" => PathBuf::from("/storage/emulated/0/Download"),
         _ => window.path().download_dir().unwrap(),
@@ -89,6 +141,38 @@ pub async fn upload_file(
     HttpResponse::Ok()
 }
 
+/// Generates a unique file path by appending a counter if the file exists.
+///
+/// This function modifies the provided `write_path` to point to a unique filename.
+/// If the original filename is available, it uses it. Otherwise, it appends `(1)`,
+/// `(2)`, etc. until a unique filename is found.
+///
+/// # Algorithm
+///
+/// 1. If `filename` doesn't exist, use it as-is
+/// 2. Split filename into name and extension
+/// 3. Try `name (1).ext`, `name (2).ext`, etc. until a unique name is found
+/// 4. Update `write_path` with the unique filename
+///
+/// # Arguments
+///
+/// - `write_path`: Mutable reference to the directory path (will be updated with filename)
+/// - `filename`: Desired filename (may be modified if it exists)
+///
+/// # Examples
+///
+/// ```text
+/// Input: /downloads/, "photo.jpg" (exists)
+/// Output: /downloads/photo (1).jpg
+///
+/// Input: /downloads/, "document" (exists)
+/// Output: /downloads/document (1)
+/// ```
+///
+/// # Panics
+///
+/// The function has an infinite loop that should always find a unique name.
+/// In practice, this is safe as it's unlikely to exhaust numeric suffixes.
 fn get_unique_file_path(write_path: &mut PathBuf, filename: &String) {
     if !write_path.join(filename).exists() {
         write_path.push(filename);
@@ -113,10 +197,42 @@ fn get_unique_file_path(write_path: &mut PathBuf, filename: &String) {
     unreachable!("Infinite loop should always find a unique name");
 }
 
+/// Serves the text upload page.
+///
+/// This handler returns an HTML page that allows users to enter and submit text.
+///
+/// # Route
+///
+/// `GET /` (when in ReceiveText mode)
+///
+/// # Returns
+///
+/// HTTP response with the text upload form HTML.
 pub async fn handle_text() -> impl Responder {
     HttpResponse::Ok().body(include_str!("../static/upload-text.html"))
 }
 
+/// Handles text upload via POST request.
+///
+/// This handler receives text content from the request body and emits it
+/// to the frontend via a `received-text` event.
+///
+/// # Route
+///
+/// `POST /upload` (when in ReceiveText mode)
+///
+/// # Arguments
+///
+/// - `window`: Tauri window for emitting events
+/// - `body`: Streaming request body containing text data
+///
+/// # Events
+///
+/// Emits a `received-text` event with the received text as the payload.
+///
+/// # Returns
+///
+/// HTTP 200 OK response after processing the text.
 pub async fn handle_text_upload(
     window: web::Data<Window>,
     mut body: web::Payload,

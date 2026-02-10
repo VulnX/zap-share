@@ -1,3 +1,21 @@
+//! UDP Broadcasting for Device Discovery
+//!
+//! This module implements UDP broadcasting functionality for discovering and announcing
+//! devices on the local network. Devices broadcast their presence and connection information,
+//! allowing peer-to-peer connection establishment without manual configuration.
+//!
+//! # Architecture
+//!
+//! - **Emission**: Devices broadcast their server port and identification via UDP
+//! - **Reception**: Devices listen for broadcasts from other devices on the network
+//! - **Discovery**: Maintains a dynamic list of available devices
+//!
+//! # Network Details
+//!
+//! - Default broadcast port: 54321
+//! - Broadcast interval: 500ms
+//! - Uses UDP broadcast to multiple subnet candidates for maximum compatibility
+
 use std::{
     collections::HashSet,
     net::{Ipv4Addr, SocketAddrV4, UdpSocket},
@@ -15,8 +33,36 @@ use tauri::{Emitter, Runtime, Window};
 
 use crate::{api, models};
 
+/// Default UDP port for device discovery broadcasts.
+///
+/// This port must be consistent across all devices for discovery to work.
 static BCAST_PORT: u16 = 54321;
 
+/// Detects the appropriate broadcast address for the local network.
+///
+/// This function attempts to find a working broadcast address by testing multiple
+/// candidates based on the local IP address. It starts with the most specific
+/// broadcast address and falls back to more general ones.
+///
+/// # Algorithm
+///
+/// Given a local IP like `192.168.1.5`, it tries in order:
+/// 1. `192.168.1.255` (subnet broadcast)
+/// 2. `192.168.255.255` (larger subnet)
+/// 3. `192.255.255.255` (even larger subnet)
+/// 4. `255.255.255.255` (global broadcast)
+///
+/// # Arguments
+///
+/// * `socket` - UDP socket configured with broadcast enabled
+///
+/// # Returns
+///
+/// The first working broadcast address from the candidate list.
+///
+/// # Panics
+///
+/// Panics if none of the broadcast candidates work (should be unreachable in practice).
 fn detect_broadcast_target(socket: &UdpSocket) -> SocketAddrV4 {
     let ip = api::get_local_ip();
     let ip = Ipv4Addr::from_str(&ip).unwrap();
@@ -43,6 +89,27 @@ fn detect_broadcast_target(socket: &UdpSocket) -> SocketAddrV4 {
     unreachable!("should have found a valid bcast candidate");
 }
 
+/// Broadcasts device information to the local network.
+///
+/// This function runs in a separate thread and continuously broadcasts the device's
+/// server port and identification information so other devices can discover it.
+///
+/// # Arguments
+///
+/// * `port` - The HTTP server port to advertise
+/// * `config` - Device configuration (fingerprint and name)
+/// * `shutdown` - Atomic flag to signal thread shutdown
+///
+/// # Broadcast Payload
+///
+/// The payload contains:
+/// - Server port number
+/// - Unique device fingerprint
+/// - Human-friendly device name
+///
+/// # Timing
+///
+/// Broadcasts are sent every 500ms until the shutdown signal is received.
 pub fn emit_info(port: u16, config: models::DeviceConfig, shutdown: Arc<AtomicBool>) {
     let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
     socket.set_broadcast(true).unwrap();
@@ -60,6 +127,32 @@ pub fn emit_info(port: u16, config: models::DeviceConfig, shutdown: Arc<AtomicBo
     }
 }
 
+/// Listens for device discovery broadcasts from other devices.
+///
+/// This function runs in a separate thread and continuously listens for UDP broadcasts
+/// from other devices on the network. When a device is discovered, it emits a
+/// `device-list-updated` event to the frontend with the updated device list.
+///
+/// # Arguments
+///
+/// * `window` - Tauri window for emitting events to the frontend
+/// * `config` - Local device configuration (to filter out self-broadcasts)
+/// * `shutdown` - Atomic flag to signal thread shutdown
+///
+/// # Device Filtering
+///
+/// - Ignores broadcasts from the device itself (matched by fingerprint)
+/// - Updates existing device entries if the IP changes
+/// - Maintains a deduplicated set of discovered devices
+///
+/// # Event Emission
+///
+/// Emits a `device-list-updated` event with a JSON array of discovered devices
+/// whenever the device list changes.
+///
+/// # Timing
+///
+/// Uses a 1-second read timeout to allow periodic shutdown checks.
 pub fn recv_emitted_info<R: Runtime>(
     window: Window<R>,
     config: models::DeviceConfig,

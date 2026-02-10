@@ -1,3 +1,9 @@
+//! File and Text Sending Handlers
+//!
+//! This module implements HTTP route handlers for sending files and text to other devices.
+//! It handles streaming file downloads with progress tracking and serves static HTML pages
+//! for the download interface.
+
 use actix_web::{
     body::SizedStream,
     http::header::{ContentDisposition, ContentType},
@@ -10,8 +16,38 @@ use tokio::io::AsyncReadExt;
 
 use crate::{api, models};
 
-const CHUNK_SIZE: usize = 1024 * 1024; // 1 MiB
+/// Chunk size for streaming file downloads (1 MiB).
+///
+/// Files are streamed in chunks of this size to:
+/// - Limit memory usage for large files
+/// - Enable progress tracking during transfer
+/// - Provide responsive progress updates to the UI
+const CHUNK_SIZE: usize = 1024 * 1024;
 
+/// Serves the download page frontend.
+///
+/// This handler serves an HTML page that lists all available files for download.
+/// The file metadata is embedded directly into the HTML as a URL-encoded JSON string.
+///
+/// # Route
+///
+/// `GET /` (when in SendFile mode)
+///
+/// # Implementation
+///
+/// The handler:
+/// 1. Retrieves file metadata from application state
+/// 2. Serializes it to JSON and URL-encodes it
+/// 3. Injects it into the HTML template
+/// 4. Returns the customized HTML page
+///
+/// # Arguments
+///
+/// - `file_datas`: Injected application state containing file metadata
+///
+/// # Returns
+///
+/// HTTP response with the rendered HTML page.
 pub async fn download_frontend(file_datas: web::Data<Vec<models::FileData>>) -> impl Responder {
     let file_datas = file_datas.into_inner();
     let file_datas_json = serde_json::to_string(&file_datas).unwrap();
@@ -21,22 +57,53 @@ pub async fn download_frontend(file_datas: web::Data<Vec<models::FileData>>) -> 
     HttpResponse::Ok().body(download_page)
 }
 
-// TODO : Refactor this entire function
-/// Handles the `/download` route
+/// Handles file download requests with streaming and progress tracking.
 ///
-/// Creates a future `data_stream` by adding the file contents in 1MiB chunks
-/// (see `CHUNK_SIZE`) and streaming it in the response body
+/// This handler streams a file in chunks, emitting progress updates to the frontend
+/// during the transfer. Progress is reported in 0.1% increments to provide smooth
+/// UI updates without overwhelming the event system.
 ///
-/// Emits a `progress-update` event specific to this window with the following
-/// payload scheme:
-/// ```javascript
+/// # Route
+///
+/// `GET /download/{id}` (when in SendFile mode)
+///
+/// # Path Parameters
+///
+/// - `id`: Unique identifier for the file (matches `FileData.id`)
+///
+/// # Progress Events
+///
+/// Emits `progress-update` events to the window with payload:
+/// ```json
 /// {
-///     "id": String, // Random `id` specific to this transfer session
-///     "progress": Number // Progress percentage ( 0-100 )
+///   "id": "unique-session-id",
+///   "filename": "example.jpg",
+///   "progress": 45.3
 /// }
 /// ```
 ///
-/// if after adding a new chunk the overall progress difference is greater than 1%
+/// Progress updates are sent when the progress changes by at least 0.1%.
+///
+/// # Response Headers
+///
+/// - `Content-Type`: `application/octet-stream`
+/// - `Content-Disposition`: `attachment; filename="<filename>"`
+///
+/// # Error Responses
+///
+/// - `400 Bad Request`: If ID is missing or invalid
+///
+/// # Implementation Notes
+///
+/// The file is streamed using an async unfold stream that:
+/// 1. Reads chunks from the file asynchronously
+/// 2. Calculates transfer progress
+/// 3. Emits progress events when thresholds are crossed
+/// 4. Returns chunks to be sent over HTTP
+///
+/// # TODO
+///
+/// This function would benefit from refactoring to reduce complexity.
 pub async fn download_file(
     file_datas: web::Data<Vec<models::FileData>>,
     window: web::Data<Window>,
@@ -65,12 +132,14 @@ pub async fn download_file(
         progress: 0.0,
     };
     debug!("{:#?}", payload.id);
+
+    // Create a stream that reads the file in chunks and tracks progress
     let data_stream = stream::unfold(
         (file, transferred, payload, window),
         move |(mut file, mut transferred, mut payload, window)| async move {
             let mut chunk = vec![0; CHUNK_SIZE];
             match file.read(&mut chunk).await {
-                Ok(0) => None,
+                Ok(0) => None, // End of file
                 Ok(n) => {
                     chunk.truncate(n);
                     transferred += n;
@@ -87,17 +156,33 @@ pub async fn download_file(
                     ))
                 }
                 Err(e) => {
-                    panic!("Error occured while reading file: {e}")
+                    panic!("Error occurred while reading file: {e}")
                 }
             }
         },
     );
+
     HttpResponse::Ok()
         .insert_header(ContentType::octet_stream())
         .insert_header(ContentDisposition::attachment(file_name))
         .body(SizedStream::new(file_size, data_stream))
 }
 
+/// Serves text content directly.
+///
+/// This handler returns the text content as the HTTP response body.
+///
+/// # Route
+///
+/// `GET /` (when in SendText mode)
+///
+/// # Arguments
+///
+/// - `text`: Injected application state containing the text to serve
+///
+/// # Returns
+///
+/// HTTP response with the text content as the body.
 pub async fn handle_text(text: web::Data<String>) -> impl Responder {
     HttpResponse::Ok().body(text.get_ref().clone())
 }
