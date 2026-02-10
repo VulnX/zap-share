@@ -2,7 +2,7 @@ import QRCode from "qrcode";
 import { flushSync } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect } from "react";
-import { useQrContext } from "../Send/QrContext";
+import { useQrContext } from "../Context/QrContext";
 
 interface RecvFileResponse {
   Success: {

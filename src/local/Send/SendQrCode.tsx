@@ -1,14 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { Progress, Typography } from "@material-tailwind/react";
-import { useTheme } from "../Common/Theme";
-import { useQrContext } from "./QrContext";
-import  {
-  ProfileButton,
-  ToggleThemeButton,
-} from "../Common/Navigation";
-import { useNavigate } from "react-router-dom";
-import { useSharedDataContext } from "./FileListContext";
+import { useTheme } from "../Context/Theme";
+import { useQrContext } from "../Context/QrContext";
+import { useSharedDataContext } from "../Context/FileListContext";
 import { invoke } from "@tauri-apps/api/core";
 import { basename } from "@tauri-apps/api/path";
 import { ProgressUpdatePayload, ServerConfiguration } from "../types";
@@ -176,10 +171,9 @@ export const DeviceList: React.FC = () => {
   );
 };
 
-export default function QrCode() {
+export default function QrCode({ onBack }: { onBack?: () => void }) {
   const { isTheme } = useTheme();
   const { qrCode, qrText } = useQrContext();
-  const navigate = useNavigate();
   const hasRun = useRef(false);
   const [showQR, setShowQR] = useState(false);
 
@@ -209,21 +203,6 @@ export default function QrCode() {
       {/* <nav>
         <Navigation tab="send"/>
       </nav> */}
-      <nav className="flex justify-between items-center p-6 w-full">
-        <div
-          className="h-[40px] cursor-pointer"
-          onClick={() => {
-            stopServer();
-            navigate("/", { replace: true });
-          }}
-        >
-          Back
-        </div>
-        <div className="flex items-center gap-4">
-          <ProfileButton />
-          <ToggleThemeButton />
-        </div>
-      </nav>
       <div className="flex flex-col items-center mt-[10vh]">
         <button
           onClick={() => setShowQR(!showQR)}

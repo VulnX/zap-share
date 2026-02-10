@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import { DeviceProvider } from "../../App";
 import Navigation from "./Navigation";
-import SendDesktop from "../Send/SendDesktop";
+import SendDesktop from "../Send/Send";
 import Recieve from "../Receive/Recieve";
 import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
@@ -68,7 +68,11 @@ export default function Choice({ children }: { children: React.ReactNode }) {
           canSwitch={canSwitch}
           setCanSwitch={setCanSwitch}
         />
-        {tab === "send" ? <SendDesktop /> : <Recieve />}
+        {tab === "send" ? (
+          <SendDesktop canSwitch={canSwitch} setCanSwitch={setCanSwitch} />
+        ) : (
+          <Recieve canSwitch={canSwitch} setCanSwitch={setCanSwitch} />
+        )}
       </nav>
       {children}
     </div>

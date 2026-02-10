@@ -1,15 +1,32 @@
-// import { ToggleThemeButton } from "../Common/Navigation";
-import { useNavigate } from "react-router-dom";
-import { useTheme } from "../Common/Theme";
-import { useSharedDataContext } from "./FileListContext";
+import { useTheme } from "../Context/Theme";
 import { basename } from "@tauri-apps/api/path";
 import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-fs";
+import {
+  Dialog,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  Button,
+  Typography,
+} from "@material-tailwind/react";
 
-const SendConfirmation: React.FC = () => {
-  const navigate = useNavigate();
+interface SendConfirmationDialogProps {
+  isOpen: boolean;
+  fileList: string[];
+  onCancel: () => void;
+  onProceed: () => void;
+  isLoading?: boolean;
+}
+
+const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
+  isOpen,
+  fileList,
+  onCancel,
+  onProceed,
+  isLoading = false,
+}) => {
   const { isTheme } = useTheme();
-  const { fileList } = useSharedDataContext();
   const [fileNames, setFileNames] = useState("");
   const [totalSize, setTotalSize] = useState("");
 
@@ -24,11 +41,13 @@ const SendConfirmation: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!isOpen || fileList.length === 0) return;
+
     const getNameAndSize = async () => {
       const names = await Promise.all(
         fileList.map(async (filePath) => await basename(filePath)),
       );
-      setFileNames(names.join("\n"));
+      setFileNames(names.join(", "));
       const sizes = await Promise.all(
         fileList.map(async (filePath) => {
           const file = await open(filePath);
@@ -41,60 +60,97 @@ const SendConfirmation: React.FC = () => {
     };
 
     getNameAndSize();
-  }, []);
+  }, [isOpen, fileList]);
 
   return (
-    <div
-      className={`min-h-screen flex flex-col  ${
-        isTheme ? "bg-dark-background" : "bg-light-background"
-      }`}
+    <Dialog
+      open={isOpen}
+      handler={isLoading ? () => {} : onCancel}
+      className={isTheme ? "bg-gray-800 text-white" : "bg-white text-black"}
+      placeholder={undefined}
+      onPointerEnterCapture={undefined}
+      onPointerLeaveCapture={undefined}
     >
-      {/* <nav className="flex justify-between p-6">
-        <img
-          src={isTheme ? darkBack : lightBack}
-          alt="back"
-          className="h-[40px]"
-          onClick={() => navigate("/send", { replace: true })}
-        />
-        <ToggleThemeButton />
-      </nav> */}
-      <div className=" flex flex-col items-center justify-center mt-24">
-        <div className="bg-white p-8 rounded-lg shadow-lg">
-          <h2 className="text-xl font-semibold mb-4">
-            The following file will be sent:
-          </h2>
-          <div className="space-y-4">
-            <div>
-              <span className="font-medium">File name: </span>
-              <span className="text-gray-700"> {fileNames}</span>
-            </div>
-            <div>
-              <span className="font-medium">File size: </span>
-              <span className="text-gray-700"> {totalSize}</span>
-            </div>
-            <div>
-              <span className="font-medium">Estimated transfer time: </span>
-              <span className="text-gray-700">A few seconds</span>
-            </div>
+      <DialogHeader className={isTheme ? "text-white" : "text-black"} placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}>
+        Confirm File Transfer
+      </DialogHeader>
+      <DialogBody
+        className={`space-y-4 ${isTheme ? "bg-gray-800 text-gray-200" : ""}`}
+        placeholder={undefined}
+        onPointerEnterCapture={undefined}
+        onPointerLeaveCapture={undefined}
+      >
+        <div className="space-y-3">
+          <div>
+            <Typography className="font-medium" color="inherit" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}>
+              File name:{" "}
+            </Typography>
+            <Typography
+              className={isTheme ? "text-gray-300" : "text-gray-700"}
+              color="inherit"
+              placeholder={undefined}
+              onPointerEnterCapture={undefined}
+              onPointerLeaveCapture={undefined}
+            >
+              {fileNames}
+            </Typography>
           </div>
-          <div className="mt-6 flex justify-end space-x-4">
-            <button
-              className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition duration-300"
-              onClick={() => navigate("/send", { replace: true })}
+          <div>
+            <Typography className="font-medium" color="inherit" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}>
+              File size:{" "}
+            </Typography>
+            <Typography
+              className={isTheme ? "text-gray-300" : "text-gray-700"}
+              color="inherit"
+              placeholder={undefined}
+              onPointerEnterCapture={undefined}
+              onPointerLeaveCapture={undefined}
             >
-              Cancel
-            </button>
-            <button
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300"
-              onClick={() => navigate("/send/qrcode", { replace: true })}
+              {totalSize}
+            </Typography>
+          </div>
+          <div>
+            <Typography className="font-medium" color="inherit" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}>
+              Estimated transfer time:{" "}
+            </Typography>
+            <Typography
+              className={isTheme ? "text-gray-300" : "text-gray-700"}
+              color="inherit"
+              placeholder={undefined}
+              onPointerEnterCapture={undefined}
+              onPointerLeaveCapture={undefined}
             >
-              Proceed
-            </button>
+              A few seconds
+            </Typography>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogBody>
+      <DialogFooter className="space-x-2" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}>
+        <Button
+          variant="text"
+          color="gray"
+          onClick={onCancel}
+          disabled={isLoading}
+          placeholder={undefined}
+          onPointerEnterCapture={undefined}
+          onPointerLeaveCapture={undefined}
+        >
+          Cancel
+        </Button>
+        <Button
+          color="blue"
+          onClick={onProceed}
+          disabled={isLoading}
+          loading={isLoading}
+          placeholder={undefined}
+          onPointerEnterCapture={undefined}
+          onPointerLeaveCapture={undefined}
+        >
+          Proceed
+        </Button>
+      </DialogFooter>
+    </Dialog>
   );
 };
 
-export default SendConfirmation;
+export default SendConfirmationDialog;

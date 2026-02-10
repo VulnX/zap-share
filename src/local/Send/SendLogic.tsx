@@ -1,28 +1,17 @@
 import QRCode from "qrcode";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect } from "react";
-import { useTheme } from "../Common/Theme";
-import Swal from "sweetalert2";
+import { useTheme } from "../Context/Theme";
 import { open } from "@tauri-apps/plugin-dialog";
-import { useNavigate } from "react-router-dom";
 import { basename } from "@tauri-apps/api/path";
 import { flushSync } from "react-dom";
-import { useQrContext } from "./QrContext";
-import { useSharedDataContext } from "./FileListContext";
+import { useQrContext } from "../Context/QrContext";
+import { useSharedDataContext } from "../Context/FileListContext";
 import { SendFileResponse, SendTextResponse } from "../types";
-
-const swalWithBootstrapButtons = Swal.mixin({
-  customClass: {
-    confirmButton: "btn btn-success",
-    cancelButton: "btn btn-danger",
-  },
-  buttonsStyling: true,
-});
 
 export function SendLogic() {
   const { isTheme } = useTheme();
   const { qrCode, setQrCode, qrText, setQrText } = useQrContext();
-  const navigate = useNavigate();
   const { setFileList, setText } = useSharedDataContext();
 
   // Save QR code to session storage whenever it changes
@@ -112,15 +101,16 @@ export function SendLogic() {
         multiple: true,
         directory: false,
       });
-      proceedWithSend(files, null);
+      if (files && files.length > 0) {
+        await proceedWithSend(files, null);
+      }
     } catch (err) {
       console.error("File selection error:", err);
-      swalWithBootstrapButtons.fire({
-        title: "Error",
-        text: "An error occurred during file selection",
-        icon: "error",
-        confirmButtonText: "OK",
-      });
+      throw new Error(
+        err instanceof Error
+          ? err.message
+          : "An error occurred during file selection"
+      );
     }
   };
 
@@ -128,20 +118,19 @@ export function SendLogic() {
     files: string[] | null,
     text: string | null,
   ) => {
-    // Generate QR code and navigate on success
-    saveSharedDataToState(text, files!);
-    const qrCodeResult = await generateQRCode(text, files || []);
-    if (text !== "" && qrCodeResult) {
-      navigate("/send/qrcode", { replace: true });
-    } else if (qrCodeResult) {
-      navigate("/send/confirm", { replace: true });
-    } else {
-      swalWithBootstrapButtons.fire({
-        title: "QR Code Generation Failed",
-        text: "Unable to generate QR code for file transfer",
-        icon: "error",
-        confirmButtonText: "OK",
-      });
+    try {
+      // Generate QR code
+      saveSharedDataToState(text, files!);
+      const qrCodeResult = await generateQRCode(text, files || []);
+      if (!qrCodeResult) {
+        throw new Error("Unable to generate QR code for file transfer");
+      }
+      return qrCodeResult;
+    } catch (err) {
+      console.error("Error in proceedWithSend:", err);
+      throw err instanceof Error
+        ? err
+        : new Error(err as string);
     }
   };
 

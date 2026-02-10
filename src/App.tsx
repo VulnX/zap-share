@@ -1,53 +1,42 @@
 import "./App.css";
 import Choice from "./local/Common/Choice";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Send from "./local/Send/Send";
-import Recieve from "./local/Receive/Recieve";
-import { ThemeProvider } from "./local/Common/Theme";
+import { ThemeProvider } from "./local/Context/Theme";
 import { createContext, useEffect, useState } from "react";
-import SendConfirmation from "./local/Send/SendConfirmation";
-import QrCode from "./local/Send/SendQrCode";
-import { QrProvider } from "./local/Send/QrContext";
-import { SharedDataProvider } from "./local/Send/FileListContext";
+import { QrProvider } from "./local/Context/QrContext";
+import { SharedDataProvider } from "./local/Context/FileListContext";
 
 interface Device {
   isMobile: boolean;
 }
+
+// Fix: Provide proper type for context
 export const DeviceProvider = createContext<Device | undefined>(undefined);
 
 function App() {
+  // Fix: Proper typing for state
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
 
   useEffect(() => {
     const os = navigator.userAgent;
     const mobileCheck = /Mobi/i.test(os);
     setIsMobile(mobileCheck);
-    // console.log(mobileCheck);
   }, []);
+
+  // Optional: Show loading state while detecting device
+  if (isMobile === null) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <div>
-      <DeviceProvider.Provider value={{ isMobile: isMobile ?? false }}>
-        <ThemeProvider>
+    <DeviceProvider.Provider value={{ isMobile }}>
+      <ThemeProvider>
+        <QrProvider>
           <SharedDataProvider>
-            <QrProvider>
-              <Router>
-                <Routes>
-                  {/* <Route path='/' element={}></Route> */}
-                  <Route path="/" element={<Choice />}></Route>
-                  <Route path="/send" element={<Send />}></Route>
-                  <Route
-                    path="/send/confirm"
-                    element={<SendConfirmation />}
-                  ></Route>
-                  <Route path="/send/qrcode" element={<QrCode />}></Route>
-                  <Route path="/receive" element={<Recieve />}></Route>
-                </Routes>
-              </Router>
-            </QrProvider>
+            <Choice children={null}/>
           </SharedDataProvider>
-        </ThemeProvider>
-      </DeviceProvider.Provider>
-    </div>
+        </QrProvider>
+      </ThemeProvider>
+    </DeviceProvider.Provider>
   );
 }
 

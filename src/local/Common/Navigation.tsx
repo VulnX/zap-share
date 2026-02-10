@@ -1,4 +1,4 @@
-import { useTheme } from "./Theme";
+import { useTheme } from "../Context/Theme";
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { DeviceConfig } from "../types";
