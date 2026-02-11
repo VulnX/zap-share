@@ -177,14 +177,15 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
   const hasRun = useRef(false);
   const [openCollapse, setOpenCollapse] = useState(false);
 
-  const stopServer = async () => {
-    try {
-      await invoke("stop_server");
-      console.log("Server Stopped");
-    } catch (error) {
-      console.error("Error stopping server:", error);
-    }
-  };
+  // TODO: Use this
+  // const stopServer = async () => {
+  //   try {
+  //     await invoke("stop_server");
+  //     console.log("Server Stopped");
+  //   } catch (error) {
+  //     console.error("Error stopping server:", error);
+  //   }
+  // };
 
   useEffect(() => {
     if (!hasRun.current) {
