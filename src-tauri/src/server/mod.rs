@@ -1,30 +1,10 @@
-use crate::{
-    api::{self, SERVER_HANDLE},
-    models,
-};
+use crate::{api::SERVER_HANDLE, models};
 use actix_web::{middleware::Logger, rt, web, App, HttpServer};
-use log::debug;
-use rustls::{
-    pki_types::{CertificateDer, PrivateKeyDer},
-    ServerConfig,
-};
 use std::sync::mpsc;
 use tauri::Runtime;
 
 mod recv;
 mod send;
-
-fn generate_tls_config() -> ServerConfig {
-    debug!("generating tls config");
-    let cert = rcgen::generate_simple_self_signed([api::get_local_ip()]).unwrap();
-    let cert_der = CertificateDer::from(cert.cert.der().to_vec());
-    let key_der = PrivateKeyDer::Pkcs8(cert.signing_key.serialize_der().into());
-    debug!("yeah done");
-    ServerConfig::builder()
-        .with_no_client_auth()
-        .with_single_cert(vec![cert_der], key_der)
-        .unwrap()
-}
 
 /// Starts an actix web server and enables required routes based on the given `mode`
 ///
@@ -40,7 +20,6 @@ pub fn start_server<R: Runtime>(
 ) {
     let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("debug"));
     let server;
-    let tls_config = generate_tls_config();
     loop {
         let mode = mode.clone();
         let window = web::Data::new(window.clone());
@@ -74,7 +53,7 @@ pub fn start_server<R: Runtime>(
             app = app.app_data(window.clone());
             app
         });
-        if let Ok(_server) = _server.bind_rustls_0_23(("0.0.0.0", 0), tls_config.clone()) {
+        if let Ok(_server) = _server.bind(("0.0.0.0", 0)) {
             // port is `0` to allow automatic assigning of random port
             server = _server;
             break;

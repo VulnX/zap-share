@@ -40,11 +40,6 @@ fn generate_device_name() -> String {
 pub fn create_device_config(
     app_handle: &AppHandle,
 ) -> std::result::Result<(), Box<dyn std::error::Error>> {
-    // For HTTPS connections
-    rustls::crypto::aws_lc_rs::default_provider()
-        .install_default()
-        .unwrap();
-
     let config_dir = app_handle.path().app_config_dir()?;
     std::fs::create_dir_all(&config_dir)?; // Ensure exists
     let config_file_path = config_dir.join("config.json");
