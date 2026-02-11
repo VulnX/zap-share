@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Drawer, Switch } from "@material-tailwind/react";
 import { ToggleThemeButton } from "./Navigation";
+import { invoke } from "@tauri-apps/api/core";
+import { DeviceConfig } from "../types";
 
 interface SidePanelProps {
   openSettings: boolean;
@@ -11,6 +13,20 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
   const closeDrawer = () => setOpenSettings(false);
   const [endToEndEncryption, setEndToEndEncryption] = useState(true);
   const [autoDiscovery, setAutoDiscovery] = useState(true);
+  const [deviceName, setDeviceName] = useState("");
+  const hasRun = useRef(false);
+
+  useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
+    async function getDeviceName() {
+      const config: DeviceConfig = await invoke("get_device_config");
+      setDeviceName(config.name);
+    }
+
+    getDeviceName();
+  }, []);
   return (
     <React.Fragment>
       <Drawer
@@ -201,7 +217,7 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
                 Device Name
               </span>
             </div>
-            <span className="text-sm text-gray-500">My Device</span>
+            <span className="text-sm text-gray-500">{deviceName || "Loading..."}</span>
           </div>
         </div>
 
