@@ -4,7 +4,7 @@ import { RecvLogic } from "./RecieveLogic";
 import { ProgressBar } from "../Send/SendQrCode";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
-import { Button } from "@material-tailwind/react";
+import { Button, Collapse } from "@material-tailwind/react";
 
 interface RecieveProps {
   canSwitch: boolean;
@@ -15,9 +15,9 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
   const { isTheme } = useTheme();
   const { qrCode, generateQRCode, qrText } = RecvLogic();
   const [recvFile, setRecvFile] = useState<boolean>(true);
-  const [showQR, setShowQR] = useState(false);
-  const [text, setText] = useState<string>("");
+    const [text, setText] = useState<string>("");
   const [isServerRunning, setIsServerRunning] = useState(false);
+  const [openCollapse, setOpenCollapse] = useState(false);
   const hasRun = useRef(false);
 
   useEffect(() => {
@@ -92,22 +92,29 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
   return (
     <div
       className={`min-h-screen flex flex-col  ${
-        isTheme ? "bg-dark-background" : "bg-light-background"
+        isTheme ? "bg-gray-900" : "bg-white"
       }`}
     >
-      <div className="flex flex-col items-center mt-[15vh]">
+      <div className="flex flex-col items-center mt-[8vh] px-4">
+        {/* File/Text Toggle */}
         <div
           className={`flex space-x-6 ${
-            isTheme ? "bg-gray-300" : "bg-gray-100"
-          } rounded-full p-2 shadow-md mb-2 w-40 mx-auto font-semibold`}
+            isTheme ? "bg-gray-700" : "bg-gray-100"
+          } rounded-full p-2 shadow-md mb-6 w-40 mx-auto font-semibold`}
         >
           <div
             className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
-              recvFile ? "bg-gray-200 text-gray-800" : "text-gray-500"
+              recvFile
+          ? isTheme
+            ? "bg-gray-600 text-white"
+            : "bg-gray-300 text-gray-900"
+          : isTheme
+          ? "text-gray-400"
+          : "text-gray-600"
             }`}
             onClick={async () => {
               if (!recvFile && isServerRunning) {
-                await restartServer("file");
+          await restartServer("file");
               }
               setRecvFile(true);
             }}
@@ -116,11 +123,17 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
           </div>
           <div
             className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
-              !recvFile ? "bg-gray-200 text-gray-800" : "text-gray-500"
+              !recvFile
+          ? isTheme
+            ? "bg-gray-600 text-white"
+            : "bg-gray-300 text-gray-900"
+          : isTheme
+          ? "text-gray-400"
+          : "text-gray-600"
             }`}
             onClick={async () => {
               if (recvFile && isServerRunning) {
-                await restartServer("text");
+          await restartServer("text");
               }
               setRecvFile(false);
             }}
@@ -128,73 +141,98 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
             Text
           </div>
         </div>
-        <button
-          onClick={() => setShowQR(!showQR)}
-          disabled={!isServerRunning}
-          className={`mb-4 mt-4 px-6 py-2 rounded-lg font-medium transition-colors ${
-            isServerRunning
-              ? isTheme
-                ? "bg-gray-700 text-white hover:bg-gray-600"
-                : "bg-gray-200 text-black hover:bg-gray-300"
-              : isTheme
-              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-              : "bg-gray-100 text-gray-400 cursor-not-allowed"
-          }`}
-        >
-          {showQR ? "Hide QR Code" : "Show QR Code"}
-        </button>
-        <Button
-          color={isServerRunning ? "red" : "green"}
-          onClick={() => toggleServer()}
-          placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
-        >
-          {isServerRunning ? "Stop" : "Start"}
-        </Button>
-        {showQR && (
-          <>
-            <h2
-              className={`text-lg ${
-                isTheme ? "text-white" : "text-black"
-              } mb-2`}
+
+        {/* Start/Stop Button */}
+        <div className="mb-8">
+          <Button
+            color={isServerRunning ? "red" : "green"}
+            onClick={() => toggleServer()}
+            placeholder={undefined}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
+            className="px-8 py-3 font-semibold"
+          >
+            {isServerRunning ? "Stop Server" : "Start Server"}
+          </Button>
+        </div>
+
+        {/* QR Code Collapse */}
+        {isServerRunning && (
+          <div className="w-full max-w-md mb-8">
+            <Collapse
+              open={openCollapse}
+              className={`border rounded-lg ${
+                isTheme
+                  ? "bg-gray-800 border-gray-700"
+                  : "bg-white border-gray-300"
+              }`}
             >
-              {qrText}
-            </h2>
-            <div
-              className={`${
-                isTheme ? "bg-dark-qrBg" : "bg-light-qrBg"
-              } mb-10 rounded-2xl p-4 shadow-lg transition-all duration-300 ease-in-out`}
-            >
-              {qrCode ? (
-                <img
-                  src={qrCode}
-                  alt="QR Code"
-                  className="w-64 h-64 mix-blend-multiply"
-                />
-              ) : (
-                <p
-                  className={`text-center ${
-                    isTheme ? "text-gray-300" : "text-gray-700"
+              <div className="p-6">
+                <h2
+                  className={`text-lg font-semibold mb-4 text-center ${
+                    isTheme ? "text-white" : "text-black"
                   }`}
                 >
-                  Generating QR Code...
-                </p>
-              )}
-            </div>
-          </>
+                  {qrText}
+                </h2>
+                <div
+                  className={`${
+                    isTheme ? "bg-gray-800" : "bg-gray-100"
+                  } rounded-2xl p-4 flex justify-center shadow-lg transition-all duration-300 ease-in-out`}
+                >
+                  {qrCode ? (
+                    <img
+                      src={qrCode}
+                      alt="QR Code"
+                      className="w-64 h-64 mix-blend-multiply"
+                    />
+                  ) : (
+                    <p
+                      className={`text-center ${
+                        isTheme ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      Generating QR Code...
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Collapse>
+            <button
+              onClick={() => setOpenCollapse(!openCollapse)}
+              className={`w-full mt-3 px-6 py-2 rounded-lg font-medium transition-colors ${
+                isTheme
+                  ? "bg-gray-700 text-white hover:bg-gray-600"
+                  : "bg-gray-200 text-black hover:bg-gray-300"
+              }`}
+            >
+              {openCollapse ? "Hide QR Code" : "Show QR Code"}
+            </button>
+          </div>
         )}
-        {!recvFile ? (
-          <div className="w-80vw">
+
+        {/* Text Receiver */}
+        {!recvFile && (
+          <div className="w-full max-w-xl mb-6 px-2">
+            <label
+              className={`block text-sm font-semibold mb-2 ${
+                isTheme ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              Received Text:
+            </label>
             <textarea
               value={text}
-              className={`w-full p-2 rounded-lg resize-none outline-none  ${
-                isTheme ? "focus:ring-0" : "focus:ring-0"
-              }`}
-              placeholder="Received text will appear here"
+              readOnly
+              className={`w-full h-64 p-4 rounded-lg resize-none outline-none border ${
+                isTheme
+                  ? "bg-gray-800 text-white border-gray-600 focus:border-gray-500"
+                  : "bg-white text-black border-gray-300 focus:border-gray-400"
+              } focus:ring-2 focus:ring-blue-500`}
+              placeholder="Received text will appear here..."
             />
           </div>
-        ) : null}
+        )}
       </div>
       <ProgressBar />
     </div>

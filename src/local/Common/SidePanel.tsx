@@ -32,7 +32,7 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
         <div className="border-t border-gray-200" />
 
         {/* Appearance Section */}
-        <div className="px-6 pl-3 py-4">
+        <div className="pr-4 pl-3 py-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">
             Appearance
           </h3>

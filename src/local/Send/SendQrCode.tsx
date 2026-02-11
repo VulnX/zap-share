@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import { Progress, Typography } from "@material-tailwind/react";
+import { Progress, Typography, Collapse } from "@material-tailwind/react";
 import { useTheme } from "../Context/Theme";
 import { useQrContext } from "../Context/QrContext";
 import { useSharedDataContext } from "../Context/FileListContext";
@@ -175,7 +175,7 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
   const { isTheme } = useTheme();
   const { qrCode, qrText } = useQrContext();
   const hasRun = useRef(false);
-  const [showQR, setShowQR] = useState(false);
+  const [openCollapse, setOpenCollapse] = useState(false);
 
   const stopServer = async () => {
     try {
@@ -197,56 +197,77 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
   return (
     <div
       className={`min-h-screen flex flex-col  ${
-        isTheme ? "bg-dark-background" : "bg-light-background"
+        isTheme ? "bg-gray-900" : "bg-white"
       }`}
     >
       {/* <nav>
         <Navigation tab="send"/>
       </nav> */}
-      <div className="flex flex-col items-center mt-[10vh]">
+      <div className="flex flex-col items-center mt-[5vh] px-4">
+        {/* Back Button */}
         <button
-          onClick={() => setShowQR(!showQR)}
-          className={`mb-4 px-6 py-2 rounded-lg font-medium transition-colors ${
+          onClick={onBack}
+          className={`mb-6 px-6 py-2 rounded-lg font-medium transition-colors self-start ${
             isTheme
               ? "bg-gray-700 text-white hover:bg-gray-600"
               : "bg-gray-200 text-black hover:bg-gray-300"
           }`}
         >
-          {showQR ? "Hide QR Code" : "Show QR Code"}
+           Back
         </button>
-
-        {showQR && (
-          <>
-            <h2
-              className={`text-lg ${
-                isTheme ? "text-white" : "text-black"
-              } mb-2`}
-            >
-              {qrText}
-            </h2>
-            <div
-              className={`${
-                isTheme ? "bg-dark-qrBg" : "bg-light-qrBg"
-              } mb-10 rounded-2xl p-4 shadow-lg transition-all duration-300 ease-in-out`}
-            >
-              {qrCode ? (
-                <img
-                  src={qrCode}
-                  alt="QR Code"
-                  className="w-64 h-64 mix-blend-multiply"
-                />
-              ) : (
-                <p
-                  className={`text-center ${
-                    isTheme ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  Generating QR Code...
-                </p>
-              )}
+        {/* QR Code Collapse */}
+        <div className="w-full max-w-md mb-8">
+          <Collapse
+            open={openCollapse}
+            className={`border rounded-lg ${
+              isTheme
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-300"
+            }`}
+            
+          >
+            <div className="p-6">
+              <h2
+                className={`text-lg font-semibold mb-4 text-center ${
+                  isTheme ? "text-white" : "text-black"
+                }`}
+              >
+                {qrText}
+              </h2>
+              <div
+                className={`${
+                  isTheme ? "bg-gray-500" : "bg-gray-100"
+                } rounded-2xl p-4 flex justify-center shadow-lg transition-all duration-300 ease-in-out`}
+              >
+                {qrCode ? (
+                  <img
+                    src={qrCode}
+                    alt="QR Code"
+                    className="w-64 h-64 mix-blend-multiply"
+                  />
+                ) : (
+                  <p
+                    className={`text-center ${
+                      isTheme ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Generating QR Code...
+                  </p>
+                )}
+              </div>
             </div>
-          </>
-        )}
+          </Collapse>
+          <button
+            onClick={() => setOpenCollapse(!openCollapse)}
+            className={`w-full mt-3 px-6 py-2 rounded-lg font-medium transition-colors ${
+              isTheme
+                ? "bg-gray-700 text-white hover:bg-gray-600"
+                : "bg-gray-200 text-black hover:bg-gray-300"
+            }`}
+          >
+            {openCollapse ? "Hide QR Code" : "Show QR Code"}
+          </button>
+        </div>
 
         <div className="w-full max-w-4xl px-4">
           <ProgressBar />
