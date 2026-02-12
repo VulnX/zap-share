@@ -12,6 +12,7 @@ export function ProgressBar() {
   const [progressMap, setProgressMap] = useState<
     Record<string, [string, number]>
   >({});
+  const { isTheme } = useTheme();
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -45,12 +46,12 @@ export function ProgressBar() {
   }, []);
 
   return (
-    <div className="w-[50vw] space-y-4">
+    <div className="w-full max-w-4xl mx-auto max-h-[500px] overflow-y-auto space-y-4">
       {Object.entries(progressMap).map(([id, [filename, progress]]) => (
-        <div key={id} className="h-10">
+        <div key={id} className="mb-4 sm:mb-6">
           <div className="mb-2 flex items-center justify-between gap-4 text-wrap">
             <Typography
-              color="blue-gray"
+              color={isTheme ? `light-green` : "blue-gray"}
               variant="h6"
               placeholder={undefined}
               onPointerEnterCapture={undefined}
@@ -59,7 +60,7 @@ export function ProgressBar() {
               Transfering {filename}
             </Typography>
             <Typography
-              color="blue-gray"
+              color={isTheme ? `light-green` : "blue-gray"}
               variant="h6"
               placeholder={undefined}
               onPointerEnterCapture={undefined}
@@ -70,6 +71,7 @@ export function ProgressBar() {
           </div>
           <Progress
             value={progress}
+            color={isTheme ? "light-green" : "gray"}
             style={{ transition: "0.1s" }}
             placeholder={undefined}
             onPointerEnterCapture={undefined}
@@ -105,8 +107,6 @@ export const DeviceList: React.FC = () => {
 
     setupListener();
   }, []);
-
-  // TODO : make function to upload file
 
   return (
     <div className="m-auto flex flex-col items-center w-full max-w-md mt-4">
@@ -177,16 +177,6 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
   const hasRun = useRef(false);
   const [openCollapse, setOpenCollapse] = useState(false);
 
-  // TODO: Use this
-  // const stopServer = async () => {
-  //   try {
-  //     await invoke("stop_server");
-  //     console.log("Server Stopped");
-  //   } catch (error) {
-  //     console.error("Error stopping server:", error);
-  //   }
-  // };
-
   useEffect(() => {
     if (!hasRun.current) {
       hasRun.current = true;
@@ -197,14 +187,14 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
 
   return (
     <div
-      className={`min-h-screen flex flex-col  ${
+      className={`flex flex-col w-full ${
         isTheme ? "bg-gray-900" : "bg-white"
       }`}
     >
       {/* <nav>
         <Navigation tab="send"/>
       </nav> */}
-      <div className="flex flex-col items-center mt-[5vh] px-4">
+      <div className="flex flex-col items-center mt-[5vh] px-4 pb-8">
         {/* Back Button */}
         <button
           onClick={onBack}
@@ -214,7 +204,7 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
               : "bg-gray-200 text-black hover:bg-gray-300"
           }`}
         >
-           Back
+          Back
         </button>
         {/* QR Code Collapse */}
         <div className="w-full max-w-md mb-8">
@@ -225,7 +215,6 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
                 ? "bg-gray-800 border-gray-700"
                 : "bg-white border-gray-300"
             }`}
-            
           >
             <div className="p-6">
               <h2
@@ -270,9 +259,11 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
           </button>
         </div>
 
-        <div className="w-full max-w-4xl px-4">
-          <ProgressBar />
+        <div className="w-3/4 max-w-4xl px-4 m-auto">
           <DeviceList />
+          <div className="pt-8">
+            <ProgressBar />
+          </div>
         </div>
       </div>
     </div>

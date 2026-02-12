@@ -27,12 +27,11 @@ const FilePicker = ({
 }) => {
   const { isTheme } = useTheme();
   return (
-    <div className="mt-[10vh] min-w-screen flex justify-center items-center">
+    <div className="mt-[10vh] min-w-screen flex justify-center items-center px-4">
       <div
-        className={`h-[40vw] w-[40vw] flex flex-col justify-center items-center ${
+        className={`h-[40vw] w-[40vw] md:h-[30vw] md:w-[30vw] sm:h-[50vw] sm:w-[50vw] flex flex-col justify-center items-center ${
           isTheme ? "bg-gray-800" : "bg-gray-200"
-        } rounded-3xl drop-shadow-xl shadow-xl clickable
-                      `}
+        } rounded-3xl drop-shadow-xl shadow-xl clickable`}
         onClick={async () => {
           try {
             const files = await open({
@@ -50,14 +49,15 @@ const FilePicker = ({
         }}
       >
         <div
-          className={`border-[1px] border-dashed border-black rounded-2xl w-[35vw] h-[35vw] flex flex-col items-center`}
+          className={`border-[1px] border-dashed border-black rounded-2xl w-[35vw] h-[35vw] flex flex-col items-center justify-center`}
         >
           <svg
-            width="30vw"
-            height="40vh"
+            width="100%"
+            height="100%"
             viewBox="0 0 268 260"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
+            preserveAspectRatio="xMidYMid meet"
           >
             <path
               d="M203.679 80.5422C193.985 63.7571 174.904 54.1292 154.443 57.299C146.411 40.9421 129.608 30.5552 110.713 30.5552C83.9683 30.5552 62.2083 51.6645 62.2083 77.6152C62.2083 78.6863 62.2519 79.7902 62.351 80.9398C39.2682 86.0429 22.3342 106.262 22.3342 129.547C22.3342 157.064 45.4086 179.446 73.7721 179.446H114.43V171.205H73.7721C50.0919 171.205 30.8339 152.518 30.8339 129.548C30.8339 108.988 46.6553 91.2798 67.645 88.3657C68.7708 88.2109 69.7829 87.6231 70.4577 86.7327C71.1288 85.847 71.419 84.7337 71.2364 83.6474C70.8773 81.4138 70.6959 79.4453 70.6959 77.6187C70.6959 56.2103 88.6552 38.7953 110.714 38.7953C127.284 38.7953 141.899 48.4853 147.962 63.4779C148.723 65.3795 150.804 66.4506 152.869 65.9883C171.521 61.8026 189.047 70.5436 197.131 86.1286C197.745 87.3334 198.948 88.1651 200.325 88.354C221.326 91.2551 237.183 108.965 237.183 129.545C237.183 152.515 217.911 171.201 194.231 171.201H140.102V179.443H194.228C222.595 179.443 245.666 157.06 245.666 129.544C245.666 105.599 227.762 84.9003 203.679 80.5422Z"
@@ -72,7 +72,7 @@ const FilePicker = ({
               strokeWidth="0.00189097"
             />
           </svg>
-          <p className="text-[18px] text-center mb-4 w-[30vw]">
+          <p className="text-sm sm:text-base md:text-lg text-center mb-4 w-[90%] px-2">
             Click to Browse or Drag Files Here to Start Sharing
           </p>
         </div>

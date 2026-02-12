@@ -60,19 +60,21 @@ export default function Choice({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div>
-      <nav>
+    <div className="h-screen w-screen flex flex-col overflow-hidden">
+      <nav className="flex-1 overflow-hidden">
         <Navigation
           tab={tab}
           setTab={setTab}
           canSwitch={canSwitch}
           setCanSwitch={setCanSwitch}
         />
-        {tab === "send" ? (
-          <SendDesktop canSwitch={canSwitch} setCanSwitch={setCanSwitch} />
-        ) : (
-          <Recieve canSwitch={canSwitch} setCanSwitch={setCanSwitch} />
-        )}
+        <div className="h-full overflow-y-auto">
+          {tab === "send" ? (
+            <SendDesktop canSwitch={canSwitch} setCanSwitch={setCanSwitch} />
+          ) : (
+            <Recieve canSwitch={canSwitch} setCanSwitch={setCanSwitch} />
+          )}
+        </div>
       </nav>
       {children}
     </div>

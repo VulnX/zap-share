@@ -91,11 +91,11 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
 
   return (
     <div
-      className={`min-h-screen flex flex-col  ${
+      className={`flex flex-col ${
         isTheme ? "bg-gray-900" : "bg-white"
       }`}
     >
-      <div className="flex flex-col items-center mt-[8vh] px-4">
+      <div className="flex flex-col items-center mt-[8vh] px-4 pb-8">
         {/* File/Text Toggle */}
         <div
           className={`flex space-x-6 ${
@@ -234,7 +234,9 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
           </div>
         )}
       </div>
+      <div className="w-3/4 m-auto">
       <ProgressBar />
+      </div>
     </div>
   );
 }

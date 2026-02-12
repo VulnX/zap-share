@@ -4,7 +4,14 @@
 
 * {
   user-select: none;
-  zoom: 0%;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 :hover {
