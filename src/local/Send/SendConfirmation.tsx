@@ -67,73 +67,79 @@ const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
       open={isOpen}
       handler={isLoading ? () => {} : onCancel}
       className={isTheme ? "bg-gray-800 text-white" : "bg-white text-black"}
-      placeholder={undefined}
-      onPointerEnterCapture={undefined}
-      onPointerLeaveCapture={undefined}
+      {...({} as any)}
     >
-      <DialogHeader className={isTheme ? "text-white" : "text-black"} placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}>
+      <DialogHeader
+        className={isTheme ? "text-white" : "text-black"}
+        {...({} as any)}
+      >
         Confirm File Transfer
       </DialogHeader>
       <DialogBody
         className={`space-y-4 ${isTheme ? "bg-gray-800 text-gray-200" : ""}`}
-        placeholder={undefined}
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
+        {...({} as any)}
       >
         <div className="space-y-3">
           <div>
-            <Typography className="font-medium" color="inherit" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}>
+            <Typography
+              className="font-medium"
+              color="inherit"
+              placeholder={undefined}
+              {...({} as any)}
+            >
               File name:{" "}
             </Typography>
             <Typography
               className={isTheme ? "text-gray-300" : "text-gray-700"}
               color="inherit"
-              placeholder={undefined}
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
+              {...({} as any)}
             >
               {fileNames}
             </Typography>
           </div>
           <div>
-            <Typography className="font-medium" color="inherit" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}>
+            <Typography
+              className="font-medium"
+              color="inherit"
+              {...({} as any)}
+            >
               File size:{" "}
             </Typography>
             <Typography
               className={isTheme ? "text-gray-300" : "text-gray-700"}
               color="inherit"
-              placeholder={undefined}
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
+              {...({} as any)}
             >
               {totalSize}
             </Typography>
           </div>
           <div>
-            <Typography className="font-medium" color="inherit" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}>
+            <Typography
+              className="font-medium"
+              color="inherit"
+              placeholder={undefined}
+              {...({} as any)}
+            >
               Estimated transfer time:{" "}
             </Typography>
             <Typography
               className={isTheme ? "text-gray-300" : "text-gray-700"}
               color="inherit"
-              placeholder={undefined}
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
+              {...({} as any)}
             >
               A few seconds
             </Typography>
           </div>
         </div>
       </DialogBody>
-      <DialogFooter className="space-x-2" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}>
+      <DialogFooter className="space-x-2" {...({} as any)}>
         <Button
           variant="text"
           color="gray"
           onClick={onCancel}
           disabled={isLoading}
           placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
+          {...({} as any)}
         >
           Cancel
         </Button>
@@ -143,8 +149,7 @@ const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
           disabled={isLoading}
           loading={isLoading}
           placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
+          {...({} as any)}
         >
           Proceed
         </Button>

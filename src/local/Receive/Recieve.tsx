@@ -15,7 +15,7 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
   const { isTheme } = useTheme();
   const { qrCode, generateQRCode, qrText } = RecvLogic();
   const [recvFile, setRecvFile] = useState<boolean>(true);
-    const [text, setText] = useState<string>("");
+  const [text, setText] = useState<string>("");
   const [isServerRunning, setIsServerRunning] = useState(false);
   const [openCollapse, setOpenCollapse] = useState(false);
   const hasRun = useRef(false);
@@ -90,11 +90,7 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
   }, []);
 
   return (
-    <div
-      className={`flex flex-col ${
-        isTheme ? "bg-gray-900" : "bg-white"
-      }`}
-    >
+    <div className={`flex flex-col ${isTheme ? "bg-gray-900" : "bg-white"}`}>
       <div className="flex flex-col items-center mt-[8vh] px-4 pb-8">
         {/* File/Text Toggle */}
         <div
@@ -105,16 +101,16 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
           <div
             className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
               recvFile
-          ? isTheme
-            ? "bg-gray-600 text-white"
-            : "bg-gray-300 text-gray-900"
-          : isTheme
-          ? "text-gray-400"
-          : "text-gray-600"
+                ? isTheme
+                  ? "bg-gray-600 text-white"
+                  : "bg-gray-300 text-gray-900"
+                : isTheme
+                  ? "text-gray-400"
+                  : "text-gray-600"
             }`}
             onClick={async () => {
               if (!recvFile && isServerRunning) {
-          await restartServer("file");
+                await restartServer("file");
               }
               setRecvFile(true);
             }}
@@ -124,16 +120,16 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
           <div
             className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
               !recvFile
-          ? isTheme
-            ? "bg-gray-600 text-white"
-            : "bg-gray-300 text-gray-900"
-          : isTheme
-          ? "text-gray-400"
-          : "text-gray-600"
+                ? isTheme
+                  ? "bg-gray-600 text-white"
+                  : "bg-gray-300 text-gray-900"
+                : isTheme
+                  ? "text-gray-400"
+                  : "text-gray-600"
             }`}
             onClick={async () => {
               if (recvFile && isServerRunning) {
-          await restartServer("text");
+                await restartServer("text");
               }
               setRecvFile(false);
             }}
@@ -147,9 +143,7 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
           <Button
             color={isServerRunning ? "red" : "green"}
             onClick={() => toggleServer()}
-            placeholder={undefined}
-            onPointerEnterCapture={undefined}
-            onPointerLeaveCapture={undefined}
+            {...({} as any)}
             className="px-8 py-3 font-semibold"
           >
             {isServerRunning ? "Stop Server" : "Start Server"}
@@ -231,7 +225,7 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
         )}
       </div>
       <div className="w-3/4 m-auto">
-      <ProgressBar />
+        <ProgressBar />
       </div>
     </div>
   );

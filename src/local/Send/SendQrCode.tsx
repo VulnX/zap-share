@@ -53,18 +53,14 @@ export function ProgressBar() {
             <Typography
               color={isTheme ? `light-green` : "blue-gray"}
               variant="h6"
-              placeholder={undefined}
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
+              {...({} as any)}
             >
               Transfering {filename}
             </Typography>
             <Typography
               color={isTheme ? `light-green` : "blue-gray"}
               variant="h6"
-              placeholder={undefined}
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
+              {...({} as any)}
             >
               {progress}%
             </Typography>
@@ -73,9 +69,7 @@ export function ProgressBar() {
             value={progress}
             color={isTheme ? "light-green" : "gray"}
             style={{ transition: "0.1s" }}
-            placeholder={undefined}
-            onPointerEnterCapture={undefined}
-            onPointerLeaveCapture={undefined}
+            {...({} as any)}
           />
         </div>
       ))}

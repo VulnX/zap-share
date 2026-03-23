@@ -33,9 +33,7 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
         open={openSettings}
         onClose={closeDrawer}
         className="p-4 overflow-y-auto"
-        placeholder=""
-        onPointerEnterCapture={() => {}}
-        onPointerLeaveCapture={() => {}}
+        {...{} as any}
       >
         {/* Header */}
         <div className="p-6 pl-3 pb-4">
@@ -119,9 +117,9 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
                 onChange={(event) =>
                   setEndToEndEncryption(event.target.checked)
                 }
-                placeholder=""
-                onPointerEnterCapture={() => {}}
-                onPointerLeaveCapture={() => {}}
+                // placeholder=""
+                // onpointerEnterCapture={() => {}}
+                // onpointerLeaveCapture={() => {}}
                 crossOrigin={undefined}
               />
             </div>
@@ -189,9 +187,9 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
             <Switch
               checked={autoDiscovery}
               onChange={(event) => setAutoDiscovery(event.target.checked)}
-              placeholder=""
-              onPointerEnterCapture={() => {}}
-              onPointerLeaveCapture={() => {}}
+              // placeholder=""
+              // onpointerEnterCapture={() => {}}
+              // onpointerLeaveCapture={() => {}}
               crossOrigin={undefined}
             />
           </div>

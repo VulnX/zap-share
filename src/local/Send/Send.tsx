@@ -128,37 +128,34 @@ const ErrorDialog: React.FC<{
       open={error.isOpen}
       handler={onClose}
       className={isTheme ? "bg-gray-800 text-white" : "bg-white text-black"}
-      placeholder={undefined}
-      onPointerEnterCapture={undefined}
-      onPointerLeaveCapture={undefined}
+     {...{} as any}
     >
       <DialogHeader
         className={isTheme ? "text-white" : "text-black"}
         placeholder={undefined}
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
+        // onpointerEnterCapture={undefined}
+        // onpointerLeaveCapture={undefined}
       >
         Error
       </DialogHeader>
       <DialogBody
         className={isTheme ? "bg-gray-800 text-gray-200" : ""}
         placeholder={undefined}
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
+        // onpointerEnterCapture={undefined}
+        // onpointerLeaveCapture={undefined}
       >
         {error.message}
       </DialogBody>
       <DialogFooter
         placeholder={undefined}
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
+        // onpointerEnterCapture={undefined}
+        // onpointerLeaveCapture={undefined}
       >
         <Button
           color="blue"
           onClick={onClose}
           placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
+      {...{} as any}
         >
           Close
         </Button>
@@ -374,36 +371,33 @@ export default function Send({
         handler={setShowBackConfirmation}
         className={isTheme ? "bg-gray-800 text-white" : "bg-white text-black"}
         placeholder={undefined}
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
+        // onpointerEnterCapture={undefined}
+        // onpointerLeaveCapture={undefined}
       >
         <DialogHeader
           className={isTheme ? "text-white" : "text-black"}
           placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
+      {...{} as any}
         >
           Stop Server?
         </DialogHeader>
         <DialogBody
           className={isTheme ? "bg-gray-800 text-gray-200" : ""}
           placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
+      {...{} as any}
         >
           Stop the server and return to file picker?
         </DialogBody>
         <DialogFooter
           placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
+      {...{} as any}
         >
           <Button
             onClick={() => setShowBackConfirmation(false)}
             className="mr-2"
             placeholder={undefined}
-            onPointerEnterCapture={undefined}
-            onPointerLeaveCapture={undefined}
+            // onpointerEnterCapture={undefined}
+            // onpointerLeaveCapture={undefined}
           >
             Cancel
           </Button>
@@ -411,8 +405,8 @@ export default function Send({
             color="red"
             onClick={handleBackFromQr}
             placeholder={undefined}
-            onPointerEnterCapture={undefined}
-            onPointerLeaveCapture={undefined}
+            // onpointerEnterCapture={undefined}
+            // onpointerLeaveCapture={undefined}
           >
             Stop & Go Back
           </Button>

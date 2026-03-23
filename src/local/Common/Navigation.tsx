@@ -19,9 +19,7 @@ export function ToggleThemeButton() {
     <Switch
       checked={isTheme}
       onChange={toggleTheme}
-      placeholder=""
-      onPointerEnterCapture={() => {}}
-      onPointerLeaveCapture={() => {}}
+      {...({} as any)}
       crossOrigin={undefined}
     />
   );
@@ -199,42 +197,22 @@ export default function Navigation({
           openSettings={openSettings}
         />
       </nav>
-      <Dialog
-        open={open}
-        handler={handleCancel}
-        placeholder=""
-        onPointerEnterCapture={() => {}}
-        onPointerLeaveCapture={() => {}}
-      >
-        <DialogHeader
-          placeholder=""
-          onPointerEnterCapture={() => {}}
-          onPointerLeaveCapture={() => {}}
-        >
+      <Dialog open={open} handler={handleCancel} {...({} as any)}>
+        <DialogHeader {...({} as any)}>
           Are you sure you want to stop{" "}
           {tab === "send" ? "Sharing" : " Receiving"}
         </DialogHeader>
-        <DialogBody
-          placeholder=""
-          onPointerEnterCapture={() => {}}
-          onPointerLeaveCapture={() => {}}
-        >
+        <DialogBody {...({} as any)}>
           Clicking confirm will stop {tab === "send" ? "Sharing" : " Receiving"}{" "}
           and you will have to restart the server
         </DialogBody>
-        <DialogFooter
-          placeholder=""
-          onPointerEnterCapture={() => {}}
-          onPointerLeaveCapture={() => {}}
-        >
+        <DialogFooter {...({} as any)}>
           <Button
             variant="text"
             color="red"
             onClick={handleCancel}
             className="mr-1"
-            placeholder=""
-            onPointerEnterCapture={() => {}}
-            onPointerLeaveCapture={() => {}}
+            {...({} as any)}
           >
             <span>Cancel</span>
           </Button>
@@ -242,9 +220,7 @@ export default function Navigation({
             variant="gradient"
             color="green"
             onClick={handleConfirm}
-            placeholder=""
-            onPointerEnterCapture={() => {}}
-            onPointerLeaveCapture={() => {}}
+            {...({} as any)}
           >
             <span>Confirm</span>
           </Button>
