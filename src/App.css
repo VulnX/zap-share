@@ -19,3 +19,8 @@ body,
     cursor: pointer;
   }
 }
+
+.qr-container svg {
+  width: 90%;
+  margin: auto;
+}

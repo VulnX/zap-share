@@ -61,7 +61,8 @@ export function SendLogic() {
         console.log("Generating QR for URL:", qr);
 
         // Generate QR code URL
-        const url = await QRCode.toDataURL(qr);
+        const url = await QRCode.toString(qr, { type: "svg" });
+        console.log(url);
 
         // console.log("Generated QR Code URL:", url);
 
@@ -109,7 +110,7 @@ export function SendLogic() {
       throw new Error(
         err instanceof Error
           ? err.message
-          : "An error occurred during file selection"
+          : "An error occurred during file selection",
       );
     }
   };
@@ -128,9 +129,7 @@ export function SendLogic() {
       return qrCodeResult;
     } catch (err) {
       console.error("Error in proceedWithSend:", err);
-      throw err instanceof Error
-        ? err
-        : new Error(err as string);
+      throw err instanceof Error ? err : new Error(err as string);
     }
   };
 

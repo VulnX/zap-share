@@ -181,11 +181,7 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
                   } rounded-2xl p-4 flex justify-center shadow-lg transition-all duration-300 ease-in-out`}
                 >
                   {qrCode ? (
-                    <img
-                      src={qrCode}
-                      alt="QR Code"
-                      className="w-64 h-64 mix-blend-multiply"
-                    />
+                    <div dangerouslySetInnerHTML={{ __html: qrCode }} />
                   ) : (
                     <p
                       className={`text-center ${

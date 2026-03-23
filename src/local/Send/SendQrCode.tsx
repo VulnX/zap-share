@@ -187,9 +187,7 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
 
   return (
     <div
-      className={`flex flex-col w-full ${
-        isTheme ? "bg-gray-900" : "bg-white"
-      }`}
+      className={`flex flex-col w-full ${isTheme ? "bg-gray-900" : "bg-white"}`}
     >
       {/* <nav>
         <Navigation tab="send"/>
@@ -207,33 +205,30 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
           Back
         </button>
         {/* QR Code Collapse */}
-        <div className="w-full max-w-md mb-8">
+        <div className="w-full max-w-sm mb-8">
           <Collapse
             open={openCollapse}
             className={`border rounded-lg ${
               isTheme
-                ? "bg-gray-800 border-gray-700"
+                ? "bg-gray-900 border-gray-700"
                 : "bg-white border-gray-300"
             }`}
           >
-            <div className="p-6">
+            <div className="p-6 pb-0">
               <h2
-                className={`text-lg font-semibold mb-4 text-center ${
+                className={`text-lg font-semibold text-center ${
                   isTheme ? "text-white" : "text-black"
                 }`}
               >
                 {qrText}
               </h2>
               <div
-                className={`${
-                  isTheme ? "bg-gray-500" : "bg-gray-100"
-                } rounded-2xl p-4 flex justify-center shadow-lg transition-all duration-300 ease-in-out`}
+                className={` rounded-2xl  flex justify-center  transition-all duration-300 ease-in-out`}
               >
                 {qrCode ? (
-                  <img
-                    src={qrCode}
-                    alt="QR Code"
-                    className="w-64 h-64 mix-blend-multiply"
+                  <div
+                    className="qr-container"
+                    dangerouslySetInnerHTML={{ __html: qrCode }}
                   />
                 ) : (
                   <p
