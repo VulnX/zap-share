@@ -97,7 +97,7 @@ pub fn recv_emitted_info<R: Runtime>(
                 // timeout
                 continue;
             }
-            Err(e) => panic!("recv_from error: {e}"),
+            Err(_) => {},
         };
     }
 }
