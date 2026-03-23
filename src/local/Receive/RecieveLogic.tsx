@@ -52,7 +52,7 @@ export function RecvLogic() {
         });
         console.log("Generating QR for URL:", qr);
         // Generate QR code URL
-        const url = await QRCode.toDataURL(qr);
+        const url = await QRCode.toString(qr, { type: "svg" });
 
         // Update state and persist to session storage
         setQrCode(url);
