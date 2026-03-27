@@ -95,6 +95,8 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       const listener = await listen<string>("device-list-updated", (event) => {
         const parsedDevices: ServerConfiguration[] = JSON.parse(event.payload);
         setNearbyDevices(parsedDevices);
+        console.log(parsedDevices);
+        
       });
 
       listeners.push(listener);
@@ -148,7 +150,6 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         {/* Device List */}
         <div className="p-4 space-y-3">
           {nearbyDevices.map((device, index) => {
-            const type = device.type;
 
             return (
               <div
@@ -187,7 +188,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                       isTheme ? "bg-gray-700" : "bg-gray-200"
                     }`}
                   >
-                    {type === "mobile" && (
+                    {device.type === "mobile" && (
                       <svg
                         className={`w-5 h-5 ${
                           isTheme ? "text-gray-300" : "text-gray-700"
@@ -199,7 +200,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                       </svg>
                     )}
 
-                    {type === "laptop" && (
+                    {device.type === "computer" && (
                       <svg
                         className={`w-5 h-5 ${
                           isTheme ? "text-gray-300" : "text-gray-700"
@@ -243,7 +244,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                             : "bg-gray-200 text-gray-600"
                         }`}
                       >
-                        {type === "mobile" ? "Phone" : "Laptop"}
+                        {device.type === "mobile" ? "Phone" : "Laptop"}
                       </span>
                     </div>
                   </div>

@@ -93,6 +93,7 @@ pub fn recv_emitted_info<R: Runtime>(
                         ip: from.ip().to_string(),
                         port: payload.port,
                         name: payload.name,
+                        r#type: payload.r#type,
                     };
                     devices.retain(|device: &models::ServerConfiguration| {
                         device.ip != server_config.ip
