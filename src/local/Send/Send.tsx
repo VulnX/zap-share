@@ -91,9 +91,11 @@ const TextSender = ({ onSendText }: { onSendText: (text: string) => void }) => {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className={`w-full h-[50vh] p-4 rounded-lg resize-none outline-none  ${
-            isTheme ? "focus:ring-0 bg-gray-800" : "focus:ring-0"
-          }`}
+          className={`w-full h-[50vh] p-4 rounded-lg resize-none outline-none border ${
+            isTheme
+              ? "bg-gray-800 text-white border-gray-600 focus:border-gray-500"
+              : "bg-white text-black border-gray-300 focus:border-gray-400"
+          } focus:ring-2 focus:ring-blue-500`}
           placeholder="Type your message here..."
         />
       </div>
@@ -128,7 +130,7 @@ const ErrorDialog: React.FC<{
       open={error.isOpen}
       handler={onClose}
       className={isTheme ? "bg-gray-800 text-white" : "bg-white text-black"}
-     {...{} as any}
+      {...({} as any)}
     >
       <DialogHeader
         className={isTheme ? "text-white" : "text-black"}
@@ -155,7 +157,7 @@ const ErrorDialog: React.FC<{
           color="blue"
           onClick={onClose}
           placeholder={undefined}
-      {...{} as any}
+          {...({} as any)}
         >
           Close
         </Button>
@@ -257,7 +259,7 @@ export default function Send({
       ) : (
         <div
           className={`min-h-screen flex flex-col pt-10 ${
-            isTheme ? "bg-gray-900" : "bg-gray-200"
+            isTheme ? "bg-gray-900" : "white"
           }`}
         >
           {/* Switch for text and file sending */}
@@ -377,21 +379,18 @@ export default function Send({
         <DialogHeader
           className={isTheme ? "text-white" : "text-black"}
           placeholder={undefined}
-      {...{} as any}
+          {...({} as any)}
         >
           Stop Server?
         </DialogHeader>
         <DialogBody
           className={isTheme ? "bg-gray-800 text-gray-200" : ""}
           placeholder={undefined}
-      {...{} as any}
+          {...({} as any)}
         >
           Stop the server and return to file picker?
         </DialogBody>
-        <DialogFooter
-          placeholder={undefined}
-      {...{} as any}
-        >
+        <DialogFooter placeholder={undefined} {...({} as any)}>
           <Button
             onClick={() => setShowBackConfirmation(false)}
             className="mr-2"
