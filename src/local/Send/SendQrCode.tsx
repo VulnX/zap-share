@@ -81,7 +81,10 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { isTheme } = useTheme();
   const hasRun = useRef(false);
 
-  const [nearbyDevices, setNearbyDevices] = useState<ServerConfiguration[]>([]);
+  const [nearbyDevices, setNearbyDevices] = useState<ServerConfiguration[]>([
+    { ip: "", port: 0, name: "xxx", type: "mobile" },
+    { ip: "", port: 0, name: "yyy", type: "computer" },
+  ]);
 
   const { fileList, text } = useSharedDataContext();
 
@@ -229,7 +232,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     {/* Chips */}
                     <div className="flex gap-2 mt-1">
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-md ${
+                        className={`text-xs px-2 py-0.5 rounded-md w-fit whitespace-nowrap ${
                           isTheme
                             ? "bg-gray-700 text-gray-300"
                             : "bg-gray-200 text-gray-600"
@@ -249,17 +252,6 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     </div>
                   </div>
                 </div>
-
-                {/* RIGHT */}
-                <button
-                  className={`px-4 py-1.5 text-sm font-medium rounded-lg border transition ${
-                    isTheme
-                      ? "bg-gray-900 text-gray-200 border-gray-600 hover:bg-gray-800"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                  }`}
-                >
-                  Connect
-                </button>
               </div>
             );
           })}
@@ -361,7 +353,7 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
           </button>
         </div>
 
-        <div className="w-3/4 max-w-4xl px-4 m-auto">
+        <div className="w-full max-w-4xl px-4 m-auto">
           <DeviceList onBack={onBack} />
           <div className="pt-8">
             <ProgressBar />
