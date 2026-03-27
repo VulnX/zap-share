@@ -129,7 +129,7 @@ export default function Navigation({
     <>
       <nav className="flex w-full">
         <div
-          className=" bg-white py-2 px-2"
+          className=" bg-white py-2 px-2  border-b-2  border-gray-200"
           onClick={() => setOpenSettings(!openSettings)}
         >
           <svg
@@ -153,35 +153,40 @@ export default function Navigation({
           </svg>
         </div>
         <div
-          className={`flex py-4 justify-center w-1/2 ${tab === "send" ? "bg-black text-white" : "bg-white text-black"}`}
+          className={`flex py-4 justify-center w-1/2 border-black ${tab === "send" ? "bg-black text-white" : "bg-white text-black border-b-2 border-l-2 border-gray-200"}`}
           onClick={() => handleTabSwitch("send")}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 640 640"
-            height="100%"
-            fill={tab === "recv" ? "black" : "white"}
-            className="mr-3"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="size-6 mr-4"
           >
-            <path d="M568.4 37.7C578.2 34.2 589 36.7 596.4 44C603.8 51.3 606.2 62.2 602.7 72L424.7 568.9C419.7 582.8 406.6 592 391.9 592C377.7 592 364.9 583.4 359.6 570.3L295.4 412.3C290.9 401.3 292.9 388.7 300.6 379.7L395.1 267.3C400.2 261.2 399.8 252.3 394.2 246.7C388.6 241.1 379.6 240.7 373.6 245.8L261.2 340.1C252.1 347.7 239.6 349.7 228.6 345.3L70.1 280.8C57 275.5 48.4 262.7 48.4 248.5C48.4 233.8 57.6 220.7 71.5 215.7L568.4 37.7z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
+            />
           </svg>
           Send
         </div>
         <div
-          className={`flex py-4 justify-center w-1/2 ${tab === "recv" ? "bg-black text-white" : "bg-white text-black"}`}
+          className={`flex py-4 justify-center w-1/2 ${tab === "recv" ? "bg-black text-white" : "bg-white text-black border-b-2 border-gray-200"}`}
           onClick={() => handleTabSwitch("recv")}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            strokeWidth="1.5"
+            stroke-width="1.5"
             stroke="currentColor"
-            className="size-6 mr-3"
+            className="size-6 mr-6"
           >
             <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              stroke-linecap="round"
+              stroke-linejoin="round"
               d="M9 3.75H6.912a2.25 2.25 0 0 0-2.15 1.588L2.35 13.177a2.25 2.25 0 0 0-.1.661V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 0 0-2.15-1.588H15M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859M12 3v8.25m0 0-3-3m3 3 3-3"
             />
           </svg>
