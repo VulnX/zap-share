@@ -81,7 +81,10 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { isTheme } = useTheme();
   const hasRun = useRef(false);
 
-  const [nearbyDevices, setNearbyDevices] = useState<ServerConfiguration[]>([]);
+  const [nearbyDevices, setNearbyDevices] = useState<ServerConfiguration[]>([
+    { ip: "", port: 0, name: "xxx", type: "mobile" },
+    { ip: "", port: 0, name: "yyy", type: "computer" },
+  ]);
 
   const { fileList, text } = useSharedDataContext();
 
@@ -95,6 +98,8 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       const listener = await listen<string>("device-list-updated", (event) => {
         const parsedDevices: ServerConfiguration[] = JSON.parse(event.payload);
         setNearbyDevices(parsedDevices);
+        console.log(parsedDevices);
+        
       });
 
       listeners.push(listener);
@@ -102,13 +107,6 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
     setupListener();
   }, []);
-
-  // 🔮 Future-ready platform detection
-  const getDeviceType = (name: string) => {
-    const lower = name.toLowerCase();
-    if (lower.includes("mac") || lower.includes("laptop")) return "laptop";
-    return "mobile";
-  };
 
   return (
     <div className="w-full max-w-3xl mx-auto mt-6">
@@ -155,7 +153,6 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         {/* Device List */}
         <div className="p-4 space-y-3">
           {nearbyDevices.map((device, index) => {
-            const type = getDeviceType(device.name);
 
             return (
               <div
@@ -194,7 +191,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                       isTheme ? "bg-gray-700" : "bg-gray-200"
                     }`}
                   >
-                    {type === "mobile" && (
+                    {device.type === "mobile" && (
                       <svg
                         className={`w-5 h-5 ${
                           isTheme ? "text-gray-300" : "text-gray-700"
@@ -206,7 +203,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                       </svg>
                     )}
 
-                    {type === "laptop" && (
+                    {device.type === "computer" && (
                       <svg
                         className={`w-5 h-5 ${
                           isTheme ? "text-gray-300" : "text-gray-700"
@@ -235,7 +232,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     {/* Chips */}
                     <div className="flex gap-2 mt-1">
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-md ${
+                        className={`text-xs px-2 py-0.5 rounded-md w-fit whitespace-nowrap ${
                           isTheme
                             ? "bg-gray-700 text-gray-300"
                             : "bg-gray-200 text-gray-600"
@@ -250,22 +247,11 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                             : "bg-gray-200 text-gray-600"
                         }`}
                       >
-                        {type === "mobile" ? "Phone" : "Laptop"}
+                        {device.type === "mobile" ? "Phone" : "Laptop"}
                       </span>
                     </div>
                   </div>
                 </div>
-
-                {/* RIGHT */}
-                <button
-                  className={`px-4 py-1.5 text-sm font-medium rounded-lg border transition ${
-                    isTheme
-                      ? "bg-gray-900 text-gray-200 border-gray-600 hover:bg-gray-800"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                  }`}
-                >
-                  Connect
-                </button>
               </div>
             );
           })}
@@ -367,7 +353,7 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
           </button>
         </div>
 
-        <div className="w-3/4 max-w-4xl px-4 m-auto">
+        <div className="w-full max-w-4xl px-4 m-auto">
           <DeviceList onBack={onBack} />
           <div className="pt-8">
             <ProgressBar />

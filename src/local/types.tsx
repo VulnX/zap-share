@@ -8,6 +8,7 @@ export type ServerConfiguration = {
   ip: string;
   port: number;
   name: string;
+  type: string;
 };
 
 export type DeviceConfig = {
