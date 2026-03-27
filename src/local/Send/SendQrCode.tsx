@@ -103,13 +103,6 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     setupListener();
   }, []);
 
-  // 🔮 Future-ready platform detection
-  const getDeviceType = (name: string) => {
-    const lower = name.toLowerCase();
-    if (lower.includes("mac") || lower.includes("laptop")) return "laptop";
-    return "mobile";
-  };
-
   return (
     <div className="w-full max-w-3xl mx-auto mt-6">
       <div
@@ -155,7 +148,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         {/* Device List */}
         <div className="p-4 space-y-3">
           {nearbyDevices.map((device, index) => {
-            const type = getDeviceType(device.name);
+            const type = device.type;
 
             return (
               <div

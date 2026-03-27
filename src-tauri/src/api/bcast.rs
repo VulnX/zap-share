@@ -43,6 +43,14 @@ fn detect_broadcast_target(socket: &UdpSocket) -> SocketAddrV4 {
     unreachable!("should have found a valid bcast candidate");
 }
 
+fn get_device_type() -> String {
+    if cfg!(target_os = "android") {
+        "mobile".into()
+    } else {
+        "computer".into()
+    }
+}
+
 pub fn emit_info(port: u16, config: models::DeviceConfig, shutdown: Arc<AtomicBool>) {
     let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
     socket.set_broadcast(true).unwrap();
@@ -50,6 +58,7 @@ pub fn emit_info(port: u16, config: models::DeviceConfig, shutdown: Arc<AtomicBo
         port,
         fingerprint: config.fingerprint,
         name: config.name,
+        r#type: get_device_type(),
     };
     let payload = serde_json::to_string(&payload).unwrap();
     debug!("sending {payload}");
@@ -97,7 +106,7 @@ pub fn recv_emitted_info<R: Runtime>(
                 // timeout
                 continue;
             }
-            Err(_) => {},
+            Err(_) => {}
         };
     }
 }
