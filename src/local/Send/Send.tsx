@@ -135,23 +135,20 @@ const ErrorDialog: React.FC<{
       <DialogHeader
         className={isTheme ? "text-white" : "text-black"}
         placeholder={undefined}
-        // onpointerEnterCapture={undefined}
-        // onpointerLeaveCapture={undefined}
+        {...({} as any)}
       >
         Error
       </DialogHeader>
       <DialogBody
         className={isTheme ? "bg-gray-800 text-gray-200" : ""}
         placeholder={undefined}
-        // onpointerEnterCapture={undefined}
-        // onpointerLeaveCapture={undefined}
+        {...({} as any)}
       >
         {error.message}
       </DialogBody>
       <DialogFooter
         placeholder={undefined}
-        // onpointerEnterCapture={undefined}
-        // onpointerLeaveCapture={undefined}
+        {...({} as any)}
       >
         <Button
           color="blue"
@@ -373,8 +370,7 @@ export default function Send({
         handler={setShowBackConfirmation}
         className={isTheme ? "bg-gray-800 text-white" : "bg-white text-black"}
         placeholder={undefined}
-        // onpointerEnterCapture={undefined}
-        // onpointerLeaveCapture={undefined}
+        {...({} as any)}
       >
         <DialogHeader
           className={isTheme ? "text-white" : "text-black"}
@@ -395,8 +391,7 @@ export default function Send({
             onClick={() => setShowBackConfirmation(false)}
             className="mr-2"
             placeholder={undefined}
-            // onpointerEnterCapture={undefined}
-            // onpointerLeaveCapture={undefined}
+            {...({} as any)}
           >
             Cancel
           </Button>
@@ -404,8 +399,7 @@ export default function Send({
             color="red"
             onClick={handleBackFromQr}
             placeholder={undefined}
-            // onpointerEnterCapture={undefined}
-            // onpointerLeaveCapture={undefined}
+            {...({} as any)}
           >
             Stop & Go Back
           </Button>

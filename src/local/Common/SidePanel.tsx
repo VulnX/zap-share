@@ -33,7 +33,7 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
         open={openSettings}
         onClose={closeDrawer}
         className="p-4 overflow-y-auto"
-        {...{} as any}
+        {...({} as any)}
       >
         {/* Header */}
         <div className="p-6 pl-3 pb-4">
@@ -117,10 +117,8 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
                 onChange={(event) =>
                   setEndToEndEncryption(event.target.checked)
                 }
-                // placeholder=""
-                // onpointerEnterCapture={() => {}}
-                // onpointerLeaveCapture={() => {}}
                 crossOrigin={undefined}
+                {...({} as any)}
               />
             </div>
           </div>
@@ -187,10 +185,8 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
             <Switch
               checked={autoDiscovery}
               onChange={(event) => setAutoDiscovery(event.target.checked)}
-              // placeholder=""
-              // onpointerEnterCapture={() => {}}
-              // onpointerLeaveCapture={() => {}}
               crossOrigin={undefined}
+              {...({} as any)}
             />
           </div>
 
@@ -215,7 +211,9 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
                 Device Name
               </span>
             </div>
-            <span className="text-sm text-gray-500">{deviceName || "Loading..."}</span>
+            <span className="text-sm text-gray-500">
+              {deviceName || "Loading..."}
+            </span>
           </div>
         </div>
 
