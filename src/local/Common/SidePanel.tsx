@@ -185,6 +185,7 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
             <Switch
               checked={autoDiscovery}
               onChange={(event) => setAutoDiscovery(event.target.checked)}
+           
               crossOrigin={undefined}
               {...({} as any)}
             />

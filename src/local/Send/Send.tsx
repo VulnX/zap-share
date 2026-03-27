@@ -134,21 +134,20 @@ const ErrorDialog: React.FC<{
     >
       <DialogHeader
         className={isTheme ? "text-white" : "text-black"}
-        placeholder={undefined}
+      
         {...({} as any)}
       >
         Error
       </DialogHeader>
       <DialogBody
         className={isTheme ? "bg-gray-800 text-gray-200" : ""}
-        placeholder={undefined}
+      
         {...({} as any)}
       >
         {error.message}
       </DialogBody>
       <DialogFooter
-        placeholder={undefined}
-        {...({} as any)}
+       {...({} as any)}
       >
         <Button
           color="blue"
@@ -263,7 +262,7 @@ export default function Send({
           <div
             className={`flex space-x-6 ${
               isTheme ? "bg-gray-700" : "bg-gray-100"
-            } rounded-full p-2 shadow-md mb-2 w-40 mx-auto font-semibold`}
+            } rounded-full p-2 shadow-md mb-2 w-4/5 mx-auto font-semibold`}
           >
             {/* File tab */}
             <div
@@ -369,12 +368,12 @@ export default function Send({
         open={showBackConfirmation}
         handler={setShowBackConfirmation}
         className={isTheme ? "bg-gray-800 text-white" : "bg-white text-black"}
-        placeholder={undefined}
+    
         {...({} as any)}
       >
         <DialogHeader
           className={isTheme ? "text-white" : "text-black"}
-          placeholder={undefined}
+          
           {...({} as any)}
         >
           Stop Server?
@@ -390,16 +389,14 @@ export default function Send({
           <Button
             onClick={() => setShowBackConfirmation(false)}
             className="mr-2"
-            placeholder={undefined}
-            {...({} as any)}
+          {...({} as any)}
           >
             Cancel
           </Button>
           <Button
             color="red"
             onClick={handleBackFromQr}
-            placeholder={undefined}
-            {...({} as any)}
+        {...({} as any)}
           >
             Stop & Go Back
           </Button>
