@@ -49,6 +49,13 @@ pub fn start_server<R: Runtime>(
                         .route("/files/{id}", web::get().to(send::get_file))
                         .app_data(web::Data::new(file_datas.clone()))
                 }
+                // Unified receive mode — handles both files and text
+                models::TransferMode::Receive => {
+                    app = app
+                        .route("/", web::get().to(recv::serve_upload_ui))
+                        .route("/files", web::post().to(recv::receive_file))
+                        .route("/text", web::post().to(recv::receive_text))
+                }
                 models::TransferMode::ReceiveFile => {
                     app = app
                         .route("/", web::get().to(recv::serve_upload_ui))

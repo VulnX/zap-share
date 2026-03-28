@@ -206,6 +206,17 @@ pub fn recv_text<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
     start_server(window, mode)
 }
 
+/// Starts the server in unified receive mode.
+///
+/// A single server handles both `POST /files` and `POST /text`,
+/// so the user never has to choose up-front what they're receiving.
+#[allow(dead_code)]
+#[tauri::command]
+pub fn recv<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
+    let mode = models::TransferMode::Receive;
+    start_server(window, mode)
+}
+
 #[allow(dead_code)]
 #[tauri::command]
 pub fn stop_server() {
@@ -286,7 +297,7 @@ fn start_server<R: Runtime>(
         models::TransferMode::SendFile(_) => {
             thread::spawn(|| bcast::recv_emitted_info(window, config, shutdown_clone))
         }
-        models::TransferMode::ReceiveFile => {
+        models::TransferMode::Receive | models::TransferMode::ReceiveFile => {
             thread::spawn(move || bcast::emit_info(port, config, shutdown_clone))
         }
         models::TransferMode::SendText(_) => {

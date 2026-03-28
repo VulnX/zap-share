@@ -69,8 +69,11 @@ impl FileData {
 #[derive(Clone)]
 pub enum TransferMode {
     SendFile(Vec<FileData>),
-    ReceiveFile,
+    /// Unified receive mode: handles both file uploads and text in one server
+    Receive,
     SendText(String),
+    /// Legacy: kept for direct app-to-app send_files_to / send_text_to compat
+    ReceiveFile,
     ReceiveText,
 }
 

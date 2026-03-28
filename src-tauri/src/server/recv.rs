@@ -69,30 +69,49 @@ pub async fn receive_file(
         .and_then(|v| v.to_str().ok())
         .and_then(|s| s.parse().ok());
 
-    debug!("Receiving file: {filename:#?} (size hint: {filesize:#?})");
+    // Sanitize filename to prevent path traversal and OS-specific invalid chars (/, \, :)
+    let sanitized_filename = filename.replace(['/', '\\', ':'], "_");
+
+    debug!("Receiving file: {sanitized_filename:#?} (size hint: {filesize:#?})");
 
     // Resolve the downloads directory (Android fallback)
     let mut write_path = match tauri_plugin_os::platform() {
         "android" => PathBuf::from("/storage/emulated/0/Download"),
-        _ => window.path().download_dir().unwrap(),
+        _ => window.path().download_dir().unwrap_or_else(|_| PathBuf::from(".")),
     };
 
-    get_unique_file_path(&mut write_path, &filename);
+    get_unique_file_path(&mut write_path, &sanitized_filename);
 
-    let file = fs::File::create(&write_path).await.unwrap();
+    let file = match fs::File::create(&write_path).await {
+        Ok(f) => f,
+        Err(e) => {
+            debug!("Failed to create file: {e:#?}");
+            return HttpResponse::InternalServerError().body(format!("Failed to create file: {e}"));
+        }
+    };
     debug!("Saving file to {write_path:#?}");
 
     let mut bufwriter = BufWriter::new(file);
     let mut written: u64 = 0;
     let mut payload = models::ProgressUpdatePayload {
         id: uuid::Uuid::new_v4().to_string(),
-        filename,
+        filename: sanitized_filename,
         progress: 0.0,
     };
 
     while let Some(chunk) = body.next().await {
-        let chunk = chunk.unwrap();
-        bufwriter.write_all(&chunk).await.unwrap();
+        let chunk = match chunk {
+            Ok(c) => c,
+            Err(e) => {
+                debug!("Error reading body chunk: {e:#?}");
+                return HttpResponse::InternalServerError().body(format!("Transfer interrupted: {e}"));
+            }
+        };
+
+        if let Err(e) = bufwriter.write_all(&chunk).await {
+            debug!("Failed to write chunk: {e:#?}");
+            return HttpResponse::InternalServerError().body(format!("Failed to write to disk: {e}"));
+        }
         written += chunk.len() as u64;
 
         if let Some(total) = filesize {
@@ -100,12 +119,15 @@ pub async fn receive_file(
             let rounded = (new_progress * 10.0).round() / 10.0;
             if payload.progress < rounded {
                 payload.progress = rounded;
-                window.emit("progress-update", &payload).unwrap();
+                let _ = window.emit("progress-update", &payload);
             }
         }
     }
 
-    bufwriter.flush().await.unwrap();
+    if let Err(e) = bufwriter.flush().await {
+        debug!("Failed to flush file: {e:#?}");
+        return HttpResponse::InternalServerError().body(format!("Failed to finalize file: {e}"));
+    }
     debug!("File saved to disk");
 
     HttpResponse::new(StatusCode::CREATED)
