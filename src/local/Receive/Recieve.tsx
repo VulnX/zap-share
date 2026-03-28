@@ -170,7 +170,7 @@ function QrPanel({ qrCode, qrText, dark, starting, isRunning, onStop, onStart, o
               {qrText}
             </div>
           )}
-          <div className={`rounded-xl flex items-center justify-center p-3 ${dark ? "bg-white" : "bg-gray-50"}`}>
+          <div className={`rounded-xl flex items-center justify-center p-3 ${dark ? "bg-white" : "border-2 border-gray-200"}`}>
             {qrCode ? (
               <div className="qr-container w-44 h-44" dangerouslySetInnerHTML={{ __html: qrCode }} />
             ) : (
@@ -279,7 +279,7 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
   }, []);
 
   return (
-    <div className={`flex flex-col h-full overflow-hidden ${dark ? "bg-gray-900" : "bg-gray-50"}`}>
+    <div className={`flex flex-col h-full overflow-hidden ${dark ? "bg-gray-900" : "bg-white"}`}>
       {/* Scrollable feed container */}
       <div ref={feedRef} className="flex-1 overflow-y-auto px-4 pt-4">
         <div className="max-w-xl mx-auto space-y-3 pb-24"> {/* pb-24 fixes clipping at the bottom */}

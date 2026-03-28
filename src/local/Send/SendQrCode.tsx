@@ -81,10 +81,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { isTheme } = useTheme();
   const hasRun = useRef(false);
 
-  const [nearbyDevices, setNearbyDevices] = useState<ServerConfiguration[]>([
-    { ip: "", port: 0, name: "xxx", type: "mobile" },
-    { ip: "", port: 0, name: "yyy", type: "computer" },
-  ]);
+  const [nearbyDevices, setNearbyDevices] = useState<ServerConfiguration[]>([]);
 
   const { fileList, text } = useSharedDataContext();
 
@@ -99,7 +96,6 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         const parsedDevices: ServerConfiguration[] = JSON.parse(event.payload);
         setNearbyDevices(parsedDevices);
         console.log(parsedDevices);
-        
       });
 
       listeners.push(listener);
@@ -153,7 +149,6 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         {/* Device List */}
         <div className="p-4 space-y-3">
           {nearbyDevices.map((device, index) => {
-
             return (
               <div
                 key={index}

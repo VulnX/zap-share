@@ -103,19 +103,25 @@ export default function Navigation({
 
   const [pendingTab, setPendingTab] = useState<string | null>(null);
   const handleTabSwitch = (newTab: string) => {
+    // If server NOT running → allow freely
     if (canSwitch) {
       setTab(newTab);
-      // setCanSwitch(false);
-    } else {
+      return;
+    }
+
+    // If server running → ask confirmation
+    if (tab !== newTab) {
       setPendingTab(newTab);
       setOpen(true);
     }
   };
   const handleConfirm = () => {
     if (pendingTab) {
-      // setCanSwitch(true);
       setTab(pendingTab);
-      setCanSwitch(false);
+
+      // server will be stopped elsewhere → allow switching again
+      setCanSwitch(true);
+
       setPendingTab(null);
     }
     setOpen(false);
@@ -156,7 +162,7 @@ export default function Navigation({
           className={`flex py-4 justify-center w-1/2 border-black ${tab === "send" ? "bg-black text-white" : "bg-white text-black border-b-2 border-l-2 border-gray-200"}`}
           onClick={() => handleTabSwitch("send")}
         >
-         <svg
+          <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 640 640"
             fill={tab === "recv" ? "black" : "white"}
