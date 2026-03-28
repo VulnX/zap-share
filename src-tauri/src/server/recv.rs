@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 
 use actix_web::{
+    http::StatusCode,
     web::{self, BytesMut},
-    HttpResponse, Responder,
+    HttpRequest, HttpResponse, Responder,
 };
 use futures_util::StreamExt;
 use log::debug;
@@ -14,48 +15,63 @@ use tokio::{
 
 use crate::models;
 
-/// Handles the `/` route in RECEIVE mode
+/// Handles `GET /` in ReceiveFile mode
 ///
-/// Serves an HTML form (from `static/upload-file.html`) allowing the user to
-/// upload a file via POST request.
-pub async fn upload() -> impl Responder {
+/// Serves the upload UI HTML page.
+pub async fn serve_upload_ui() -> impl Responder {
     HttpResponse::Ok().body(include_str!("../static/upload-file.html"))
 }
 
-/// Handles the `/upload/{filename}/{filesize}` POST route
+/// Handles `POST /files` in ReceiveFile mode
 ///
-/// Receives a streaming file upload via the request body and writes it
-/// directly to disk, chunk-by-chunk, at a platform-specific downloads path.
-///
-/// On Android, the file is saved to:
-/// `/storage/emulated/0/Download/{filename}`
-///
-/// On other platforms, it is saved to the path resolved from:
-/// `window.path().download_dir()`
+/// Streams the raw request body directly to disk chunk-by-chunk.
+/// The filename is read from the `X-Filename` request header.
+/// The total size (for progress reporting) is read from the
+/// `Content-Length` request header when present.
 ///
 /// Emits a `progress-update` event to the window after writing each chunk,
 /// with the following payload:
 /// ```javascript
-/// Number // Progress percentage (0-100)
+/// { "id": String, "filename": String, "progress": Number /* 0-100 */ }
 /// ```
 ///
-/// # Path Parameters
-/// - `filename`: The name of the file being uploaded.
-/// - `filesize`: The total size of the file in bytes (used to calculate progress).
+/// Returns `201 Created` on success, `400 Bad Request` if the
+/// `X-Filename` header is missing or empty.
 ///
-/// # Errors
-/// - Upload fails if a file by same name already exists (should be easy fix)
-pub async fn upload_file(
+/// # Notes
+/// - Body is streamed (not buffered) – no multipart overhead.
+/// - If a file with the same name already exists in the downloads directory
+///   a numeric suffix is appended automatically, e.g. `photo (1).jpg`.
+pub async fn receive_file(
     window: web::Data<Window>,
-    path: web::Path<(String, u64)>,
+    req: HttpRequest,
     mut body: web::Payload,
 ) -> impl Responder {
-    let (filename, filesize) = path.into_inner();
-    debug!("{filename:#?}");
-    debug!("{filesize:#?}");
+    // Extract filename from the X-Filename header (percent-decoded)
+    let filename = match req
+        .headers()
+        .get("X-Filename")
+        .and_then(|v| v.to_str().ok())
+        .filter(|s| !s.is_empty())
+        .map(|s| urlencoding::decode(s).map(|c| c.into_owned()).unwrap_or_else(|_| s.to_owned()))
+    {
+        Some(name) => name,
+        None => {
+            return HttpResponse::BadRequest()
+                .body("Missing or empty X-Filename header");
+        }
+    };
 
-    // Fallback to static path on android since tauri does not detect the
-    // system downloads directory
+    // Optional Content-Length for progress reporting
+    let filesize: Option<u64> = req
+        .headers()
+        .get("Content-Length")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.parse().ok());
+
+    debug!("Receiving file: {filename:#?} (size hint: {filesize:#?})");
+
+    // Resolve the downloads directory (Android fallback)
     let mut write_path = match tauri_plugin_os::platform() {
         "android" => PathBuf::from("/storage/emulated/0/Download"),
         _ => window.path().download_dir().unwrap(),
@@ -64,32 +80,38 @@ pub async fn upload_file(
     get_unique_file_path(&mut write_path, &filename);
 
     let file = fs::File::create(&write_path).await.unwrap();
-    debug!("saving file to {write_path:#?}");
+    debug!("Saving file to {write_path:#?}");
+
     let mut bufwriter = BufWriter::new(file);
-    let mut written = 0;
+    let mut written: u64 = 0;
     let mut payload = models::ProgressUpdatePayload {
         id: uuid::Uuid::new_v4().to_string(),
         filename,
         progress: 0.0,
     };
+
     while let Some(chunk) = body.next().await {
         let chunk = chunk.unwrap();
         bufwriter.write_all(&chunk).await.unwrap();
-        written += chunk.len();
-        let new_progress = written as f32 * 100.0 / filesize as f32;
-        let rounded_progress = (new_progress * 10.0).round() / 10.0;
-        if payload.progress < rounded_progress {
-            payload.progress = rounded_progress;
-            window.emit("progress-update", &payload).unwrap();
+        written += chunk.len() as u64;
+
+        if let Some(total) = filesize {
+            let new_progress = written as f32 * 100.0 / total as f32;
+            let rounded = (new_progress * 10.0).round() / 10.0;
+            if payload.progress < rounded {
+                payload.progress = rounded;
+                window.emit("progress-update", &payload).unwrap();
+            }
         }
     }
-    bufwriter.flush().await.unwrap();
-    debug!("saved on disk");
 
-    HttpResponse::Ok()
+    bufwriter.flush().await.unwrap();
+    debug!("File saved to disk");
+
+    HttpResponse::new(StatusCode::CREATED)
 }
 
-fn get_unique_file_path(write_path: &mut PathBuf, filename: &String) {
+fn get_unique_file_path(write_path: &mut PathBuf, filename: &str) {
     if !write_path.join(filename).exists() {
         write_path.push(filename);
         return;
@@ -97,7 +119,7 @@ fn get_unique_file_path(write_path: &mut PathBuf, filename: &String) {
 
     let (name, ext) = match filename.rsplit_once('.') {
         Some((name, ext)) => (name.to_string(), Some(ext.to_string())),
-        None => (filename.clone(), None),
+        None => (filename.to_string(), None),
     };
 
     for i in 1.. {
@@ -113,11 +135,20 @@ fn get_unique_file_path(write_path: &mut PathBuf, filename: &String) {
     unreachable!("Infinite loop should always find a unique name");
 }
 
-pub async fn handle_text() -> impl Responder {
+/// Handles `GET /` in ReceiveText mode
+///
+/// Serves the text-upload UI HTML page.
+pub async fn serve_text_ui() -> impl Responder {
     HttpResponse::Ok().body(include_str!("../static/upload-text.html"))
 }
 
-pub async fn handle_text_upload(
+/// Handles `POST /text` in ReceiveText mode
+///
+/// Buffers the plain-text request body and emits it as a
+/// `received-text` event to the Tauri window.
+///
+/// Returns `204 No Content` on success.
+pub async fn receive_text(
     window: web::Data<Window>,
     mut body: web::Payload,
 ) -> impl Responder {
@@ -127,5 +158,5 @@ pub async fn handle_text_upload(
     }
     let body_str = String::from_utf8_lossy(&body_bytes);
     window.emit("received-text", body_str).unwrap();
-    HttpResponse::Ok()
+    HttpResponse::new(StatusCode::NO_CONTENT)
 }

@@ -1,22 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Upload</title>
-  </head>
-  <body>
-    <textarea id="textInput" placeholder="Paste text here..."></textarea>
-    <hr />
-    <button onclick="sendText()">Send</button>
-    <script defer>
-      function sendText() {
-        const text = document.getElementById("textInput").value;
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/upload");
-        xhr.setRequestHeader("Content-Type", "text/plain");
-        xhr.send(text);
-      }
-    </script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload</title>
+</head>
+
+<body>
+  <textarea id="textInput" placeholder="Paste text here..."></textarea>
+  <hr />
+  <button onclick="sendText()">Send</button>
+  <script defer>
+    function sendText() {
+      const text = document.getElementById("textInput").value;
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/text");
+      xhr.setRequestHeader("Content-Type", "text/plain");
+      xhr.send(text);
+    }
+  </script>
+</body>
+
 </html>

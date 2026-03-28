@@ -6,13 +6,29 @@ use tauri::Runtime;
 mod recv;
 mod send;
 
-/// Starts an actix web server and enables required routes based on the given `mode`
+/// Starts an actix-web server and registers REST routes based on `mode`.
 ///
-/// Server will be exposed at : `0.0.0.0`
+/// The server binds to `0.0.0.0` on a randomly assigned port.
+/// The assigned port is sent back to the caller via `tx`.
+/// `SERVER_HANDLE` is registered once the server starts successfully.
 ///
-/// Port will be randomly assigned and sent back to caller function via `tx` channel
+/// ## Route map
 ///
-/// `SERVER_HANDLE` will be registered after server starts successfully
+/// ### SendFile
+/// - `GET  /`          — download UI page
+/// - `GET  /files/{id}` — stream a file by its ID
+///
+/// ### ReceiveFile
+/// - `GET  /`          — upload UI page
+/// - `POST /files`      — receive a streaming file upload
+///
+/// ### SendText
+/// - `GET  /`          — UI page (redirects client to /text)
+/// - `GET  /text`       — returns the raw text body
+///
+/// ### ReceiveText
+/// - `GET  /`          — text input UI page
+/// - `POST /text`       — receive plain-text body, emit to window
 pub fn start_server<R: Runtime>(
     window: tauri::Window<R>,
     mode: models::TransferMode,
@@ -29,37 +45,37 @@ pub fn start_server<R: Runtime>(
             match &mode {
                 models::TransferMode::SendFile(file_datas) => {
                     app = app
-                        .route("/", web::get().to(send::download_frontend))
-                        .route("/download/{id}", web::get().to(send::download_file))
+                        .route("/", web::get().to(send::serve_download_ui))
+                        .route("/files/{id}", web::get().to(send::get_file))
                         .app_data(web::Data::new(file_datas.clone()))
                 }
                 models::TransferMode::ReceiveFile => {
-                    app = app.route("/", web::get().to(recv::upload)).route(
-                        "/upload/{filename}/{filesize}",
-                        web::post().to(recv::upload_file),
-                    )
+                    app = app
+                        .route("/", web::get().to(recv::serve_upload_ui))
+                        .route("/files", web::post().to(recv::receive_file))
                 }
                 models::TransferMode::SendText(text) => {
                     app = app
-                        .route("/", web::get().to(send::handle_text))
+                        .route("/", web::get().to(send::get_text))
+                        .route("/text", web::get().to(send::get_text))
                         .app_data(web::Data::new(text.clone()))
                 }
                 models::TransferMode::ReceiveText => {
                     app = app
-                        .route("/", web::get().to(recv::handle_text))
-                        .route("/upload", web::post().to(recv::handle_text_upload))
+                        .route("/", web::get().to(recv::serve_text_ui))
+                        .route("/text", web::post().to(recv::receive_text))
                 }
             };
             app = app.app_data(window.clone());
             app
         });
         if let Ok(_server) = _server.bind(("0.0.0.0", 0)) {
-            // port is `0` to allow automatic assigning of random port
+            // port `0` triggers automatic random port assignment
             server = _server;
             break;
         }
-        // The caller function should handle `recv_timeout` because this may
-        // (hypothetically) get stuck in an infinite loop
+        // The caller should handle `recv_timeout` since this could
+        // (hypothetically) spin indefinitely
     }
     let port = server
         .addrs()
@@ -70,9 +86,8 @@ pub fn start_server<R: Runtime>(
     let server = server.shutdown_timeout(0).run();
     let mut guard = SERVER_HANDLE.lock().unwrap();
     *guard = Some(server.handle());
-    // This function will be running as long as the server is, thus guard
-    // won't be dropped automatically. To make it available for other
-    // threads, we need to manually drop it here.
+    // Manually drop the guard so other threads can acquire it while
+    // this function blocks on the server future.
     drop(guard);
     rt::System::new().block_on(server).unwrap();
 }

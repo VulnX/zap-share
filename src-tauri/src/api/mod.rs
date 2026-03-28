@@ -117,21 +117,16 @@ pub async fn send_files_to<R: Runtime>(
     files: Vec<(SafeFilePath, String)>,
     to: models::ServerConfiguration,
 ) {
+    let endpoint = format!("http://{}:{}/files", to.ip, to.port);
     for (filepath, filename) in files {
         let (mut file, _) = open_file(&filepath, &window);
-        let client = reqwest::Client::new();
-        let endpoint = format!(
-            "http://{}:{}/upload/{}/{}",
-            to.ip,
-            to.port,
-            filename,
-            file.metadata().unwrap().len()
-        );
-        println!("sending {file:#?} to {endpoint:#?}");
         let mut file_contents = Vec::new();
         file.read_to_end(&mut file_contents).unwrap();
+        println!("sending {filename:#?} to {endpoint:#?}");
+        let client = reqwest::Client::new();
         client
-            .post(endpoint)
+            .post(&endpoint)
+            .header("X-Filename", urlencoding::encode(&filename).into_owned())
             .body(file_contents)
             .send()
             .await
@@ -143,9 +138,15 @@ pub async fn send_files_to<R: Runtime>(
 #[tauri::command]
 pub async fn send_text_to(text: String, to: models::ServerConfiguration) {
     let client = reqwest::Client::new();
-    let endpoint = format!("http://{}:{}/upload", to.ip, to.port);
-    println!("sending {text:#?} to {endpoint:#?}");
-    client.post(endpoint).body(text).send().await.unwrap();
+    let endpoint = format!("http://{}:{}/text", to.ip, to.port);
+    println!("sending text to {endpoint:#?}");
+    client
+        .post(endpoint)
+        .header("Content-Type", "text/plain")
+        .body(text)
+        .send()
+        .await
+        .unwrap();
 }
 
 #[allow(dead_code)]

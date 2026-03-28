@@ -161,14 +161,8 @@
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
-        xhr.open(
-          "POST",
-          "/upload/" +
-          encodeURIComponent(file.name) +
-          "/" +
-          encodeURIComponent(file.size),
-          true
-        );
+        xhr.open("POST", "/files", true);
+        xhr.setRequestHeader("X-Filename", encodeURIComponent(file.name));
 
         xhr.upload.onprogress = function (event) {
           if (event.lengthComputable) {
@@ -181,7 +175,7 @@
         };
 
         xhr.onload = function () {
-          if (xhr.status === 200) {
+          if (xhr.status >= 200 && xhr.status < 300) {
             status.innerText = "Uploaded";
             resolve();
           } else if (xhr.status === 413) {
