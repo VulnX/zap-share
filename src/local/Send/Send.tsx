@@ -6,6 +6,7 @@ import SendConfirmationDialog from "./SendConfirmation";
 import QrCode from "./SendQrCode";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
+import { useSharedDataContext } from "../Context/FileListContext";
 import {
   Dialog,
   DialogHeader,
@@ -29,9 +30,8 @@ const FilePicker = ({
   return (
     <div className="mt-[10vh] min-w-screen flex justify-center items-center px-4">
       <div
-        className={`h-[40vw] w-[40vw] md:h-[30vw] md:w-[30vw] sm:h-[50vw] sm:w-[50vw] flex flex-col justify-center items-center ${
-          isTheme ? "bg-gray-800" : "bg-gray-200"
-        } rounded-3xl drop-shadow-xl shadow-xl clickable`}
+        className={`h-[40vw] w-[40vw] md:h-[30vw] md:w-[30vw] sm:h-[50vw] sm:w-[50vw] flex flex-col justify-center items-center ${isTheme ? "bg-gray-800" : "bg-gray-200"
+          } rounded-3xl drop-shadow-xl shadow-xl clickable`}
         onClick={async () => {
           try {
             const files = await open({
@@ -91,11 +91,10 @@ const TextSender = ({ onSendText }: { onSendText: (text: string) => void }) => {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className={`w-full h-[50vh] p-4 rounded-lg resize-none outline-none border ${
-            isTheme
-              ? "bg-gray-800 text-white border-gray-600 focus:border-gray-500"
-              : "bg-white text-black border-gray-300 focus:border-gray-400"
-          } focus:ring-2 focus:ring-blue-500`}
+          className={`w-full h-[50vh] p-4 rounded-lg resize-none outline-none border ${isTheme
+            ? "bg-gray-800 text-white border-gray-600 focus:border-gray-500"
+            : "bg-white text-black border-gray-300 focus:border-gray-400"
+            } focus:ring-2 focus:ring-blue-500`}
           placeholder="Type your message here..."
         />
       </div>
@@ -105,9 +104,8 @@ const TextSender = ({ onSendText }: { onSendText: (text: string) => void }) => {
             onSendText(text);
           }
         }}
-        className={`mt-4 px-8 py-3 bg-gray-600 text-white rounded-lg font-medium hover:shadow-lg transition-all ${
-          isTheme ? "hover:bg-gray-500" : "hover:bg-gray-800"
-        }`}
+        className={`mt-4 px-8 py-3 bg-gray-600 text-white rounded-lg font-medium hover:shadow-lg transition-all ${isTheme ? "hover:bg-gray-500" : "hover:bg-gray-800"
+          }`}
       >
         Send
       </button>
@@ -190,11 +188,15 @@ export default function Send({
     }
   };
 
+  const { setFileList, setText } = useSharedDataContext();
+
   const handleBackFromQr = async () => {
     setShowBackConfirmation(false);
     await stopServer();
     setShowQrCode(false);
     setSendFile(false);
+    setFileList([]);
+    setText(undefined);
     setCanSwitch(true);
   };
 
@@ -254,9 +256,8 @@ export default function Send({
         />
       ) : (
         <div
-          className={`min-h-screen flex flex-col pt-10 ${
-            isTheme ? "bg-gray-900" : "white"
-          }`}
+          className={`min-h-screen flex flex-col pt-10 ${isTheme ? "bg-gray-900" : "white"
+            }`}
         >
           {/* Switch for text and file sending */}
           <div
@@ -266,15 +267,14 @@ export default function Send({
           >
             {/* File tab */}
             <div
-              className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
-                sendFile
-                  ? isTheme
-                    ? "bg-gray-600 text-white"
-                    : "bg-gray-300 text-gray-900"
-                  : isTheme
-                    ? "text-gray-400"
-                    : "text-gray-600"
-              }`}
+              className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${sendFile
+                ? isTheme
+                  ? "bg-gray-600 text-white"
+                  : "bg-gray-300 text-gray-900"
+                : isTheme
+                  ? "text-gray-400"
+                  : "text-gray-600"
+                }`}
               onClick={() => setSendFile(true)}
             >
               File
@@ -282,15 +282,14 @@ export default function Send({
 
             {/* Text tab */}
             <div
-              className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
-                !sendFile
-                  ? isTheme
-                    ? "bg-gray-600 text-white"
-                    : "bg-gray-300 text-gray-900"
-                  : isTheme
-                    ? "text-gray-400"
-                    : "text-gray-600"
-              }`}
+              className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${!sendFile
+                ? isTheme
+                  ? "bg-gray-600 text-white"
+                  : "bg-gray-300 text-gray-900"
+                : isTheme
+                  ? "text-gray-400"
+                  : "text-gray-600"
+                }`}
               onClick={() => setSendFile(false)}
             >
               Text

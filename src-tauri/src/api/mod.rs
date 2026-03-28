@@ -117,21 +117,16 @@ pub async fn send_files_to<R: Runtime>(
     files: Vec<(SafeFilePath, String)>,
     to: models::ServerConfiguration,
 ) {
+    let endpoint = format!("http://{}:{}/files", to.ip, to.port);
     for (filepath, filename) in files {
         let (mut file, _) = open_file(&filepath, &window);
-        let client = reqwest::Client::new();
-        let endpoint = format!(
-            "http://{}:{}/upload/{}/{}",
-            to.ip,
-            to.port,
-            filename,
-            file.metadata().unwrap().len()
-        );
-        println!("sending {file:#?} to {endpoint:#?}");
         let mut file_contents = Vec::new();
         file.read_to_end(&mut file_contents).unwrap();
+        println!("sending {filename:#?} to {endpoint:#?}");
+        let client = reqwest::Client::new();
         client
-            .post(endpoint)
+            .post(&endpoint)
+            .header("X-Filename", urlencoding::encode(&filename).into_owned())
             .body(file_contents)
             .send()
             .await
@@ -143,9 +138,15 @@ pub async fn send_files_to<R: Runtime>(
 #[tauri::command]
 pub async fn send_text_to(text: String, to: models::ServerConfiguration) {
     let client = reqwest::Client::new();
-    let endpoint = format!("http://{}:{}/upload", to.ip, to.port);
-    println!("sending {text:#?} to {endpoint:#?}");
-    client.post(endpoint).body(text).send().await.unwrap();
+    let endpoint = format!("http://{}:{}/text", to.ip, to.port);
+    println!("sending text to {endpoint:#?}");
+    client
+        .post(endpoint)
+        .header("Content-Type", "text/plain")
+        .body(text)
+        .send()
+        .await
+        .unwrap();
 }
 
 #[allow(dead_code)]
@@ -202,6 +203,17 @@ pub fn send_text<R: Runtime>(window: Window<R>, text: String) -> models::StartSe
 #[tauri::command]
 pub fn recv_text<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
     let mode = models::TransferMode::ReceiveText;
+    start_server(window, mode)
+}
+
+/// Starts the server in unified receive mode.
+///
+/// A single server handles both `POST /files` and `POST /text`,
+/// so the user never has to choose up-front what they're receiving.
+#[allow(dead_code)]
+#[tauri::command]
+pub fn recv<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
+    let mode = models::TransferMode::Receive;
     start_server(window, mode)
 }
 
@@ -285,7 +297,7 @@ fn start_server<R: Runtime>(
         models::TransferMode::SendFile(_) => {
             thread::spawn(|| bcast::recv_emitted_info(window, config, shutdown_clone))
         }
-        models::TransferMode::ReceiveFile => {
+        models::TransferMode::Receive | models::TransferMode::ReceiveFile => {
             thread::spawn(move || bcast::emit_info(port, config, shutdown_clone))
         }
         models::TransferMode::SendText(_) => {

@@ -1,208 +1,290 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Upload</title>
+  <title>Send to device</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f11;
+      color: #e4e4e7;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+      gap: 20px;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f4f4f5;
+      letter-spacing: -0.02em;
+    }
+
+    /* Tab toggle */
+    .tabs {
+      display: flex;
+      background: #1c1c1f;
+      border: 1px solid #2a2a2e;
+      border-radius: 12px;
+      padding: 4px;
+      gap: 2px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px 24px;
+      border: none;
+      border-radius: 9px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: #71717a;
+      transition: all 0.15s;
+    }
+
+    .tab-btn.active {
+      background: #2a2a2e;
+      color: #f4f4f5;
+    }
+
+    /* Panels */
+    .panel { display: none; width: 100%; max-width: 420px; flex-direction: column; gap: 16px; }
+    .panel.visible { display: flex; }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed #3a3a3e;
+      border-radius: 16px;
+      padding: 32px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #1a1a1d;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #6366f1;
+      background: #1e1e2a;
+    }
+    .drop-zone .icon { font-size: 2.4rem; margin-bottom: 10px; }
+    .drop-zone .label { font-size: 0.9rem; color: #a1a1aa; }
+    .drop-zone .sublabel { font-size: 0.75rem; color: #52525b; margin-top: 4px; }
+    #fileInput { display: none; }
+    #fileName { font-size: 0.82rem; color: #818cf8; font-weight: 500; min-height: 1.2em; text-align: center; }
+
+    /* Progress bar */
+    .progress-wrap {
+      height: 6px;
+      background: #27272a;
+      border-radius: 99px;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .progress-wrap.visible { opacity: 1; }
+    #progressBar {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #6366f1, #818cf8);
+      border-radius: 99px;
+      transition: width 0.2s;
+    }
+
+    /* Status */
+    #statusMsg {
+      font-size: 0.8rem;
+      color: #71717a;
+      text-align: center;
+      min-height: 1.2em;
+    }
+    #statusMsg.success { color: #4ade80; }
+    #statusMsg.error   { color: #f87171; }
+
+    /* Textarea */
+    textarea {
+      width: 100%;
+      height: 180px;
+      background: #1a1a1d;
+      border: 1.5px solid #3a3a3e;
+      border-radius: 14px;
+      color: #e4e4e7;
+      font-size: 0.95rem;
+      padding: 14px;
+      resize: none;
+      outline: none;
+      line-height: 1.6;
+      transition: border-color 0.15s;
+    }
+    textarea:focus { border-color: #6366f1; }
+    textarea::placeholder { color: #52525b; }
+
+    /* Button */
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: #6366f1;
+      color: #fff;
+      letter-spacing: 0.01em;
+      transition: background 0.15s, opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover  { background: #4f46e5; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  </style>
 </head>
-<style>
-  * {
-    margin: 0;
-    padding: 0;
-    font-size: 1.2rem;
-    transition: 0.1s;
-    font-family: sans-serif;
-    color: white;
-  }
-
-  body {
-    max-width: 100vw;
-    max-height: 100vh;
-    background-color: #1b1b1b;
-    overflow: hidden;
-  }
-
-  .container {
-    display: flex;
-    flex-direction: column;
-    padding: 15px;
-  }
-
-  .container * {
-    margin: 20px 0;
-  }
-
-  .title-container {
-    text-align: center;
-  }
-
-  .title {
-    font-weight: bold;
-    border-bottom: thin solid white;
-  }
-
-  #fileInput {
-    display: none;
-  }
-
-  #progress {
-    opacity: 0;
-    height: 10px;
-    background-color: #09f;
-    border-radius: 10px;
-  }
-
-  .status-container {
-    background-color: #333;
-    border-left: 5px solid #555;
-    padding: 10px;
-    border-radius: 5px;
-    opacity: 0;
-  }
-
-  .status-prefix {
-    font-weight: bold;
-    border-bottom: thin solid black;
-  }
-
-  button {
-    outline: none;
-    border: none;
-    border-radius: 5px;
-    background-color: #09f;
-    padding: 10px;
-    color: white;
-    font-weight: bold;
-    text-transform: uppercase;
-  }
-
-  button:hover,
-  button:active,
-  button:disabled {
-    background-color: #07f;
-  }
-
-  .modified-input-btn-container {
-    display: flex;
-    flex-direction: column;
-  }
-
-  #fileSelectedMessage {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-</style>
-
 <body>
-  <div class="container">
-    <div class="title-container">
-      <span class="title">Upload a file</span>
-    </div>
-    <input type="file" id="fileInput" onchange="fileUpdated(null)" name="file" multiple />
-    <div class="modified-input-btn-container">
-      <span id="fileSelectedMessage">No file selected</span>
-      <button onclick="selectFile()">Select file</button>
-    </div>
-    <div class="status-container">
-      <span class="status-prefix">STATUS:</span>
-      <span id="status-actual"></span>
-    </div>
-    <div id="progress" value="0" max="100"></div>
-    <button id="uploadBtn" onclick="setTimeout(uploadFile, 100)">
-      Upload
-    </button>
+  <h1>Send to device</h1>
+
+  <!-- Tab switcher -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tabFile" onclick="switchTab('file')">File</button>
+    <button class="tab-btn"        id="tabText" onclick="switchTab('text')">Text</button>
   </div>
+
+  <!-- ── File panel ── -->
+  <div class="panel visible" id="panelFile">
+    <div
+      class="drop-zone"
+      id="dropZone"
+      onclick="document.getElementById('fileInput').click()"
+    >
+      <div class="icon">📂</div>
+      <p class="label">Tap to select files</p>
+      <p class="sublabel">or drag &amp; drop here</p>
+    </div>
+    <input type="file" id="fileInput" multiple onchange="filesChosen()" />
+    <p id="fileName"></p>
+    <div class="progress-wrap" id="progressWrap">
+      <div id="progressBar"></div>
+    </div>
+    <p id="statusMsg"></p>
+    <button class="btn" id="uploadBtn" onclick="uploadFiles()" disabled>Upload</button>
+  </div>
+
+  <!-- ── Text panel ── -->
+  <div class="panel" id="panelText">
+    <textarea id="textInput" placeholder="Paste or type text to send…"></textarea>
+    <button class="btn" id="sendTextBtn" onclick="sendText()">Send text</button>
+  </div>
+
   <script>
-    function selectFile() {
-      document.querySelector("#fileInput").click();
+    // ── Tab ──────────────────────────────────────────────────────────────────
+    function switchTab(tab) {
+      document.getElementById("panelFile").classList.toggle("visible", tab === "file");
+      document.getElementById("panelText").classList.toggle("visible", tab === "text");
+      document.getElementById("tabFile").classList.toggle("active", tab === "file");
+      document.getElementById("tabText").classList.toggle("active", tab === "text");
     }
-    function fileUpdated(name) {
-      document.querySelector("#fileSelectedMessage").innerText =
-        !document.querySelector("#fileInput").files[0]
-          ? "No file selected"
-          : name
-            ? name
-            : document.querySelector("#fileInput").files[0].name;
 
-      document.querySelector("#status-actual").innerText = "";
-      document.querySelector(".status-container").style.opacity = "0";
-      document.querySelector("#progress").style.opacity = "0";
-      document.querySelector("#progress").style.width = "0";
+    // ── Drag & drop ──────────────────────────────────────────────────────────
+    const dz = document.getElementById("dropZone");
+    dz.addEventListener("dragover",  e => { e.preventDefault(); dz.classList.add("drag-over"); });
+    dz.addEventListener("dragleave", ()  => dz.classList.remove("drag-over"));
+    dz.addEventListener("drop", e => {
+      e.preventDefault();
+      dz.classList.remove("drag-over");
+      document.getElementById("fileInput").files = e.dataTransfer.files;
+      filesChosen();
+    });
+
+    // ── File selection ───────────────────────────────────────────────────────
+    function filesChosen() {
+      const files = document.getElementById("fileInput").files;
+      const btn   = document.getElementById("uploadBtn");
+      const nameEl = document.getElementById("fileName");
+      if (!files.length) { btn.disabled = true; nameEl.textContent = ""; return; }
+      nameEl.textContent = [...files].map(f => f.name).join(", ");
+      btn.disabled = false;
+      setStatus("", "");
     }
-    async function uploadFile() {
-      const files = document.querySelector("#fileInput").files;
-      const progressBar = document.querySelector("#progress");
-      const statusBar = document.querySelector(".status-container");
-      const status = document.querySelector("#status-actual");
-      const uploadBtn = document.querySelector("#uploadBtn");
 
-      uploadBtn.setAttribute("disabled", "true");
-
+    // ── Upload ───────────────────────────────────────────────────────────────
+    async function uploadFiles() {
+      const files  = document.getElementById("fileInput").files;
+      const btn    = document.getElementById("uploadBtn");
+      if (!files.length) return;
+      btn.disabled = true;
       for (const file of files) {
-        fileUpdated(file.name);
-        if (!file) {
-          alert("Please select a file");
-          return;
-        }
-
+        setStatus("Uploading " + file.name + "…", "");
         try {
-          await uploadSingleFile(file, progressBar, statusBar, status);
-        } catch (err) {
-          alert("Upload failed for " + file.name);
+          await uploadOne(file);
+          setStatus(file.name + " — sent ✓", "success");
+        } catch {
+          setStatus("Failed to send " + file.name, "error");
         }
       }
-
-      uploadBtn.removeAttribute("disabled");
+      btn.disabled = false;
     }
 
-    function uploadSingleFile(file, progressBar, statusBar, status) {
+    function uploadOne(file) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/files", true);
+        xhr.setRequestHeader("X-Filename", encodeURIComponent(file.name));
 
-        xhr.open(
-          "POST",
-          "/upload/" +
-          encodeURIComponent(file.name) +
-          "/" +
-          encodeURIComponent(file.size),
-          true
-        );
-
-        xhr.upload.onprogress = function (event) {
-          if (event.lengthComputable) {
-            progressBar.style.opacity = "1";
-            statusBar.style.opacity = "1";
-            const percentage = (event.loaded / event.total) * 100;
-            progressBar.style.width = Math.round(percentage) + "%";
-            status.innerText = "Uploading..." + Math.round(percentage) + "%";
-          }
+        xhr.upload.onprogress = e => {
+          if (!e.lengthComputable) return;
+          const pct = (e.loaded / e.total) * 100;
+          document.getElementById("progressWrap").classList.add("visible");
+          document.getElementById("progressBar").style.width = pct + "%";
+          setStatus("Uploading… " + Math.round(pct) + "%", "");
         };
 
-        xhr.onload = function () {
-          if (xhr.status === 200) {
-            status.innerText = "Uploaded";
-            resolve();
-          } else if (xhr.status === 413) {
-            alert("Not enough space on filesystem, please choose a smaller file");
-            reject();
-          } else {
-            alert("Upload error: " + xhr.status);
-            reject();
-          }
+        xhr.onload = () => {
+          document.getElementById("progressBar").style.width = "100%";
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else if (xhr.status === 413) { alert("Not enough space on device."); reject(); }
+          else { alert("Upload error: " + xhr.status); reject(); }
         };
 
-        xhr.onerror = function () {
-          alert("File upload failed.");
-          reject();
-        };
-
+        xhr.onerror = () => { alert("Network error."); reject(); };
         xhr.send(file);
       });
     }
 
+    // ── Text send ────────────────────────────────────────────────────────────
+    async function sendText() {
+      const text = document.getElementById("textInput").value.trim();
+      if (!text) { alert("Please enter some text."); return; }
+      const btn = document.getElementById("sendTextBtn");
+      btn.disabled = true;
+      btn.textContent = "Sending…";
+      try {
+        const res = await fetch("/text", {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },
+          body: text,
+        });
+        if (res.ok) {
+          btn.textContent = "Sent ✓";
+          document.getElementById("textInput").value = "";
+          setTimeout(() => { btn.textContent = "Send text"; btn.disabled = false; }, 1800);
+        } else {
+          btn.textContent = "Error " + res.status;
+          btn.disabled = false;
+        }
+      } catch {
+        btn.textContent = "Network error";
+        btn.disabled = false;
+      }
+    }
+
+    function setStatus(msg, cls) {
+      const el = document.getElementById("statusMsg");
+      el.textContent = msg;
+      el.className = cls;
+    }
   </script>
 </body>
-
 </html>

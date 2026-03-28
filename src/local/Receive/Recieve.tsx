@@ -1,231 +1,318 @@
 import { useTheme } from "../Context/Theme";
-import { useEffect, useState, useRef } from "react";
-import { RecvLogic } from "./RecieveLogic";
-import { ProgressBar } from "../Send/SendQrCode";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
-import { Button, Collapse } from "@material-tailwind/react";
+import { useQrContext } from "../Context/QrContext";
+import QRCode from "qrcode";
+import { flushSync } from "react-dom";
+import { ProgressUpdatePayload } from "../types";
 
 interface RecieveProps {
   canSwitch: boolean;
   setCanSwitch: (value: boolean) => void;
 }
 
+interface RecvResponse {
+  Success: { ip: string | null; port: number };
+}
+
+type ReceivedItem =
+  | { kind: "text"; id: string; content: string; at: string }
+  | { kind: "file"; id: string; filename: string; progress: number; at: string };
+
+function timestamp() {
+  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+// ── Text card ─────────────────────────────────────────────────────────────────
+
+function TextCard({ item, dark }: { item: Extract<ReceivedItem, { kind: "text" }>; dark: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(item.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <div className={`rounded-2xl p-4 border ${dark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} shadow-sm`}>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded ${dark ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-600"}`}>
+            TEXT
+          </span>
+          <span className={`text-xs font-medium ${dark ? "text-gray-400" : "text-gray-500"}`}>
+            {item.at}
+          </span>
+        </div>
+        <button
+          onClick={copy}
+          className={`text-xs px-3 py-1 rounded-full font-semibold transition-all ${copied
+            ? "bg-green-500 text-white"
+            : dark
+              ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+        >
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+      <p className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${dark ? "text-gray-100" : "text-gray-800"}`}>
+        {item.content}
+      </p>
+    </div>
+  );
+}
+
+// ── File card ─────────────────────────────────────────────────────────────────
+
+function FileCard({ item, dark }: { item: Extract<ReceivedItem, { kind: "file" }>; dark: boolean }) {
+  const done = item.progress >= 100;
+  return (
+    <div className={`rounded-2xl p-4 border ${dark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} shadow-sm`}>
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded ${dark ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-600"}`}>
+              FILE
+            </span>
+            <span className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}>{item.at}</span>
+          </div>
+          <p className={`text-sm font-semibold truncate ${dark ? "text-white" : "text-gray-900"}`}>
+            {item.filename}
+          </p>
+        </div>
+        {done && (
+          <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+            ✓ Saved
+          </span>
+        )}
+      </div>
+      <div className={`h-1.5 w-full rounded-full ${dark ? "bg-gray-700" : "bg-gray-100"}`}>
+        <div
+          className="h-full rounded-full bg-blue-500 transition-all duration-300"
+          style={{ width: `${item.progress}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── QR + status panel ─────────────────────────────────────────────────────────
+
+interface QrPanelProps {
+  qrCode: string | null;
+  qrText: string | null;
+  dark: boolean;
+  starting: boolean;
+  isRunning: boolean;
+  onStop: () => void;
+  onStart: () => void;
+  onClear: () => void;
+  hasItems: boolean;
+}
+
+function QrPanel({ qrCode, qrText, dark, starting, isRunning, onStop, onStart, onClear, hasItems }: QrPanelProps) {
+  const [expanded, setExpanded] = useState(true);
+  return (
+    <div className={`rounded-2xl border overflow-hidden ${dark ? "bg-gray-800/60 border-gray-700" : "bg-white border-gray-200"} shadow-sm`}>
+      {/* Collapsible header */}
+      <div
+        className={`flex items-center justify-between px-5 py-4 cursor-pointer select-none ${dark ? "hover:bg-gray-700/50" : "hover:bg-gray-50"} transition-colors`}
+        onClick={() => setExpanded((e) => !e)}
+      >
+        <div className="flex items-center gap-3">
+          {isRunning ? (
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+            </span>
+          ) : starting ? (
+            <div className="w-2.5 h-2.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <span className="w-2.5 h-2.5 rounded-full bg-gray-500" />
+          )}
+          <span className={`text-sm font-semibold ${dark ? "text-white" : "text-gray-900"}`}>
+            {starting ? "Starting…" : isRunning ? "Ready to receive" : "Server stopped"}
+          </span>
+        </div>
+        <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+          {hasItems && (
+            <button
+              onClick={onClear}
+              className={`text-[10px] font-bold tracking-wider uppercase px-2 py-1 rounded transition-colors ${dark ? "text-gray-500 hover:text-red-400" : "text-gray-400 hover:text-red-500"}`}
+            >
+              Clear
+            </button>
+          )}
+          <button
+            onClick={isRunning ? onStop : onStart}
+            disabled={starting}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all disabled:opacity-40 ${isRunning
+              ? "bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30"
+              : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30"
+              }`}
+          >
+            {isRunning ? "Stop" : "Start"}
+          </button>
+          <svg
+            className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""} ${dark ? "text-gray-400" : "text-gray-500"}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+
+      {expanded && isRunning && (
+        <div className="px-5 pb-5">
+          {qrText && (
+            <div className={`mb-3 text-[11px] font-mono p-2 rounded ${dark ? "bg-black/20 text-blue-300" : "bg-gray-100 text-blue-600"}`}>
+              {qrText}
+            </div>
+          )}
+          <div className={`rounded-xl flex items-center justify-center p-3 ${dark ? "bg-white" : "bg-gray-50"}`}>
+            {qrCode ? (
+              <div className="qr-container w-44 h-44" dangerouslySetInnerHTML={{ __html: qrCode }} />
+            ) : (
+              <div className="w-44 h-44 flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
 export default function Recieve({ setCanSwitch }: RecieveProps) {
-  const { isTheme } = useTheme();
-  const { qrCode, generateQRCode, qrText } = RecvLogic();
-  const [recvFile, setRecvFile] = useState<boolean>(true);
-  const [text, setText] = useState<string>("");
-  const [isServerRunning, setIsServerRunning] = useState(false);
-  const [openCollapse, setOpenCollapse] = useState(false);
-  const hasRun = useRef(false);
+  const { isTheme: dark } = useTheme();
+  const { setQrCode, qrCode, setQrText, qrText } = useQrContext();
+  const [items, setItems] = useState<ReceivedItem[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const startedRef = useRef(false);
+  const feedRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll on new items
   useEffect(() => {
-    let unlisten: (() => void) | undefined;
+    if (feedRef.current) {
+      feedRef.current.scrollTop = feedRef.current.scrollHeight;
+    }
+  }, [items]);
 
-    const setupListener = async () => {
-      try {
-        console.log("Setting up listener for recieved-text");
-        unlisten = await listen<string>("received-text", (event) => {
-          console.log("Received mode event payload:", event.payload);
-          setText(event.payload);
-        });
-      } catch (error) {
-        console.error("No text received yet", error);
-        setText("No text received yet");
+  const startServer = useCallback(async () => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    setStarting(true);
+    try {
+      const resp = await invoke<RecvResponse>("recv");
+      if (resp?.Success?.ip) {
+        const { ip, port } = resp.Success;
+        const url = `http://${ip}:${port}`;
+        flushSync(() => setQrText(url));
+        const svg = await QRCode.toString(url, { type: "svg" });
+        setQrCode(svg);
+        setIsRunning(true);
+        setCanSwitch(false);
       }
-    };
-    setupListener();
+    } catch (err) {
+      console.error("Failed to start receive server:", err);
+      startedRef.current = false;
+    } finally {
+      setStarting(false);
+    }
+  }, [setQrCode, setQrText, setCanSwitch]);
 
+  const stopServer = useCallback(async () => {
+    await invoke("stop_server");
+    setIsRunning(false);
+    setCanSwitch(true);
+    setQrCode(null);
+    setQrText(null);
+    startedRef.current = false;
+  }, [setQrCode, setQrText, setCanSwitch]);
+
+  const clearItems = () => setItems([]);
+
+  // Auto-start on mount, stop on unmount
+  useEffect(() => {
+    startServer();
     return () => {
-      if (unlisten) unlisten();
+      invoke("stop_server").catch(() => { });
+      startedRef.current = false;
     };
   }, []);
 
-  const stopServer = async () => {
-    try {
-      await invoke("stop_server");
-      console.log("Server Stopped");
-      setIsServerRunning(false);
-    } catch (error) {
-      console.error("Error stopping server:", error);
-    }
-  };
-
-  const restartServer = async (mode: "file" | "text") => {
-    try {
-      await stopServer();
-      // Wait a moment before restarting
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      await generateQRCode(mode === "file" ? "file" : "text");
-      setIsServerRunning(true);
-      console.log("Server Restarted");
-    } catch (error) {
-      console.error("Error restarting server:", error);
-    }
-  };
-
-  const toggleServer = async () => {
-    if (isServerRunning) {
-      await stopServer();
-    } else {
-      await restartServer(recvFile ? "file" : "text");
-    }
-  };
+  // Listen for received text
   useEffect(() => {
-    // Sync canSwitch with server state
-    // Restrict tab switching when server is running (active receive)
-    // Allow switching when server is off
-    setCanSwitch(!isServerRunning);
-  }, [isServerRunning, setCanSwitch]);
+    let unlistenFn: (() => void) | undefined;
+    let cancelled = false;
+    listen<string>("received-text", (ev) => {
+      setItems((prev) => [
+        ...prev,
+        { kind: "text", id: crypto.randomUUID(), content: ev.payload, at: timestamp() },
+      ]);
+    }).then((fn) => { if (cancelled) fn(); else unlistenFn = fn; });
+    return () => { cancelled = true; unlistenFn?.(); };
+  }, []);
 
+  // Listen for file progress
   useEffect(() => {
-    const fetch = async () => {
-      if (!hasRun.current && isServerRunning) {
-        hasRun.current = true;
-        await generateQRCode(recvFile ? "file" : "text");
-      }
-    };
-    fetch();
+    let unlistenFn: (() => void) | undefined;
+    let cancelled = false;
+    listen<ProgressUpdatePayload>("progress-update", (ev) => {
+      const { id, filename, progress } = ev.payload;
+      setItems((prev) => {
+        const idx = prev.findIndex((it) => it.kind === "file" && it.id === id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...(next[idx] as Extract<ReceivedItem, { kind: "file" }>), progress };
+          return next;
+        }
+        return [...prev, { kind: "file", id, filename, progress, at: timestamp() }];
+      });
+    }).then((fn) => { if (cancelled) fn(); else unlistenFn = fn; });
+    return () => { cancelled = true; unlistenFn?.(); };
   }, []);
 
   return (
-    <div className={`flex flex-col ${isTheme ? "bg-gray-900" : "bg-white"}`}>
-      <div className="flex flex-col items-center mt-[8vh] px-4 pb-8">
-        {/* File/Text Toggle */}
-        <div
-          className={`flex space-x-6 ${
-            isTheme ? "bg-gray-700" : "bg-gray-100"
-          } rounded-full p-2 shadow-md mb-6 w-40 mx-auto font-semibold`}
-        >
-          <div
-            className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
-              recvFile
-                ? isTheme
-                  ? "bg-gray-600 text-white"
-                  : "bg-gray-300 text-gray-900"
-                : isTheme
-                  ? "text-gray-400"
-                  : "text-gray-600"
-            }`}
-            onClick={async () => {
-              if (!recvFile && isServerRunning) {
-                await restartServer("file");
-              }
-              setRecvFile(true);
-            }}
-          >
-            File
-          </div>
-          <div
-            className={`cursor-pointer px-4 py-1 rounded-full transition-colors ${
-              !recvFile
-                ? isTheme
-                  ? "bg-gray-600 text-white"
-                  : "bg-gray-300 text-gray-900"
-                : isTheme
-                  ? "text-gray-400"
-                  : "text-gray-600"
-            }`}
-            onClick={async () => {
-              if (recvFile && isServerRunning) {
-                await restartServer("text");
-              }
-              setRecvFile(false);
-            }}
-          >
-            Text
-          </div>
+    <div className={`flex flex-col h-full overflow-hidden ${dark ? "bg-gray-900" : "bg-gray-50"}`}>
+      {/* Scrollable feed container */}
+      <div ref={feedRef} className="flex-1 overflow-y-auto px-4 pt-4">
+        <div className="max-w-xl mx-auto space-y-3 pb-24"> {/* pb-24 fixes clipping at the bottom */}
+          {/* QR / status panel */}
+          <QrPanel
+            qrCode={qrCode}
+            qrText={qrText}
+            dark={dark}
+            starting={starting}
+            isRunning={isRunning}
+            onStop={stopServer}
+            onStart={startServer}
+            onClear={clearItems}
+            hasItems={items.length > 0}
+          />
+
+          {/* Items feed */}
+          {items.map((item) =>
+            item.kind === "text" ? (
+              <TextCard key={item.id} item={item} dark={dark} />
+            ) : (
+              <FileCard key={item.id} item={item} dark={dark} />
+            )
+          )}
+
+          {/* Empty state */}
+          {isRunning && items.length === 0 && !starting && (
+            <div className={`flex flex-col items-center py-12 gap-2 ${dark ? "text-gray-600" : "text-gray-400"}`}>
+              <p className="text-sm font-medium">No incoming transfers yet</p>
+              <p className="text-xs">Waiting for files or text...</p>
+            </div>
+          )}
         </div>
-
-        {/* Start/Stop Button */}
-        <div className="mb-8">
-          <Button
-            color={isServerRunning ? "red" : "green"}
-            onClick={() => toggleServer()}
-            {...({} as any)}
-            className="px-8 py-3 font-semibold"
-          >
-            {isServerRunning ? "Stop Server" : "Start Server"}
-          </Button>
-        </div>
-
-        {/* QR Code Collapse */}
-        {isServerRunning && (
-          <div className="w-full max-w-md mb-8">
-            <Collapse
-              open={openCollapse}
-              className={`border rounded-lg ${
-                isTheme
-                  ? "bg-gray-800 border-gray-700"
-                  : "bg-white border-gray-300"
-              }`}
-            >
-              <div className="p-6">
-                <h2
-                  className={`text-lg font-semibold mb-4 text-center ${
-                    isTheme ? "text-white" : "text-black"
-                  }`}
-                >
-                  {qrText}
-                </h2>
-                <div
-                  className={`${
-                    isTheme ? "bg-gray-800" : "bg-gray-100"
-                  } rounded-2xl p-4 flex justify-center shadow-lg transition-all duration-300 ease-in-out`}
-                >
-                  {qrCode ? (
-                    <div className="qr-container" dangerouslySetInnerHTML={{ __html: qrCode }} />
-                  ) : (
-                    <p
-                      className={`text-center ${
-                        isTheme ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      Generating QR Code...
-                    </p>
-                  )}
-                </div>
-              </div>
-            </Collapse>
-            <button
-              onClick={() => setOpenCollapse(!openCollapse)}
-              className={`w-full mt-3 px-6 py-2 rounded-lg font-medium transition-colors ${
-                isTheme
-                  ? "bg-gray-700 text-white hover:bg-gray-600"
-                  : "bg-gray-200 text-black hover:bg-gray-300"
-              }`}
-            >
-              {openCollapse ? "Hide QR Code" : "Show QR Code"}
-            </button>
-          </div>
-        )}
-
-        {/* Text Receiver */}
-        {!recvFile && (
-          <div className="w-full max-w-xl mb-6 px-2">
-            <label
-              className={`block text-sm font-semibold mb-2 ${
-                isTheme ? "text-gray-300" : "text-gray-700"
-              }`}
-            >
-              Received Text:
-            </label>
-            <textarea
-              value={text}
-              readOnly
-              className={`w-full h-64 p-4 rounded-lg resize-none outline-none border ${
-                isTheme
-                  ? "bg-gray-800 text-white border-gray-600 focus:border-gray-500"
-                  : "bg-white text-black border-gray-300 focus:border-gray-400"
-              } focus:ring-2 focus:ring-blue-500`}
-              placeholder="Received text will appear here..."
-            />
-          </div>
-        )}
-      </div>
-      <div className="w-3/4 m-auto">
-        <ProgressBar />
       </div>
     </div>
   );

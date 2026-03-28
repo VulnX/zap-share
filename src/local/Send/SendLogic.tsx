@@ -85,13 +85,15 @@ export function SendLogic() {
     }
   };
 
-  const saveSharedDataToState = (text: string | null, files: string[]) => {
+  const saveSharedDataToState = (text: string | null, files: string[] | null) => {
     if (text !== null) {
       // Text was shared
       setText(text);
-    } else {
-      // File(s) where shared
+      setFileList([]); // Clear previous files
+    } else if (files !== null) {
+      // File(s) were shared
       setFileList(files);
+      setText(undefined); // Clear previous text
     }
   };
 
