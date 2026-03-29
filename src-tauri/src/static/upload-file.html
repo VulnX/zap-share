@@ -1,11 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Send to device</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -55,8 +62,17 @@
     }
 
     /* Panels */
-    .panel { display: none; width: 100%; max-width: 420px; flex-direction: column; gap: 16px; }
-    .panel.visible { display: flex; }
+    .panel {
+      display: none;
+      width: 100%;
+      max-width: 420px;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel.visible {
+      display: flex;
+    }
 
     /* Drop zone */
     .drop-zone {
@@ -68,15 +84,40 @@
       transition: all 0.2s;
       background: #1a1a1d;
     }
-    .drop-zone:hover, .drop-zone.drag-over {
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
       border-color: #6366f1;
       background: #1e1e2a;
     }
-    .drop-zone .icon { font-size: 2.4rem; margin-bottom: 10px; }
-    .drop-zone .label { font-size: 0.9rem; color: #a1a1aa; }
-    .drop-zone .sublabel { font-size: 0.75rem; color: #52525b; margin-top: 4px; }
-    #fileInput { display: none; }
-    #fileName { font-size: 0.82rem; color: #818cf8; font-weight: 500; min-height: 1.2em; text-align: center; }
+
+    .drop-zone .icon {
+      font-size: 2.4rem;
+      margin-bottom: 10px;
+    }
+
+    .drop-zone .label {
+      font-size: 0.9rem;
+      color: #a1a1aa;
+    }
+
+    .drop-zone .sublabel {
+      font-size: 0.75rem;
+      color: #52525b;
+      margin-top: 4px;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    #fileName {
+      font-size: 0.82rem;
+      color: #818cf8;
+      font-weight: 500;
+      min-height: 1.2em;
+      text-align: center;
+    }
 
     /* Progress bar */
     .progress-wrap {
@@ -87,7 +128,11 @@
       opacity: 0;
       transition: opacity 0.2s;
     }
-    .progress-wrap.visible { opacity: 1; }
+
+    .progress-wrap.visible {
+      opacity: 1;
+    }
+
     #progressBar {
       height: 100%;
       width: 0;
@@ -103,8 +148,14 @@
       text-align: center;
       min-height: 1.2em;
     }
-    #statusMsg.success { color: #4ade80; }
-    #statusMsg.error   { color: #f87171; }
+
+    #statusMsg.success {
+      color: #4ade80;
+    }
+
+    #statusMsg.error {
+      color: #f87171;
+    }
 
     /* Textarea */
     textarea {
@@ -121,8 +172,14 @@
       line-height: 1.6;
       transition: border-color 0.15s;
     }
-    textarea:focus { border-color: #6366f1; }
-    textarea::placeholder { color: #52525b; }
+
+    textarea:focus {
+      border-color: #6366f1;
+    }
+
+    textarea::placeholder {
+      color: #52525b;
+    }
 
     /* Button */
     .btn {
@@ -138,27 +195,34 @@
       letter-spacing: 0.01em;
       transition: background 0.15s, opacity 0.15s, transform 0.1s;
     }
-    .btn:hover  { background: #4f46e5; }
-    .btn:active { transform: scale(0.98); }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn:hover {
+      background: #4f46e5;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
   </style>
 </head>
+
 <body>
   <h1>Send to device</h1>
 
   <!-- Tab switcher -->
   <div class="tabs">
     <button class="tab-btn active" id="tabFile" onclick="switchTab('file')">File</button>
-    <button class="tab-btn"        id="tabText" onclick="switchTab('text')">Text</button>
+    <button class="tab-btn" id="tabText" onclick="switchTab('text')">Text</button>
   </div>
 
   <!-- ── File panel ── -->
   <div class="panel visible" id="panelFile">
-    <div
-      class="drop-zone"
-      id="dropZone"
-      onclick="document.getElementById('fileInput').click()"
-    >
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
       <div class="icon">📂</div>
       <p class="label">Tap to select files</p>
       <p class="sublabel">or drag &amp; drop here</p>
@@ -189,8 +253,8 @@
 
     // ── Drag & drop ──────────────────────────────────────────────────────────
     const dz = document.getElementById("dropZone");
-    dz.addEventListener("dragover",  e => { e.preventDefault(); dz.classList.add("drag-over"); });
-    dz.addEventListener("dragleave", ()  => dz.classList.remove("drag-over"));
+    dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("drag-over"); });
+    dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
     dz.addEventListener("drop", e => {
       e.preventDefault();
       dz.classList.remove("drag-over");
@@ -201,7 +265,7 @@
     // ── File selection ───────────────────────────────────────────────────────
     function filesChosen() {
       const files = document.getElementById("fileInput").files;
-      const btn   = document.getElementById("uploadBtn");
+      const btn = document.getElementById("uploadBtn");
       const nameEl = document.getElementById("fileName");
       if (!files.length) { btn.disabled = true; nameEl.textContent = ""; return; }
       nameEl.textContent = [...files].map(f => f.name).join(", ");
@@ -210,10 +274,14 @@
     }
 
     // ── Handshake ──────────────────────────────────────────────────────────
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
+    }
+
     async function getTransferToken(type, filename, filesize) {
-      const id = crypto.randomUUID();
+      const id = generateId();
       const device_name = "Web Browser";
-      
+
       const res = await fetch("/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -232,8 +300,8 @@
 
     // ── Upload ───────────────────────────────────────────────────────────────
     async function uploadFiles() {
-      const files  = document.getElementById("fileInput").files;
-      const btn    = document.getElementById("uploadBtn");
+      const files = document.getElementById("fileInput").files;
+      const btn = document.getElementById("uploadBtn");
       if (!files.length) return;
       btn.disabled = true;
       for (const file of files) {
@@ -290,7 +358,7 @@
         btn.textContent = "Sending…";
         const res = await fetch("/text", {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "text/plain",
             "X-Transfer-Token": token
           },
@@ -317,4 +385,5 @@
     }
   </script>
 </body>
+
 </html>

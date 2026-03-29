@@ -196,8 +196,12 @@
             btn.disabled = !input.value.trim();
         }
 
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
+        }
+
         async function getTransferToken(type, filename, filesize) {
-            const id = crypto.randomUUID();
+            const id = generateId();
             const device_name = "Web Browser";
 
             const res = await fetch("/request", {
