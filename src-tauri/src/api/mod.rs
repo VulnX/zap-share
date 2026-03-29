@@ -18,6 +18,7 @@ mod bcast;
 
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 pub static BCAST_THREAD: Mutex<Option<models::BroadcastThread>> = Mutex::new(None);
+pub static TRANSFER_MANAGER: Mutex<Option<Arc<server::recv::TransferManager>>> = Mutex::new(None);
 
 static SHARED_DATA: Mutex<Option<Option<tauri_plugin_ipd::SharedData>>> = Mutex::new(None);
 
@@ -117,36 +118,111 @@ pub async fn send_files_to<R: Runtime>(
     files: Vec<(SafeFilePath, String)>,
     to: models::ServerConfiguration,
 ) {
-    let endpoint = format!("http://{}:{}/files", to.ip, to.port);
+    let config = get_device_config(window.clone());
+    let client = reqwest::Client::new();
+    let request_endpoint = format!("http://{}:{}/request", to.ip, to.port);
+    let files_endpoint = format!("http://{}:{}/files", to.ip, to.port);
+
     for (filepath, filename) in files {
         let (mut file, _) = open_file(&filepath, &window);
         let mut file_contents = Vec::new();
         file.read_to_end(&mut file_contents).unwrap();
-        println!("sending {filename:#?} to {endpoint:#?}");
-        let client = reqwest::Client::new();
-        client
-            .post(&endpoint)
-            .header("X-Filename", urlencoding::encode(&filename).into_owned())
-            .body(file_contents)
+        let filesize = file_contents.len() as u64;
+
+        // 1. Send Request
+        let transfer_request = models::TransferRequest {
+            id: uuid::Uuid::new_v4().to_string(),
+            device_name: config.name.clone(),
+            r#type: "file".to_string(),
+            filename: Some(filename.clone()),
+            filesize: Some(filesize),
+        };
+
+        let resp = client
+            .post(&request_endpoint)
+            .json(&transfer_request)
             .send()
-            .await
-            .unwrap();
+            .await;
+
+        match resp {
+            Ok(resp) if resp.status().is_success() => {
+                let transfer_resp: models::TransferResponse = resp.json().await.unwrap();
+                if transfer_resp.accepted {
+                    if let Some(token) = transfer_resp.token {
+                        // 2. Send File with token
+                        println!("sending {filename:#?} to {files_endpoint:#?}");
+                        client
+                            .post(&files_endpoint)
+                            .header("X-Filename", urlencoding::encode(&filename).into_owned())
+                            .header("X-Transfer-Token", token)
+                            .body(file_contents)
+                            .send()
+                            .await
+                            .unwrap();
+                    }
+                } else {
+                    println!("Transfer rejected by receiver for {filename}");
+                }
+            }
+            _ => {
+                println!("Transfer request failed or rejected for {filename}");
+            }
+        }
     }
 }
 
 #[allow(dead_code)]
 #[tauri::command]
-pub async fn send_text_to(text: String, to: models::ServerConfiguration) {
+pub async fn send_text_to<R: Runtime>(
+    window: Window<R>,
+    text: String,
+    to: models::ServerConfiguration,
+) {
+    let config = get_device_config(window.clone());
     let client = reqwest::Client::new();
-    let endpoint = format!("http://{}:{}/text", to.ip, to.port);
-    println!("sending text to {endpoint:#?}");
-    client
-        .post(endpoint)
-        .header("Content-Type", "text/plain")
-        .body(text)
+    let request_endpoint = format!("http://{}:{}/request", to.ip, to.port);
+    let text_endpoint = format!("http://{}:{}/text", to.ip, to.port);
+
+    // 1. Send Request
+    let transfer_request = models::TransferRequest {
+        id: uuid::Uuid::new_v4().to_string(),
+        device_name: config.name.clone(),
+        r#type: "text".to_string(),
+        filename: None,
+        filesize: Some(text.len() as u64),
+    };
+
+    println!("sending text request to {request_endpoint:#?}");
+    let resp = client
+        .post(&request_endpoint)
+        .json(&transfer_request)
         .send()
-        .await
-        .unwrap();
+        .await;
+
+    match resp {
+        Ok(resp) if resp.status().is_success() => {
+            let transfer_resp: models::TransferResponse = resp.json().await.unwrap();
+            if transfer_resp.accepted {
+                if let Some(token) = transfer_resp.token {
+                    // 2. Send Text with token
+                    println!("sending text to {text_endpoint:#?}");
+                    client
+                        .post(text_endpoint)
+                        .header("Content-Type", "text/plain")
+                        .header("X-Transfer-Token", token)
+                        .body(text)
+                        .send()
+                        .await
+                        .unwrap();
+                }
+            } else {
+                println!("Text transfer rejected by receiver");
+            }
+        }
+        _ => {
+            println!("Text transfer request failed or rejected");
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -219,6 +295,18 @@ pub fn recv<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
 
 #[allow(dead_code)]
 #[tauri::command]
+pub fn respond_to_transfer_request(id: String, accepted: bool) {
+    let manager_guard = TRANSFER_MANAGER.lock().unwrap();
+    if let Some(manager) = manager_guard.as_ref() {
+        let mut pending = manager.pending.lock().unwrap();
+        if let Some(tx) = pending.remove(&id) {
+            let _ = tx.send(accepted);
+        }
+    }
+}
+
+#[allow(dead_code)]
+#[tauri::command]
 pub fn stop_server() {
     let mut handle_guard = SERVER_HANDLE.lock().unwrap();
     if let Some(server_handle) = handle_guard.take() {
@@ -234,6 +322,8 @@ pub fn stop_server() {
         let _ = bcast_thread.handle.join();
         *thread_guard = None;
     }
+    let mut manager_guard = TRANSFER_MANAGER.lock().unwrap();
+    *manager_guard = None;
 }
 
 pub fn get_local_ip() -> String {

@@ -209,6 +209,27 @@
       setStatus("", "");
     }
 
+    // ── Handshake ──────────────────────────────────────────────────────────
+    async function getTransferToken(type, filename, filesize) {
+      const id = crypto.randomUUID();
+      const device_name = "Web Browser";
+      
+      const res = await fetch("/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, device_name, type, filename, filesize }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 408) throw new Error("Request timed out");
+        throw new Error("Handshake failed: " + res.status);
+      }
+
+      const data = await res.json();
+      if (!data.accepted) throw new Error("Rejected");
+      return data.token;
+    }
+
     // ── Upload ───────────────────────────────────────────────────────────────
     async function uploadFiles() {
       const files  = document.getElementById("fileInput").files;
@@ -216,22 +237,25 @@
       if (!files.length) return;
       btn.disabled = true;
       for (const file of files) {
-        setStatus("Uploading " + file.name + "…", "");
+        setStatus("Waiting for acceptance…", "");
         try {
-          await uploadOne(file);
+          const token = await getTransferToken("file", file.name, file.size);
+          setStatus("Uploading " + file.name + "…", "");
+          await uploadOne(file, token);
           setStatus(file.name + " — sent ✓", "success");
-        } catch {
-          setStatus("Failed to send " + file.name, "error");
+        } catch (err) {
+          setStatus(err.message === "Rejected" ? "Transfer rejected by receiver" : (err.message || "Failed to send " + file.name), "error");
         }
       }
       btn.disabled = false;
     }
 
-    function uploadOne(file) {
+    function uploadOne(file, token) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/files", true);
         xhr.setRequestHeader("X-Filename", encodeURIComponent(file.name));
+        xhr.setRequestHeader("X-Transfer-Token", token);
 
         xhr.upload.onprogress = e => {
           if (!e.lengthComputable) return;
@@ -259,24 +283,30 @@
       if (!text) { alert("Please enter some text."); return; }
       const btn = document.getElementById("sendTextBtn");
       btn.disabled = true;
-      btn.textContent = "Sending…";
+      const originalText = btn.textContent;
+      btn.textContent = "Waiting for acceptance…";
       try {
+        const token = await getTransferToken("text", null, text.length);
+        btn.textContent = "Sending…";
         const res = await fetch("/text", {
           method: "POST",
-          headers: { "Content-Type": "text/plain" },
+          headers: { 
+            "Content-Type": "text/plain",
+            "X-Transfer-Token": token
+          },
           body: text,
         });
         if (res.ok) {
           btn.textContent = "Sent ✓";
           document.getElementById("textInput").value = "";
-          setTimeout(() => { btn.textContent = "Send text"; btn.disabled = false; }, 1800);
+          setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 1800);
         } else {
           btn.textContent = "Error " + res.status;
           btn.disabled = false;
         }
-      } catch {
-        btn.textContent = "Network error";
-        btn.disabled = false;
+      } catch (err) {
+        btn.textContent = err.message === "Rejected" ? "Rejected" : "Failed";
+        setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 1800);
       }
     }
 

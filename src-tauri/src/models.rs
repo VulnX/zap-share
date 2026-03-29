@@ -83,6 +83,22 @@ pub struct DeviceConfig {
     pub name: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TransferRequest {
+    pub id: String,
+    pub device_name: String,
+    pub r#type: String, // "file" or "text"
+    pub filename: Option<String>,
+    pub filesize: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TransferResponse {
+    pub id: String,
+    pub accepted: bool,
+    pub token: Option<String>,
+}
+
 #[derive(Debug)]
 pub struct BroadcastThread {
     pub handle: JoinHandle<()>,

@@ -182,32 +182,60 @@
 
         <button id="sendBtn" class="btn" onclick="sendText()" disabled>
             <div class="loader"></div>
-            <span class="btn-text">Send to device</span>
+            <span id="btnText" class="btn-text">Send to device</span>
         </button>
     </div>
 
     <script>
         const input = document.getElementById('textInput');
         const btn = document.getElementById('sendBtn');
+        const btnText = document.getElementById('btnText');
         const status = document.getElementById('status');
 
         function updateBtn() {
             btn.disabled = !input.value.trim();
         }
 
+        async function getTransferToken(type, filename, filesize) {
+            const id = crypto.randomUUID();
+            const device_name = "Web Browser";
+
+            const res = await fetch("/request", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, device_name, type, filename, filesize }),
+            });
+
+            if (!res.ok) {
+                if (res.status === 408) throw new Error("Request timed out");
+                throw new Error("Handshake failed: " + res.status);
+            }
+
+            const data = await res.json();
+            if (!data.accepted) throw new Error("Rejected");
+            return data.token;
+        }
+
         async function sendText() {
             const text = input.value.trim();
             if (!text) return;
 
-            document.body.classList.add('sending');
             btn.disabled = true;
-            status.textContent = '';
+            status.textContent = 'Waiting for acceptance…';
             status.className = 'status';
 
             try {
+                const token = await getTransferToken("text", null, text.length);
+
+                document.body.classList.add('sending');
+                status.textContent = 'Sending…';
+
                 const response = await fetch('/text', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
+                    headers: {
+                        'Content-Type': 'text/plain',
+                        'X-Transfer-Token': token
+                    },
                     body: text
                 });
 
@@ -221,7 +249,7 @@
                     status.classList.add('error');
                 }
             } catch (err) {
-                status.textContent = 'Connection failed. Is the device online?';
+                status.textContent = err.message === "Rejected" ? "Transfer rejected by receiver" : 'Failed: ' + err.message;
                 status.classList.add('error');
             } finally {
                 document.body.classList.remove('sending');

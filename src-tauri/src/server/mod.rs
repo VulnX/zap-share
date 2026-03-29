@@ -1,9 +1,9 @@
 use crate::{api::SERVER_HANDLE, models};
 use actix_web::{middleware::Logger, rt, web, App, HttpServer};
-use std::sync::mpsc;
+use std::sync::{mpsc, Arc};
 use tauri::Runtime;
 
-mod recv;
+pub mod recv;
 mod send;
 
 /// Starts an actix-web server and registers REST routes based on `mode`.
@@ -38,10 +38,18 @@ pub fn start_server<R: Runtime>(
     let server;
     loop {
         let mode = mode.clone();
-        let window = web::Data::new(window.clone());
+        let window_clone = window.clone();
+        let window_data = web::Data::new(window_clone);
+        let manager = Arc::new(recv::TransferManager::new());
+        {
+            let mut global_manager = crate::api::TRANSFER_MANAGER.lock().unwrap();
+            *global_manager = Some(manager.clone());
+        }
+        let manager_data = web::Data::from(manager);
         let _server = HttpServer::new(move || {
             let app = App::new();
             let mut app = app.wrap(Logger::default());
+            app = app.app_data(manager_data.clone());
             match &mode {
                 models::TransferMode::SendFile(file_datas) => {
                     app = app
@@ -53,12 +61,14 @@ pub fn start_server<R: Runtime>(
                 models::TransferMode::Receive => {
                     app = app
                         .route("/", web::get().to(recv::serve_upload_ui))
+                        .route("/request", web::post().to(recv::handle_request))
                         .route("/files", web::post().to(recv::receive_file))
                         .route("/text", web::post().to(recv::receive_text))
                 }
                 models::TransferMode::ReceiveFile => {
                     app = app
                         .route("/", web::get().to(recv::serve_upload_ui))
+                        .route("/request", web::post().to(recv::handle_request))
                         .route("/files", web::post().to(recv::receive_file))
                 }
                 models::TransferMode::SendText(text) => {
@@ -70,10 +80,11 @@ pub fn start_server<R: Runtime>(
                 models::TransferMode::ReceiveText => {
                     app = app
                         .route("/", web::get().to(recv::serve_text_ui))
+                        .route("/request", web::post().to(recv::handle_request))
                         .route("/text", web::post().to(recv::receive_text))
                 }
             };
-            app = app.app_data(window.clone());
+            app = app.app_data(window_data.clone());
             app
         });
         if let Ok(_server) = _server.bind(("0.0.0.0", 0)) {

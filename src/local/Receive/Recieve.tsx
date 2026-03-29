@@ -5,7 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useQrContext } from "../Context/QrContext";
 import QRCode from "qrcode";
 import { flushSync } from "react-dom";
-import { ProgressUpdatePayload } from "../types";
+import { ProgressUpdatePayload, TransferRequest } from "../types";
 
 interface RecieveProps {
   canSwitch: boolean;
@@ -18,7 +18,8 @@ interface RecvResponse {
 
 type ReceivedItem =
   | { kind: "text"; id: string; content: string; at: string }
-  | { kind: "file"; id: string; filename: string; progress: number; at: string };
+  | { kind: "file"; id: string; filename: string; progress: number; at: string }
+  | { kind: "request"; id: string; request: TransferRequest; at: string };
 
 function timestamp() {
   return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -34,7 +35,7 @@ function TextCard({ item, dark }: { item: Extract<ReceivedItem, { kind: "text" }
     setTimeout(() => setCopied(false), 1500);
   };
   return (
-    <div className={`rounded-2xl p-4 border ${dark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} shadow-sm`}>
+    <div className={`rounded-2xl p-4 border ${dark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2`}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
           <span className={`text-xs font-semibold px-2 py-0.5 rounded ${dark ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-600"}`}>
@@ -68,7 +69,7 @@ function TextCard({ item, dark }: { item: Extract<ReceivedItem, { kind: "text" }
 function FileCard({ item, dark }: { item: Extract<ReceivedItem, { kind: "file" }>; dark: boolean }) {
   const done = item.progress >= 100;
   return (
-    <div className={`rounded-2xl p-4 border ${dark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} shadow-sm`}>
+    <div className={`rounded-2xl p-4 border ${dark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2`}>
       <div className="flex items-center gap-2 mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -92,6 +93,56 @@ function FileCard({ item, dark }: { item: Extract<ReceivedItem, { kind: "file" }
           className="h-full rounded-full bg-blue-500 transition-all duration-300"
           style={{ width: `${item.progress}%` }}
         />
+      </div>
+    </div>
+  );
+}
+
+// ── Request card ──────────────────────────────────────────────────────────────
+
+function RequestCard({ item, dark, onRespond }: { item: Extract<ReceivedItem, { kind: "request" }>; dark: boolean; onRespond: (id: string, accepted: boolean) => void }) {
+  const { request } = item;
+  return (
+    <div className={`rounded-2xl p-5 border-2 ${dark ? "bg-blue-500/5 border-blue-500/20 shadow-lg shadow-blue-500/5" : "bg-blue-50 border-blue-100 shadow-sm"} transition-all duration-500 animate-in zoom-in-95`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${dark ? "bg-gray-800" : "bg-white"}`}>
+            {request.type === "file" ? "📁" : "💬"}
+          </div>
+          <div>
+            <h3 className={`text-sm font-bold ${dark ? "text-white" : "text-gray-900"}`}>Transfer Request</h3>
+            <p className={`text-xs ${dark ? "text-gray-400" : "text-gray-500"}`}>
+              From <span className="font-semibold text-blue-500">{request.device_name}</span>
+            </p>
+          </div>
+        </div>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${dark ? "bg-blue-500/20 text-blue-300" : "bg-blue-500/10 text-blue-600"}`}>
+          Pending
+        </span>
+      </div>
+
+      {request.type === "file" && (
+        <div className={`p-3 rounded-xl border mb-4 ${dark ? "bg-black/20 border-gray-700/50" : "bg-white border-blue-100"}`}>
+          <p className={`text-sm font-medium truncate ${dark ? "text-gray-200" : "text-gray-700"}`}>{request.filename}</p>
+          {request.filesize && (
+            <p className="text-[10px] text-gray-500 mt-0.5">{(request.filesize / (1024 * 1024)).toFixed(2)} MB</p>
+          )}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          onClick={() => onRespond(request.id, false)}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${dark ? "bg-gray-800 hover:bg-gray-700 text-gray-400" : "bg-gray-100 hover:bg-gray-200 text-gray-600"}`}
+        >
+          Reject
+        </button>
+        <button
+          onClick={() => onRespond(request.id, true)}
+          className="flex-1 py-2 rounded-xl text-xs font-bold bg-blue-500 hover:bg-blue-600 text-white shadow-md shadow-blue-500/20 transition-all"
+        >
+          Accept
+        </button>
       </div>
     </div>
   );
@@ -278,11 +329,29 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
     return () => { cancelled = true; unlistenFn?.(); };
   }, []);
 
+  // Listen for transfer requests
+  useEffect(() => {
+    let unlistenFn: (() => void) | undefined;
+    let cancelled = false;
+    listen<TransferRequest>("transfer-request", (ev) => {
+      setItems((prev) => [
+        ...prev,
+        { kind: "request", id: ev.payload.id, request: ev.payload, at: timestamp() },
+      ]);
+    }).then((fn) => { if (cancelled) fn(); else unlistenFn = fn; });
+    return () => { cancelled = true; unlistenFn?.(); };
+  }, []);
+
+  const handleRespond = async (id: string, accepted: boolean) => {
+    await invoke("respond_to_transfer_request", { id, accepted });
+    setItems((prev) => prev.filter((it) => !(it.kind === "request" && it.id === id)));
+  };
+
   return (
     <div className={`flex flex-col h-full overflow-hidden ${dark ? "bg-gray-900" : "bg-white"}`}>
       {/* Scrollable feed container */}
       <div ref={feedRef} className="flex-1 overflow-y-auto px-4 pt-4">
-        <div className="max-w-xl mx-auto space-y-3 pb-24"> {/* pb-24 fixes clipping at the bottom */}
+        <div className="max-w-xl mx-auto space-y-3 pb-24">
           {/* QR / status panel */}
           <QrPanel
             qrCode={qrCode}
@@ -297,13 +366,12 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
           />
 
           {/* Items feed */}
-          {items.map((item) =>
-            item.kind === "text" ? (
-              <TextCard key={item.id} item={item} dark={dark} />
-            ) : (
-              <FileCard key={item.id} item={item} dark={dark} />
-            )
-          )}
+          {items.map((item) => {
+            if (item.kind === "text") return <TextCard key={item.id} item={item} dark={dark} />;
+            if (item.kind === "file") return <FileCard key={item.id} item={item} dark={dark} />;
+            if (item.kind === "request") return <RequestCard key={item.id} item={item} dark={dark} onRespond={handleRespond} />;
+            return null;
+          })}
 
           {/* Empty state */}
           {isRunning && items.length === 0 && !starting && (

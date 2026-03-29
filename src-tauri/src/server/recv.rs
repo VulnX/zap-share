@@ -1,25 +1,87 @@
-use std::path::PathBuf;
-
-use actix_web::{
-    http::StatusCode,
-    web::{self, BytesMut},
-    HttpRequest, HttpResponse, Responder,
-};
-use futures_util::StreamExt;
-use log::debug;
-use tauri::{Emitter, Manager, Window};
-use tokio::{
-    fs,
-    io::{AsyncWriteExt, BufWriter},
-};
-
+use std::collections::{HashMap, HashSet};
+use std::sync::Mutex;
+use tokio::sync::oneshot;
 use crate::models;
+use actix_web::{web, HttpResponse, HttpRequest, Responder, http::StatusCode};
+use tauri::{Window, Emitter, Manager};
+use std::path::PathBuf;
+use actix_web::web::BytesMut;
+use futures_util::StreamExt;
+use tokio::io::{AsyncWriteExt, BufWriter};
+use tokio::fs;
+use log::debug;
+
+pub struct TransferManager {
+    pub pending: Mutex<HashMap<String, oneshot::Sender<bool>>>,
+    pub tokens: Mutex<HashSet<String>>,
+}
+
+impl TransferManager {
+    pub fn new() -> Self {
+        Self {
+            pending: Mutex::new(HashMap::new()),
+            tokens: Mutex::new(HashSet::new()),
+        }
+    }
+}
 
 /// Handles `GET /` in ReceiveFile mode
 ///
 /// Serves the upload UI HTML page.
 pub async fn serve_upload_ui() -> impl Responder {
     HttpResponse::Ok().body(include_str!("../static/upload-file.html"))
+}
+
+/// Handles `POST /request`
+pub async fn handle_request(
+    window: web::Data<Window>,
+    manager: web::Data<TransferManager>,
+    req: web::Json<models::TransferRequest>,
+) -> impl Responder {
+    let request_id = req.id.clone();
+    debug!("Incoming transfer request: {:#?}", req);
+
+    let (tx, rx) = oneshot::channel();
+    {
+        let mut pending = manager.pending.lock().unwrap();
+        pending.insert(request_id.clone(), tx);
+    }
+
+    // Emit event to Tauri frontend
+    if let Err(e) = window.emit("transfer-request", req.into_inner()) {
+        debug!("Failed to emit transfer-request: {e}");
+        return HttpResponse::InternalServerError().body("Failed to notify receiver");
+    }
+
+    // Wait for response (with timeout)
+    match tokio::time::timeout(std::time::Duration::from_secs(60), rx).await {
+        Ok(Ok(accepted)) => {
+            if accepted {
+                let token = uuid::Uuid::new_v4().to_string();
+                {
+                    let mut tokens = manager.tokens.lock().unwrap();
+                    tokens.insert(token.clone());
+                }
+                HttpResponse::Ok().json(models::TransferResponse {
+                    id: request_id,
+                    accepted: true,
+                    token: Some(token),
+                })
+            } else {
+                HttpResponse::Ok().json(models::TransferResponse {
+                    id: request_id,
+                    accepted: false,
+                    token: None,
+                })
+            }
+        }
+        _ => {
+            // Timeout or channel closed
+            let mut pending = manager.pending.lock().unwrap();
+            pending.remove(&request_id);
+            HttpResponse::RequestTimeout().body("Request timed out or cancelled")
+        }
+    }
 }
 
 /// Handles `POST /files` in ReceiveFile mode
@@ -44,9 +106,29 @@ pub async fn serve_upload_ui() -> impl Responder {
 ///   a numeric suffix is appended automatically, e.g. `photo (1).jpg`.
 pub async fn receive_file(
     window: web::Data<Window>,
+    manager: web::Data<TransferManager>,
     req: HttpRequest,
     mut body: web::Payload,
 ) -> impl Responder {
+    // Validate token
+    let token = match req
+        .headers()
+        .get("X-Transfer-Token")
+        .and_then(|v| v.to_str().ok())
+    {
+        Some(token) => token,
+        None => {
+            return HttpResponse::Unauthorized().body("Missing X-Transfer-Token header");
+        }
+    };
+
+    {
+        let mut tokens = manager.tokens.lock().unwrap();
+        if !tokens.remove(token) {
+            return HttpResponse::Forbidden().body("Invalid or expired token");
+        }
+    }
+
     // Extract filename from the X-Filename header (percent-decoded)
     let filename = match req
         .headers()
@@ -99,8 +181,8 @@ pub async fn receive_file(
         progress: 0.0,
     };
 
-    while let Some(chunk) = body.next().await {
-        let chunk = match chunk {
+    while let Some(chunk_result) = body.next().await {
+        let chunk = match chunk_result {
             Ok(c) => c,
             Err(e) => {
                 debug!("Error reading body chunk: {e:#?}");
@@ -172,13 +254,38 @@ pub async fn serve_text_ui() -> impl Responder {
 /// Returns `204 No Content` on success.
 pub async fn receive_text(
     window: web::Data<Window>,
+    manager: web::Data<TransferManager>,
+    req: HttpRequest,
     mut body: web::Payload,
 ) -> impl Responder {
+    // Validate token
+    let token = match req
+        .headers()
+        .get("X-Transfer-Token")
+        .and_then(|v| v.to_str().ok())
+    {
+        Some(token) => token,
+        None => {
+            return HttpResponse::Unauthorized().body("Missing X-Transfer-Token header");
+        }
+    };
+
+    {
+        let mut tokens = manager.tokens.lock().unwrap();
+        if !tokens.remove(token) {
+            return HttpResponse::Forbidden().body("Invalid or expired token");
+        }
+    }
+
     let mut body_bytes = BytesMut::new();
-    while let Some(Ok(chunk)) = body.next().await {
+    while let Some(chunk_result) = body.next().await {
+        let chunk = match chunk_result {
+            Ok(c) => c,
+            Err(e) => return HttpResponse::InternalServerError().body(e.to_string()),
+        };
         body_bytes.extend_from_slice(&chunk);
     }
-    let body_str = String::from_utf8_lossy(&body_bytes);
+    let body_str = String::from_utf8_lossy(&body_bytes).to_string();
     window.emit("received-text", body_str).unwrap();
     HttpResponse::new(StatusCode::NO_CONTENT)
 }

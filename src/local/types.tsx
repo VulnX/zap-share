@@ -35,3 +35,11 @@ export interface SharedText {
 export interface SharedFiles {
   URIList: string[] | null;
 }
+
+export type TransferRequest = {
+  id: string;
+  device_name: string;
+  type: "file" | "text";
+  filename?: string;
+  filesize?: number;
+};
