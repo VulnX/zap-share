@@ -2,8 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+
+/* // Dark mode palette used consistently:
+// bg-[#13151f]   → page background
+// bg-[#1a1d2a]   → card surface / nav
+// bg-[#2a2d3e]   → elevated elements, badges
+// bg-[#343748]   → hover state
+// border-[#2a2d3e] → subtle border
+// text-slate-100  → primary text
+// text-[#8b92b3]  → muted/secondary text
+// text-[#5a6080]  → very muted text */
+/* ── Design Tokens ──────────────────────────────────────────────────────────── */
+:root {
+  /* Light theme */
+  --bg-page: #f8f9fc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f3f8;
+  --bg-hover: #e8ebf2;
+  --border-subtle: #e2e5ef;
+  --border-strong: #d1d5e0;
+  --text-primary: #1a1d2e;
+  --text-secondary: #5b6178;
+  --text-muted: #9097b0;
+  --accent: #6366f1;
+  --accent-hover: #5457e5;
+  --accent-subtle: rgba(99, 102, 241, 0.08);
+  --accent-border: rgba(99, 102, 241, 0.25);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --radius: 12px;
+}
+
+/* ── Global Reset & Base ──────────────────────────────────────────────────── */
 * {
   user-select: none;
+  -webkit-user-select: none;
 }
 
 html,
@@ -12,15 +45,89 @@ body,
   height: 100%;
   width: 100%;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-:hover {
-  .clickable {
-    cursor: pointer;
-  }
+/* ── Smooth theme transitions ─────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Opt-out for elements that have their own transitions */
+button,
+a,
+input,
+textarea,
+[class*="transition"] {
+  transition-property: all;
+}
+
+/* ── Clickable cursor ─────────────────────────────────────────────────────── */
+:hover .clickable {
+  cursor: pointer;
+}
+
+/* ── QR Code Container ────────────────────────────────────────────────────── */
 .qr-container svg {
   width: 90%;
   margin: auto;
+}
+
+/* ── Custom Scrollbar ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 146, 179, 0.25);
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 146, 179, 0.45);
+}
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.3s ease-out both;
+}
+
+.pulse-glow {
+  animation: pulseGlow 2s infinite;
 }

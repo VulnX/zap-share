@@ -66,23 +66,27 @@ const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
     <Dialog
       open={isOpen}
       handler={isLoading ? () => {} : onCancel}
-      className={isTheme ? "bg-gray-800 text-white" : "bg-white text-black"}
+      className={
+        isTheme
+          ? "!bg-[#1a1d2a] text-white border border-[#2a2d3e]"
+          : "bg-white text-[#1a1d2e]"
+      }
       {...({} as any)}
     >
       <DialogHeader
-        className={isTheme ? "text-white" : "text-black"}
+        className={isTheme ? "text-white" : "text-[#1a1d2e]"}
         {...({} as any)}
       >
         Confirm File Transfer
       </DialogHeader>
       <DialogBody
-        className={`space-y-4 ${isTheme ? "bg-gray-800 text-gray-200" : ""}`}
+        className={`space-y-4 ${isTheme ? "!text-[#c4c9de]" : "text-[#5b6178]"}`}
         {...({} as any)}
       >
         <div className="space-y-3">
           <div>
             <Typography
-              className="font-medium"
+              className={`font-medium ${isTheme ? "text-slate-200" : "text-[#1a1d2e]"}`}
               color="inherit"
               placeholder={undefined}
               {...({} as any)}
@@ -90,7 +94,7 @@ const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
               File name:{" "}
             </Typography>
             <Typography
-              className={isTheme ? "text-gray-300" : "text-gray-700"}
+              className={isTheme ? "text-[#c4c9de]" : "text-[#5b6178]"}
               color="inherit"
               {...({} as any)}
             >
@@ -99,14 +103,14 @@ const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
           </div>
           <div>
             <Typography
-              className="font-medium"
+              className={`font-medium ${isTheme ? "text-slate-200" : "text-[#1a1d2e]"}`}
               color="inherit"
               {...({} as any)}
             >
               File size:{" "}
             </Typography>
             <Typography
-              className={isTheme ? "text-gray-300" : "text-gray-700"}
+              className={isTheme ? "text-[#c4c9de]" : "text-[#5b6178]"}
               color="inherit"
               {...({} as any)}
             >
@@ -115,7 +119,7 @@ const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
           </div>
           <div>
             <Typography
-              className="font-medium"
+              className={`font-medium ${isTheme ? "text-slate-200" : "text-[#1a1d2e]"}`}
               color="inherit"
               placeholder={undefined}
               {...({} as any)}
@@ -123,7 +127,7 @@ const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
               Estimated transfer time:{" "}
             </Typography>
             <Typography
-              className={isTheme ? "text-gray-300" : "text-gray-700"}
+              className={isTheme ? "text-[#c4c9de]" : "text-[#5b6178]"}
               color="inherit"
               {...({} as any)}
             >
@@ -134,8 +138,7 @@ const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
       </DialogBody>
       <DialogFooter className="space-x-2" {...({} as any)}>
         <Button
-          variant="text"
-          color="gray"
+          color="red"
           onClick={onCancel}
           disabled={isLoading}
           placeholder={undefined}
@@ -148,7 +151,6 @@ const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
           onClick={onProceed}
           disabled={isLoading}
           loading={isLoading}
-          placeholder={undefined}
           {...({} as any)}
         >
           Proceed

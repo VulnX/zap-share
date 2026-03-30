@@ -108,13 +108,13 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     <div className="w-full max-w-3xl mx-auto mt-6">
       <div
         className={`border rounded-xl shadow-sm ${
-          isTheme ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
+          isTheme ? "!bg-[#1a1d2a] !border-[#2a2d3e]" : "bg-white border-gray-200"
         }`}
       >
         {/* Header */}
         <div
           className={`flex items-center justify-between px-5 py-4 border-b ${
-            isTheme ? "border-gray-700" : "border-gray-200"
+            isTheme ? "border-[#2a2d3e]" : "border-gray-200"
           }`}
         >
           <div className="flex items-center gap-2">
@@ -129,7 +129,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
             <h3
               className={`text-sm font-semibold ${
-                isTheme ? "text-gray-200" : "text-gray-700"
+                isTheme ? "text-white" : "text-gray-700"
               }`}
             >
               Nearby Devices
@@ -154,7 +154,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 key={index}
                 className={`flex items-center justify-between p-4 border rounded-xl transition cursor-pointer ${
                   isTheme
-                    ? "bg-gray-800 border-gray-700 hover:bg-gray-700"
+                    ? "bg-[#13151f] border-[#2a2d3e] hover:bg-[#2a2d3e]"
                     : "bg-gray-50 border-gray-200 hover:bg-gray-100"
                 }`}
                 onClick={async () => {
@@ -183,13 +183,13 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                   {/* ICON */}
                   <div
                     className={`w-10 h-10 flex items-center justify-center rounded-full ${
-                      isTheme ? "bg-gray-700" : "bg-gray-200"
+                      isTheme ? "bg-[#2a2d3e]" : "bg-gray-200"
                     }`}
                   >
                     {device.type === "mobile" && (
                       <svg
                         className={`w-5 h-5 ${
-                          isTheme ? "text-gray-300" : "text-gray-700"
+                          isTheme ? "text-slate-200" : "text-gray-700"
                         }`}
                         viewBox="0 0 384 512"
                         fill="currentColor"
@@ -201,7 +201,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     {device.type === "computer" && (
                       <svg
                         className={`w-5 h-5 ${
-                          isTheme ? "text-gray-300" : "text-gray-700"
+                          isTheme ? "text-slate-200" : "text-gray-700"
                         }`}
                         viewBox="0 0 640 512"
                         fill="currentColor"
@@ -216,7 +216,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-sm font-medium ${
-                          isTheme ? "text-gray-100" : "text-gray-800"
+                          isTheme ? "text-white" : "text-gray-800"
                         }`}
                       >
                         {device.name}
@@ -229,7 +229,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                       <span
                         className={`text-xs px-2 py-0.5 rounded-md w-fit whitespace-nowrap ${
                           isTheme
-                            ? "bg-gray-700 text-gray-300"
+                            ? "bg-[#2a2d3e] text-[#c4c9de]"
                             : "bg-gray-200 text-gray-600"
                         }`}
                       >
@@ -238,7 +238,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                       <span
                         className={`text-xs px-2 py-0.5 rounded-md ${
                           isTheme
-                            ? "bg-gray-700 text-gray-300"
+                            ? "bg-[#2a2d3e] text-[#c4c9de]"
                             : "bg-gray-200 text-gray-600"
                         }`}
                       >
@@ -255,7 +255,7 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         {/* Footer */}
         <div
           className={`text-center text-xs pb-4 ${
-            isTheme ? "text-gray-400" : "text-gray-400"
+            isTheme ? "text-[#9ba2c0]" : "text-gray-400"
           }`}
         >
           Make sure other devices have the app open and are nearby
@@ -281,7 +281,7 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
 
   return (
     <div
-      className={`flex flex-col w-full ${isTheme ? "bg-gray-900" : "bg-white"}`}
+      className={`flex flex-col w-full ${isTheme ? "bg-[#13151f]" : "bg-white"}`}
     >
       {/* <nav>
         <Navigation tab="send"/>
@@ -292,7 +292,7 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
           onClick={onBack}
           className={`mb-6 px-6 py-2 rounded-lg font-medium transition-colors self-start ${
             isTheme
-              ? "bg-gray-700 text-white hover:bg-gray-600"
+              ? "bg-[#2a2d3e] text-white hover:bg-[#343748]"
               : "bg-gray-200 text-black hover:bg-gray-300"
           }`}
         >
@@ -304,7 +304,7 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
             open={openCollapse}
             className={`border rounded-lg ${
               isTheme
-                ? "bg-gray-900 border-gray-700"
+                ? "!bg-[#1a1d2a] !border-[#2a2d3e]"
                 : "bg-white border-gray-300"
             }`}
           >
@@ -327,7 +327,7 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
                 ) : (
                   <p
                     className={`text-center ${
-                      isTheme ? "text-gray-300" : "text-gray-700"
+                      isTheme ? "text-[#c4c9de]" : "text-gray-700"
                     }`}
                   >
                     Generating QR Code...
@@ -340,7 +340,7 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
             onClick={() => setOpenCollapse(!openCollapse)}
             className={`w-full mt-3 px-6 py-2 rounded-lg font-medium transition-colors ${
               isTheme
-                ? "bg-gray-700 text-white hover:bg-gray-600"
+                ? "bg-[#2a2d3e] text-white hover:bg-[#343748]"
                 : "bg-gray-200 text-black hover:bg-gray-300"
             }`}
           >
