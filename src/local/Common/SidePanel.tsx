@@ -45,12 +45,12 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
       <Drawer
         open={openSettings}
         onClose={closeDrawer}
-        className={`overflow-y-auto ${dark ? "!bg-[#13151f] text-white" : "!bg-[#f8f9fc] !text-[#1a1d2e]"}`}
+        className={`flex flex-col ${dark ? "!bg-[#13151f] text-white" : "!bg-[#f8f9fc] !text-[#1a1d2e]"}`}
         {...({} as any)}
       >
-        {/* Header */}
+        {/* Header - fixed, does not scroll */}
         <div
-          className={`px-5 pt-6 pb-5 border-b ${dark ? "border-[#2a2d3e]" : "border-[#e2e5ef]"}`}
+          className={`px-5 pt-6 pb-5 border-b flex-shrink-0 ${dark ? "border-[#2a2d3e]" : "border-[#e2e5ef]"}`}
         >
           <div className="flex items-center justify-between">
             <div>
@@ -91,7 +91,8 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
           </div>
         </div>
 
-        <div className="px-5 py-5 space-y-6">
+        {/* Scrollable content */}
+        <div className="px-5 py-5 space-y-6 overflow-y-auto flex-1">
           {/* Appearance Section */}
           <div>
             <p className={sectionLabelClass}>Appearance</p>
@@ -221,7 +222,7 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
                 onChange={(e) => setAutoDiscovery(e.target.checked)}
                 id="custom-switch-component-3"
                 ripple={false}
-                className="h-full w-full  bg-blue-gray-400 checked:bg-blue-gray-800"
+                className="h-full w-full bg-blue-gray-400 checked:bg-blue-gray-800"
                 circleProps={{
                   className: "before:hidden",
                 }}

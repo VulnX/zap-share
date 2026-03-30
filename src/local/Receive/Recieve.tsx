@@ -7,7 +7,6 @@ import QRCode from "qrcode";
 import { flushSync } from "react-dom";
 import { ProgressUpdatePayload, TransferRequest } from "../types";
 
-
 interface RecieveProps {
   canSwitch: boolean;
   setCanSwitch: (value: boolean) => void;
@@ -47,7 +46,7 @@ function TextCard({
   return (
     <div
       className={`rounded-2xl p-4 border ${
-        dark ? "bg-[#1a1d2a] border-[#2a2d3e]" : "bg-white border-gray-200"
+        dark ? "bg-[#1a1d2a] border-[#2a2d3e] text-white" : "bg-white border-gray-200"
       } shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -102,7 +101,7 @@ function FileCard({
   return (
     <div
       className={`rounded-2xl p-4 border ${
-        dark ? "bg-[#1a1d2a] border-[#2a2d3e]" : "bg-white border-gray-200"
+        dark ? "bg-[#1a1d2a] border-[#2a2d3e] text-white" : "bg-white border-gray-200"
       } shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2`}
     >
       <div className="flex items-center gap-2 mb-3">
@@ -124,7 +123,7 @@ function FileCard({
             </span>
           </div>
           <p
-            className={`text-sm font-semibold truncate ${dark ? "text-slate-100" : "text-gray-900"}`}
+            className={`text-sm font-semibold truncate ${dark ? "white" : "text-gray-900"}`}
           >
             {item.filename}
           </p>
@@ -163,7 +162,7 @@ function RequestCard({
     <div
       className={`rounded-2xl p-5 border-2 ${
         dark
-          ? "bg-indigo-500/5 border-indigo-500/25 shadow-lg shadow-indigo-900/20"
+          ? "bg-indigo-500/5 border-indigo-500/25 shadow-lg shadow-indigo-900/20 text-white"
           : "bg-blue-50 border-blue-100 shadow-sm"
       } transition-all duration-500 animate-in zoom-in-95`}
     >
@@ -178,7 +177,7 @@ function RequestCard({
           </div>
           <div>
             <h3
-              className={`text-sm font-bold ${dark ? "text-slate-100" : "text-gray-900"}`}
+              className={`text-sm font-bold ${dark ? "white" : "text-gray-900"}`}
             >
               Transfer Request
             </h3>
@@ -229,7 +228,7 @@ function RequestCard({
           onClick={() => onRespond(request.id, false)}
           className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
             dark
-               ? "bg-[#2a2d3e] hover:bg-[#343748] text-[#c4c9de] hover:text-white border border-[#3a3f55]"
+              ? "bg-[#2a2d3e] hover:bg-[#343748] text-[#c4c9de] hover:text-white border border-[#3a3f55]"
               : "bg-gray-100 hover:bg-gray-200 text-gray-600"
           }`}
         >

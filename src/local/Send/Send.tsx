@@ -205,12 +205,12 @@ export default function Send({
   }, []);
 
   return (
-    <div>
+    <div className="h-full">
       {showQrCode ? (
         <QrCode onBack={() => setShowBackConfirmation(true)} />
       ) : (
         <div
-          className={`min-h-screen flex flex-col items-center pt-8 sm:pt-10 xl:pt-20 px-4 sm:px-6 ${
+          className={`h-full flex flex-col items-center pt-8 sm:pt-10 xl:pt-20 px-4 sm:px-6 ${
             isTheme ? "bg-[#13151f] text-white" : "bg-[#f8f9fc] !text-[#1a1d2e]"
           }`}
         >

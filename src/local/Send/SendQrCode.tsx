@@ -108,7 +108,9 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     <div className="w-full max-w-3xl mx-auto mt-6">
       <div
         className={`border rounded-xl shadow-sm ${
-          isTheme ? "!bg-[#1a1d2a] !border-[#2a2d3e]" : "bg-white border-gray-200"
+          isTheme
+            ? "!bg-[#1a1d2a] !border-[#2a2d3e]"
+            : "bg-white border-gray-200"
         }`}
       >
         {/* Header */}
@@ -281,11 +283,8 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
 
   return (
     <div
-      className={`flex flex-col w-full ${isTheme ? "bg-[#13151f]" : "bg-white"}`}
+      className={`w-full h-full flex flex-col ${isTheme ? "bg-[#13151f]" : "bg-white"}`}
     >
-      {/* <nav>
-        <Navigation tab="send"/>
-      </nav> */}
       <div className="flex flex-col items-center mt-[5vh] px-4 pb-8">
         {/* Back Button */}
         <button
@@ -299,7 +298,7 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
           Back
         </button>
         {/* QR Code Collapse */}
-        <div className="w-full max-w-sm mb-8">
+        <div className="w-full max-w-sm ">
           <Collapse
             open={openCollapse}
             className={`border rounded-lg ${

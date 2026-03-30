@@ -17,7 +17,7 @@ export function ToggleThemeButton() {
 
   return (
     <Switch
-      checked={isTheme} 
+      checked={isTheme}
       onChange={toggleTheme}
       id="custom-switch-component"
       ripple={false}
@@ -58,7 +58,7 @@ export function ProfileButton() {
             : "bg-[#f1f3f8] text-[#5b6178] hover:bg-[#e8ebf2]"
         } transition-all flex items-center justify-center`}
         title={deviceName}
-      > 
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-5 w-5"
@@ -78,7 +78,7 @@ export function ProfileButton() {
         <div
           className={`absolute right-0 mt-2 py-2 px-4 rounded-xl shadow-lg z-50 ${
             isTheme
-              ? "bg-[#2a2d3e] text-slate-100 border border-[#3a3f55] shadow-black/40"
+              ? "bg-[#2a2d3e] white border border-[#3a3f55] shadow-black/40"
               : "bg-white text-[#1a1d2e] border border-[#e2e5ef] shadow-md"
           }`}
         >
