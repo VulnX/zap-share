@@ -81,6 +81,11 @@ textarea,
   margin: auto;
 }
 
+.qr-container-dark svg {
+  filter: invert(1);
+  mix-blend-mode: screen;
+}
+
 /* ── Custom Scrollbar ─────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;

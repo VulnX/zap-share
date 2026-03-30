@@ -368,12 +368,12 @@ function QrPanel({
           )}
           <div
             className={`rounded-xl flex items-center justify-center p-3 ${
-              dark ? "bg-white shadow-inner" : "border-2 border-gray-200"
+              dark ? " shadow-inner" : "border-2 border-gray-200"
             }`}
           >
             {qrCode ? (
               <div
-                className="qr-container w-44 h-44"
+                className={`qr-container w-44 h-44 ${dark ? "qr-container-dark" : ""}`}
                 dangerouslySetInnerHTML={{ __html: qrCode }}
               />
             ) : (

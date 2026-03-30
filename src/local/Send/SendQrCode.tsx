@@ -320,7 +320,7 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
               >
                 {qrCode ? (
                   <div
-                    className="qr-container"
+                    className={`qr-container ${isTheme ? "qr-container-dark" : ""}`}
                     dangerouslySetInnerHTML={{ __html: qrCode }}
                   />
                 ) : (
