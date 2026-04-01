@@ -25,6 +25,7 @@ pub async fn serve_download_ui(file_datas: web::Data<Vec<models::FileData>>) -> 
     let file_datas_json = urlencoding::encode(&file_datas_json);
     let page = include_str!("../static/download-file.html").to_string();
     let page = page.replace("<FILE_DATA_HERE>", &file_datas_json);
+    // TODO: This needs to go! Please     ^^^^^^^^^^^^^^^^^.
     HttpResponse::Ok().body(page)
 }
 
@@ -55,7 +56,7 @@ pub async fn get_file(
     };
 
     let (file, _) = api::open_file(&file_data.filepath, &window);
-    let file = tokio::fs::File::from_std(file);
+    let file: tokio::fs::File = tokio::fs::File::from_std(file);
     let file_name = file_data.filename.clone();
     let file_size = file_data.filesize;
 
@@ -104,6 +105,7 @@ pub async fn get_file(
 ///
 /// Returns the shared text as a plain-text response body.
 pub async fn get_text(text: web::Data<String>) -> impl Responder {
+    // TODO: Something better here. Some UI at least
     HttpResponse::new(StatusCode::OK)
         .set_body(actix_web::body::BoxBody::new(text.get_ref().clone()))
 }

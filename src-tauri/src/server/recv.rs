@@ -25,11 +25,11 @@ impl TransferManager {
     }
 }
 
-/// Handles `GET /` in ReceiveFile mode
+/// Handles `GET /`
 ///
 /// Serves the upload UI HTML page.
 pub async fn serve_upload_ui() -> impl Responder {
-    HttpResponse::Ok().body(include_str!("../static/upload-file.html"))
+    HttpResponse::Ok().body(include_str!("../static/upload-portal.html"))
 }
 
 /// Handles `POST /request`
@@ -47,7 +47,7 @@ pub async fn handle_request(
         pending.insert(request_id.clone(), tx);
     }
 
-    // Emit event to Tauri frontend
+    // Emit event to frontend
     if let Err(e) = window.emit("transfer-request", req.into_inner()) {
         debug!("Failed to emit transfer-request: {e}");
         return HttpResponse::InternalServerError().body("Failed to notify receiver");
@@ -84,7 +84,7 @@ pub async fn handle_request(
     }
 }
 
-/// Handles `POST /files` in ReceiveFile mode
+/// Handles `POST /files`
 ///
 /// Streams the raw request body directly to disk chunk-by-chunk.
 /// The filename is read from the `X-Filename` request header.
@@ -152,6 +152,7 @@ pub async fn receive_file(
         .and_then(|s| s.parse().ok());
 
     // Sanitize filename to prevent path traversal and OS-specific invalid chars (/, \, :)
+    // TOOD: Is this sanitization *really* needed?
     let sanitized_filename = filename.replace(['/', '\\', ':'], "_");
 
     debug!("Receiving file: {sanitized_filename:#?} (size hint: {filesize:#?})");
@@ -237,13 +238,6 @@ fn get_unique_file_path(write_path: &mut PathBuf, filename: &str) {
         }
     }
     unreachable!("Infinite loop should always find a unique name");
-}
-
-/// Handles `GET /` in ReceiveText mode
-///
-/// Serves the text-upload UI HTML page.
-pub async fn serve_text_ui() -> impl Responder {
-    HttpResponse::Ok().body(include_str!("../static/upload-text.html"))
 }
 
 /// Handles `POST /text` in ReceiveText mode

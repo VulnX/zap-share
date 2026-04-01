@@ -11,24 +11,6 @@ mod send;
 /// The server binds to `0.0.0.0` on a randomly assigned port.
 /// The assigned port is sent back to the caller via `tx`.
 /// `SERVER_HANDLE` is registered once the server starts successfully.
-///
-/// ## Route map
-///
-/// ### SendFile
-/// - `GET  /`          — download UI page
-/// - `GET  /files/{id}` — stream a file by its ID
-///
-/// ### ReceiveFile
-/// - `GET  /`          — upload UI page
-/// - `POST /files`      — receive a streaming file upload
-///
-/// ### SendText
-/// - `GET  /`          — UI page (redirects client to /text)
-/// - `GET  /text`       — returns the raw text body
-///
-/// ### ReceiveText
-/// - `GET  /`          — text input UI page
-/// - `POST /text`       — receive plain-text body, emit to window
 pub fn start_server<R: Runtime>(
     window: tauri::Window<R>,
     mode: models::TransferMode,
@@ -50,6 +32,9 @@ pub fn start_server<R: Runtime>(
             let app = App::new();
             let mut app = app.wrap(Logger::default());
             app = app.app_data(manager_data.clone());
+            // TODO: Allow all routes here, and return 403 Forbidden in
+            // individual handlers based on current mode. This will allow us to
+            // use same server when switching between SEND and RECV modes.
             match &mode {
                 models::TransferMode::SendFile(file_datas) => {
                     app = app
@@ -57,30 +42,17 @@ pub fn start_server<R: Runtime>(
                         .route("/files/{id}", web::get().to(send::get_file))
                         .app_data(web::Data::new(file_datas.clone()))
                 }
-                // Unified receive mode — handles both files and text
-                models::TransferMode::Receive => {
-                    app = app
-                        .route("/", web::get().to(recv::serve_upload_ui))
-                        .route("/request", web::post().to(recv::handle_request))
-                        .route("/files", web::post().to(recv::receive_file))
-                        .route("/text", web::post().to(recv::receive_text))
-                }
-                models::TransferMode::ReceiveFile => {
-                    app = app
-                        .route("/", web::get().to(recv::serve_upload_ui))
-                        .route("/request", web::post().to(recv::handle_request))
-                        .route("/files", web::post().to(recv::receive_file))
-                }
                 models::TransferMode::SendText(text) => {
                     app = app
                         .route("/", web::get().to(send::get_text))
                         .route("/text", web::get().to(send::get_text))
                         .app_data(web::Data::new(text.clone()))
                 }
-                models::TransferMode::ReceiveText => {
+                models::TransferMode::Receive => {
                     app = app
-                        .route("/", web::get().to(recv::serve_text_ui))
+                        .route("/", web::get().to(recv::serve_upload_ui))
                         .route("/request", web::post().to(recv::handle_request))
+                        .route("/files", web::post().to(recv::receive_file))
                         .route("/text", web::post().to(recv::receive_text))
                 }
             };
@@ -94,6 +66,7 @@ pub fn start_server<R: Runtime>(
         }
         // The caller should handle `recv_timeout` since this could
         // (hypothetically) spin indefinitely
+        // ^^^^^^^^^^^^^^^^ can it really? <--- TODO
     }
     let port = server
         .addrs()

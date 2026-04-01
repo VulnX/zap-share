@@ -57,6 +57,7 @@ impl FileData {
         let id = uuid::Uuid::new_v4().to_string();
         let (file, _) = api::open_file(&filepath, window);
         let filesize = file.metadata().unwrap().len();
+        // TODO: Why not pass the raw File object itself??
         Self {
             id,
             filepath,
@@ -72,9 +73,6 @@ pub enum TransferMode {
     /// Unified receive mode: handles both file uploads and text in one server
     Receive,
     SendText(String),
-    /// Legacy: kept for direct app-to-app send_files_to / send_text_to compat
-    ReceiveFile,
-    ReceiveText,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

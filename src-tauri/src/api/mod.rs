@@ -52,6 +52,8 @@ pub async fn get_shared_data<R: Runtime>(
             *prev_data = Some(current_data.clone());
             current_data
         }
+        // TODO: A bug here is that, if the same file is shared again, then the
+        //       app will not detect it. Fix this somehow
         Some(ref prev_shared_data) => {
             if &current_data == prev_shared_data {
                 None
@@ -235,50 +237,10 @@ pub fn get_device_config<R: Runtime>(window: Window<R>) -> models::DeviceConfig 
     config
 }
 
-/// Starts server in `receive` mode
-///
-/// # Parameters (from JavaScript/TypeScript):
-///
-/// No parameters are required.
-///
-/// Example:
-/// ```ts
-/// invoke('recv_file');
-/// ```
-///
-/// # Return value:
-/// ```ts
-/// {
-///   "Success": {
-///     "ip": String | null, // Automatic IP detection may fail
-///     "port": Number
-///   }
-/// }
-/// ```
-///
-/// or
-///
-/// ```ts
-/// { "Error": "<error message>" }
-/// ```
-#[allow(dead_code)]
-#[tauri::command]
-pub fn recv_file<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
-    let mode = models::TransferMode::ReceiveFile;
-    start_server(window, mode)
-}
-
 #[allow(dead_code)]
 #[tauri::command]
 pub fn send_text<R: Runtime>(window: Window<R>, text: String) -> models::StartServerResponse {
     let mode = models::TransferMode::SendText(text);
-    start_server(window, mode)
-}
-
-#[allow(dead_code)]
-#[tauri::command]
-pub fn recv_text<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
-    let mode = models::TransferMode::ReceiveText;
     start_server(window, mode)
 }
 
@@ -361,6 +323,7 @@ fn start_server<R: Runtime>(
     // Stop any running server instance before starting a new one
     stop_server();
 
+    // Used to transfer port number between actix thread and API responder thread
     let (tx, rx) = mpsc::channel::<u16>();
     thread::spawn({
         let mode = mode.clone();
@@ -385,15 +348,12 @@ fn start_server<R: Runtime>(
     let shutdown_clone = shutdown.clone();
     let bcast_thread_handle = match mode {
         models::TransferMode::SendFile(_) => {
-            thread::spawn(|| bcast::recv_emitted_info(window, config, shutdown_clone))
-        }
-        models::TransferMode::Receive | models::TransferMode::ReceiveFile => {
-            thread::spawn(move || bcast::emit_info(port, config, shutdown_clone))
+            thread::spawn(|| bcast::recv_info(window, config, shutdown_clone))
         }
         models::TransferMode::SendText(_) => {
-            thread::spawn(|| bcast::recv_emitted_info(window, config, shutdown_clone))
+            thread::spawn(|| bcast::recv_info(window, config, shutdown_clone))
         }
-        models::TransferMode::ReceiveText => {
+        models::TransferMode::Receive => {
             thread::spawn(move || bcast::emit_info(port, config, shutdown_clone))
         }
     };

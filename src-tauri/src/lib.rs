@@ -15,12 +15,10 @@ pub fn run() {
             api::send_file,
             api::send_files_to,
             api::send_text_to,
-            api::recv_file,
             api::recv,
             api::get_shared_data,
             api::get_device_config,
             api::send_text,
-            api::recv_text,
             api::respond_to_transfer_request,
             api::stop_server
         ])

@@ -17,6 +17,7 @@ use crate::{api, models};
 
 static BCAST_PORT: u16 = 54321;
 
+// TODO: Doesn't work on SVKM network. Fix pls
 fn detect_broadcast_target(socket: &UdpSocket) -> SocketAddrV4 {
     let ip = api::get_local_ip();
     let ip = Ipv4Addr::from_str(&ip).unwrap();
@@ -69,13 +70,14 @@ pub fn emit_info(port: u16, config: models::DeviceConfig, shutdown: Arc<AtomicBo
     }
 }
 
-pub fn recv_emitted_info<R: Runtime>(
+pub fn recv_info<R: Runtime>(
     window: Window<R>,
     config: models::DeviceConfig,
     shutdown: Arc<AtomicBool>,
 ) {
+    // TODO: No unwrap here pls, this CAN fail!
     let socket = UdpSocket::bind(("0.0.0.0", BCAST_PORT)).unwrap();
-    let mut buf = [0u8; 0x1000];
+    let mut buf = [0u8; 0x1000]; // TODO: Can we use sizeof(models::MulticastPayload) here?
     let mut devices = HashSet::new();
     while !shutdown.load(Ordering::Relaxed) {
         socket
@@ -95,6 +97,7 @@ pub fn recv_emitted_info<R: Runtime>(
                         name: payload.name,
                         r#type: payload.r#type,
                     };
+                    // Ensure uniqueness (by IP) in Hashset
                     devices.retain(|device: &models::ServerConfiguration| {
                         device.ip != server_config.ip
                     });
