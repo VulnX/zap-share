@@ -68,11 +68,15 @@ impl FileData {
 }
 
 #[derive(Clone)]
+pub struct Send {
+    pub files: Option<Vec<FileData>>,
+    pub text: Option<String>,
+}
+
+#[derive(Clone)]
 pub enum TransferMode {
-    SendFile(Vec<FileData>),
-    /// Unified receive mode: handles both file uploads and text in one server
+    Send(Send),
     Receive,
-    SendText(String),
 }
 
 #[derive(Debug, Serialize, Deserialize)]

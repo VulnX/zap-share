@@ -1,25 +1,27 @@
-use crate::{api::SERVER_HANDLE, models};
-use actix_web::{middleware::Logger, rt, web, App, HttpServer};
-use std::sync::{mpsc, Arc};
+use crate::{api::{self, SERVER_HANDLE}, models};
+use actix_web::{App, HttpServer, middleware::Logger, rt, web};
+use std::sync::{Arc, RwLock, mpsc};
 use tauri::Runtime;
 
 pub mod recv;
 mod send;
+
+pub struct ServerStatus {
+    pub ip: String,
+    pub port: u16,
+}
+
+pub static SERVER_STATUS: RwLock<Option<ServerStatus>> = RwLock::new(None);
 
 /// Starts an actix-web server and registers REST routes based on `mode`.
 ///
 /// The server binds to `0.0.0.0` on a randomly assigned port.
 /// The assigned port is sent back to the caller via `tx`.
 /// `SERVER_HANDLE` is registered once the server starts successfully.
-pub fn start_server<R: Runtime>(
-    window: tauri::Window<R>,
-    mode: models::TransferMode,
-    tx: mpsc::Sender<u16>,
-) {
+pub fn start_server<R: Runtime>(window: tauri::Window<R>, tx: mpsc::Sender<u16>) {
     let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("debug"));
     let server;
     loop {
-        let mode = mode.clone();
         let window_clone = window.clone();
         let window_data = web::Data::new(window_clone);
         let manager = Arc::new(recv::TransferManager::new());
@@ -35,27 +37,15 @@ pub fn start_server<R: Runtime>(
             // TODO: Allow all routes here, and return 403 Forbidden in
             // individual handlers based on current mode. This will allow us to
             // use same server when switching between SEND and RECV modes.
-            match &mode {
-                models::TransferMode::SendFile(file_datas) => {
-                    app = app
-                        .route("/", web::get().to(send::serve_download_ui))
-                        .route("/files/{id}", web::get().to(send::get_file))
-                        .app_data(web::Data::new(file_datas.clone()))
-                }
-                models::TransferMode::SendText(text) => {
-                    app = app
-                        .route("/", web::get().to(send::get_text))
-                        .route("/text", web::get().to(send::get_text))
-                        .app_data(web::Data::new(text.clone()))
-                }
-                models::TransferMode::Receive => {
-                    app = app
-                        .route("/", web::get().to(recv::serve_upload_ui))
-                        .route("/request", web::post().to(recv::handle_request))
-                        .route("/files", web::post().to(recv::receive_file))
-                        .route("/text", web::post().to(recv::receive_text))
-                }
-            };
+            app = app
+            .route("/", web::get().to(handle_root))
+                .route("/download", web::get().to(send::serve_download_ui))
+                .route("/download/files/{id}", web::get().to(send::get_file))
+                // .route("/download/text", web::get().to(send::get_text))
+                .route("/upload", web::get().to(recv::serve_upload_ui))
+                .route("/upload/request", web::post().to(recv::handle_request))
+                .route("/upload/files", web::post().to(recv::receive_file))
+                .route("/upload/text", web::post().to(recv::receive_text));
             app = app.app_data(window_data.clone());
             app
         });
@@ -81,4 +71,13 @@ pub fn start_server<R: Runtime>(
     // this function blocks on the server future.
     drop(guard);
     rt::System::new().block_on(server).unwrap();
+}
+
+async fn handle_root() -> web::Redirect {
+    let mode = api::TRANSFER_MODE.read().unwrap();
+    let mode = mode.as_ref().unwrap();
+    match *mode {
+        models::TransferMode::Send(_) => web::Redirect::to("/download"),
+        models::TransferMode::Receive => web::Redirect::to("/upload"),
+    }
 }

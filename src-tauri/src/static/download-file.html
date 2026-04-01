@@ -194,7 +194,7 @@
             files.forEach(file => {
                 const item = document.createElement('a');
                 item.className = 'file-item';
-                item.href = `/files/${file.id}`;
+                item.href = `/download/files/${file.id}`;
                 item.setAttribute('download', file.filename);
 
                 // Format size if available (Backend should ideally provide this)

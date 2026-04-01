@@ -1,15 +1,16 @@
-use std::collections::{HashMap, HashSet};
-use std::sync::Mutex;
-use tokio::sync::oneshot;
-use crate::models;
-use actix_web::{web, HttpResponse, HttpRequest, Responder, http::StatusCode};
-use tauri::{Window, Emitter, Manager};
-use std::path::PathBuf;
+use crate::{api, models};
+use actix_web::http::header;
 use actix_web::web::BytesMut;
+use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, Responder};
 use futures_util::StreamExt;
-use tokio::io::{AsyncWriteExt, BufWriter};
-use tokio::fs;
 use log::debug;
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
+use std::sync::Mutex;
+use tauri::{Emitter, Manager, Window};
+use tokio::fs;
+use tokio::io::{AsyncWriteExt, BufWriter};
+use tokio::sync::oneshot;
 
 pub struct TransferManager {
     pub pending: Mutex<HashMap<String, oneshot::Sender<bool>>>,
@@ -25,19 +26,33 @@ impl TransferManager {
     }
 }
 
-/// Handles `GET /`
+/// Handles `GET /upload`
 ///
 /// Serves the upload UI HTML page.
 pub async fn serve_upload_ui() -> impl Responder {
+    let mode = api::TRANSFER_MODE.read().unwrap();
+    let mode = mode.as_ref().unwrap();
+    if matches!(mode, models::TransferMode::Send(_)) {
+        return HttpResponse::Found().append_header((header::LOCATION, "/")).finish();
+    }
+
     HttpResponse::Ok().body(include_str!("../static/upload-portal.html"))
 }
 
-/// Handles `POST /request`
+/// Handles `POST /upload/request`
 pub async fn handle_request(
     window: web::Data<Window>,
     manager: web::Data<TransferManager>,
     req: web::Json<models::TransferRequest>,
 ) -> impl Responder {
+    let mode_guard = api::TRANSFER_MODE.read().unwrap();
+    let mode = mode_guard.as_ref().unwrap();
+    if matches!(mode, models::TransferMode::Send(_)) {
+        return HttpResponse::Forbidden().body("Forbidden");
+    }
+    // This is a blocking request, drop the `TRANSFER_MODE` guard
+    drop(mode_guard);
+
     let request_id = req.id.clone();
     debug!("Incoming transfer request: {:#?}", req);
 
@@ -84,7 +99,7 @@ pub async fn handle_request(
     }
 }
 
-/// Handles `POST /files`
+/// Handles `POST /upload/files`
 ///
 /// Streams the raw request body directly to disk chunk-by-chunk.
 /// The filename is read from the `X-Filename` request header.
@@ -110,6 +125,15 @@ pub async fn receive_file(
     req: HttpRequest,
     mut body: web::Payload,
 ) -> impl Responder {
+    let mode_guard = api::TRANSFER_MODE.read().unwrap();
+    let mode = mode_guard.as_ref().unwrap();
+    if matches!(mode, models::TransferMode::Send(_)) {
+        return HttpResponse::Forbidden().body("Forbidden");
+    }
+
+    // This is a blocking request, drop the `TRANSFER_MODE` guard
+    drop(mode_guard);
+
     // Validate token
     let token = match req
         .headers()
@@ -135,12 +159,14 @@ pub async fn receive_file(
         .get("X-Filename")
         .and_then(|v| v.to_str().ok())
         .filter(|s| !s.is_empty())
-        .map(|s| urlencoding::decode(s).map(|c| c.into_owned()).unwrap_or_else(|_| s.to_owned()))
-    {
+        .map(|s| {
+            urlencoding::decode(s)
+                .map(|c| c.into_owned())
+                .unwrap_or_else(|_| s.to_owned())
+        }) {
         Some(name) => name,
         None => {
-            return HttpResponse::BadRequest()
-                .body("Missing or empty X-Filename header");
+            return HttpResponse::BadRequest().body("Missing or empty X-Filename header");
         }
     };
 
@@ -160,7 +186,10 @@ pub async fn receive_file(
     // Resolve the downloads directory (Android fallback)
     let mut write_path = match tauri_plugin_os::platform() {
         "android" => PathBuf::from("/storage/emulated/0/Download"),
-        _ => window.path().download_dir().unwrap_or_else(|_| PathBuf::from(".")),
+        _ => window
+            .path()
+            .download_dir()
+            .unwrap_or_else(|_| PathBuf::from(".")),
     };
 
     get_unique_file_path(&mut write_path, &sanitized_filename);
@@ -176,24 +205,32 @@ pub async fn receive_file(
 
     let mut bufwriter = BufWriter::new(file);
     let mut written: u64 = 0;
+    let term_flag = api::TERM_FLAG.read().unwrap().clone();
     let mut payload = models::ProgressUpdatePayload {
         id: uuid::Uuid::new_v4().to_string(),
         filename: sanitized_filename,
         progress: 0.0,
     };
-
     while let Some(chunk_result) = body.next().await {
+        if let Some(ref flag) = term_flag {
+            if flag.load(std::sync::atomic::Ordering::Relaxed) {
+                debug!("Termination signal received, stopping receive_file");
+                return HttpResponse::InternalServerError().body("Transfer terminated by server reset");
+            }
+        }
         let chunk = match chunk_result {
             Ok(c) => c,
             Err(e) => {
                 debug!("Error reading body chunk: {e:#?}");
-                return HttpResponse::InternalServerError().body(format!("Transfer interrupted: {e}"));
+                return HttpResponse::InternalServerError()
+                    .body(format!("Transfer interrupted: {e}"));
             }
         };
 
         if let Err(e) = bufwriter.write_all(&chunk).await {
             debug!("Failed to write chunk: {e:#?}");
-            return HttpResponse::InternalServerError().body(format!("Failed to write to disk: {e}"));
+            return HttpResponse::InternalServerError()
+                .body(format!("Failed to write to disk: {e}"));
         }
         written += chunk.len() as u64;
 
@@ -240,7 +277,7 @@ fn get_unique_file_path(write_path: &mut PathBuf, filename: &str) {
     unreachable!("Infinite loop should always find a unique name");
 }
 
-/// Handles `POST /text` in ReceiveText mode
+/// Handles `POST /upload/text` in ReceiveText mode
 ///
 /// Buffers the plain-text request body and emits it as a
 /// `received-text` event to the Tauri window.
@@ -271,8 +308,15 @@ pub async fn receive_text(
         }
     }
 
+    let term_flag = api::TERM_FLAG.read().unwrap().clone();
     let mut body_bytes = BytesMut::new();
     while let Some(chunk_result) = body.next().await {
+        if let Some(ref flag) = term_flag {
+            if flag.load(std::sync::atomic::Ordering::Relaxed) {
+                debug!("Termination signal received, stopping receive_text");
+                return HttpResponse::InternalServerError().body("Transfer terminated by server reset");
+            }
+        }
         let chunk = match chunk_result {
             Ok(c) => c,
             Err(e) => return HttpResponse::InternalServerError().body(e.to_string()),

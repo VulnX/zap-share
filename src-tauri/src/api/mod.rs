@@ -1,11 +1,12 @@
 use crate::{models, server};
 use actix_web::dev::ServerHandle;
+use log::debug;
 use std::{
     io::Read,
     path::PathBuf,
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc, Arc, Mutex,
+        mpsc, Arc, Mutex, RwLock,
     },
     thread::{self},
     time::Duration,
@@ -19,6 +20,8 @@ mod bcast;
 pub static SERVER_HANDLE: Mutex<Option<ServerHandle>> = Mutex::new(None);
 pub static BCAST_THREAD: Mutex<Option<models::BroadcastThread>> = Mutex::new(None);
 pub static TRANSFER_MANAGER: Mutex<Option<Arc<server::recv::TransferManager>>> = Mutex::new(None);
+pub static TRANSFER_MODE: RwLock<Option<models::TransferMode>> = RwLock::new(None);
+pub static TERM_FLAG: RwLock<Option<Arc<AtomicBool>>> = RwLock::new(None);
 
 static SHARED_DATA: Mutex<Option<Option<tauri_plugin_ipd::SharedData>>> = Mutex::new(None);
 
@@ -109,8 +112,15 @@ pub fn send_file<R: Runtime>(
         .into_iter()
         .map(|(filepath, filename)| models::FileData::from(filepath, filename, &window))
         .collect();
-    let mode = models::TransferMode::SendFile(file_datas);
-    start_server(window, mode)
+    let mode = models::TransferMode::Send(models::Send {
+        files: Some(file_datas),
+        text: None,
+    });
+    {
+        let mut guard = TRANSFER_MODE.write().unwrap();
+        *guard = Some(mode);
+    }
+    start_server(window)
 }
 
 #[allow(dead_code)]
@@ -122,8 +132,8 @@ pub async fn send_files_to<R: Runtime>(
 ) {
     let config = get_device_config(window.clone());
     let client = reqwest::Client::new();
-    let request_endpoint = format!("http://{}:{}/request", to.ip, to.port);
-    let files_endpoint = format!("http://{}:{}/files", to.ip, to.port);
+    let request_endpoint = format!("http://{}:{}/upload/request", to.ip, to.port);
+    let files_endpoint = format!("http://{}:{}/upload/files", to.ip, to.port);
 
     for (filepath, filename) in files {
         let (mut file, _) = open_file(&filepath, &window);
@@ -182,8 +192,8 @@ pub async fn send_text_to<R: Runtime>(
 ) {
     let config = get_device_config(window.clone());
     let client = reqwest::Client::new();
-    let request_endpoint = format!("http://{}:{}/request", to.ip, to.port);
-    let text_endpoint = format!("http://{}:{}/text", to.ip, to.port);
+    let request_endpoint = format!("http://{}:{}/upload/request", to.ip, to.port);
+    let text_endpoint = format!("http://{}:{}/upload/text", to.ip, to.port);
 
     // 1. Send Request
     let transfer_request = models::TransferRequest {
@@ -240,8 +250,15 @@ pub fn get_device_config<R: Runtime>(window: Window<R>) -> models::DeviceConfig 
 #[allow(dead_code)]
 #[tauri::command]
 pub fn send_text<R: Runtime>(window: Window<R>, text: String) -> models::StartServerResponse {
-    let mode = models::TransferMode::SendText(text);
-    start_server(window, mode)
+    let mode = models::TransferMode::Send(models::Send {
+        files: None,
+        text: Some(text),
+    });
+    {
+        let mut guard = TRANSFER_MODE.write().unwrap();
+        *guard = Some(mode);
+    }
+    start_server(window)
 }
 
 /// Starts the server in unified receive mode.
@@ -252,7 +269,11 @@ pub fn send_text<R: Runtime>(window: Window<R>, text: String) -> models::StartSe
 #[tauri::command]
 pub fn recv<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
     let mode = models::TransferMode::Receive;
-    start_server(window, mode)
+    {
+        let mut guard = TRANSFER_MODE.write().unwrap();
+        *guard = Some(mode);
+    }
+    start_server(window)
 }
 
 #[allow(dead_code)]
@@ -270,22 +291,22 @@ pub fn respond_to_transfer_request(id: String, accepted: bool) {
 #[allow(dead_code)]
 #[tauri::command]
 pub fn stop_server() {
-    let mut handle_guard = SERVER_HANDLE.lock().unwrap();
-    if let Some(server_handle) = handle_guard.take() {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        rt.block_on(async {
-            server_handle.stop(true).await;
-        });
-    }
-    let mut thread_guard = BCAST_THREAD.lock().unwrap();
-    if let Some(bcast_thread) = thread_guard.take() {
-        bcast_thread.shutdown.store(true, Ordering::Relaxed);
-        // Ignore the error
-        let _ = bcast_thread.handle.join();
-        *thread_guard = None;
-    }
-    let mut manager_guard = TRANSFER_MANAGER.lock().unwrap();
-    *manager_guard = None;
+    // let mut handle_guard = SERVER_HANDLE.lock().unwrap();
+    // if let Some(server_handle) = handle_guard.take() {
+    //     let rt = tokio::runtime::Runtime::new().unwrap();
+    //     rt.block_on(async {
+    //         server_handle.stop(true).await;
+    //     });
+    // }
+    // let mut thread_guard = BCAST_THREAD.lock().unwrap();
+    // if let Some(bcast_thread) = thread_guard.take() {
+    //     bcast_thread.shutdown.store(true, Ordering::Relaxed);
+    //     // Ignore the error
+    //     let _ = bcast_thread.handle.join();
+    //     *thread_guard = None;
+    // }
+    // let mut manager_guard = TRANSFER_MANAGER.lock().unwrap();
+    // *manager_guard = None;
 }
 
 pub fn get_local_ip() -> String {
@@ -316,20 +337,50 @@ pub fn get_local_ip() -> String {
 /// If the server has started successfully then the `port` number and (optionally detected) `ip` address will be returned
 ///
 /// In case of any detected errors, corresponding `Error` type will be returned
-fn start_server<R: Runtime>(
-    window: Window<R>,
-    mode: models::TransferMode,
-) -> models::StartServerResponse {
-    // Stop any running server instance before starting a new one
-    stop_server();
+fn start_server<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
+    // Clear ongoing requests by toggling the termination flag
+    {
+        let mut guard = TERM_FLAG.write().unwrap();
+        if let Some(old_flag) = guard.take() {
+            old_flag.store(true, Ordering::Relaxed);
+            debug!("sent termination to previous connections");
+        }
+        *guard = Some(Arc::new(AtomicBool::new(false)));
+    }
+    // Clear pending upload requests
+    {
+        debug!("resetting manager...");
+        let mut guard = TRANSFER_MANAGER.lock().unwrap();
+        if let Some(manager) = guard.as_mut() {
+            let mut pending_guard = manager.pending.lock().unwrap();
+            pending_guard.clear();
+            let mut tokens_guard = manager.tokens.lock().unwrap();
+            tokens_guard.clear();
+        }
+        debug!("manager reset");
+    }
+
+    // stop_server();
+    let server_guard = SERVER_HANDLE.lock().unwrap();
+    if server_guard.is_some() {
+        // Server already running
+        debug!("Server already running");
+        let server_status = server::SERVER_STATUS.read().unwrap();
+        let server_status = server_status.as_ref().unwrap(); // Safe to unwrap
+        return models::StartServerResponse::Success(models::Url {
+            ip: server_status.ip.clone(),
+            port: server_status.port,
+        });
+    }
+
+    debug!("Starting server...");
 
     // Used to transfer port number between actix thread and API responder thread
     let (tx, rx) = mpsc::channel::<u16>();
     thread::spawn({
-        let mode = mode.clone();
         let window = window.clone();
         move || {
-            server::start_server(window, mode, tx);
+            server::start_server(window, tx);
         }
     });
 
@@ -341,16 +392,23 @@ fn start_server<R: Runtime>(
     };
 
     let ip = get_local_ip();
+    // Setup `SERVER_STATUS`
+    let mut server_status = server::SERVER_STATUS.write().unwrap();
+    *server_status = Some(server::ServerStatus {
+        ip: ip.clone(),
+        port,
+    });
+    // Setup `BCAST_THREAD`
     let config_file_path = window.path().app_config_dir().unwrap().join("config.json");
     let config_json = std::fs::read_to_string(config_file_path).unwrap();
     let config: models::DeviceConfig = serde_json::from_str(&config_json).unwrap();
     let shutdown = Arc::new(AtomicBool::new(false));
     let shutdown_clone = shutdown.clone();
-    let bcast_thread_handle = match mode {
-        models::TransferMode::SendFile(_) => {
-            thread::spawn(|| bcast::recv_info(window, config, shutdown_clone))
-        }
-        models::TransferMode::SendText(_) => {
+    let mode = TRANSFER_MODE.read().unwrap();
+    // Caller should ensure they setup `TRANSFER_MODE` beforehand.
+    // This makes the panic safe here.
+    let bcast_thread_handle = match mode.as_ref().unwrap() {
+        models::TransferMode::Send(_) => {
             thread::spawn(|| bcast::recv_info(window, config, shutdown_clone))
         }
         models::TransferMode::Receive => {
