@@ -373,12 +373,18 @@ export default function Recieve() {
     <div
       className={`flex flex-col h-full overflow-hidden ${dark ? "bg-[#13151f]" : "bg-white"}`}
     >
-      <div ref={feedRef} className="flex-1 overflow-y-auto px-4 pt-4">
-        <div className="max-w-xl mx-auto space-y-3 pb-24">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className={`text-lg font-bold ${dark ? "text-white" : "text-gray-900"}`}>
-              Received Items
-            </h2>
+      <div 
+        ref={feedRef} 
+        className="flex-1 overflow-y-auto pt-8 sm:pt-10 px-4 sm:px-6 flex flex-col items-center"
+      >
+        <div className="w-full max-w-4xl pb-24">
+          <div className="flex justify-between items-center mb-6 sm:mb-8">
+            <div>
+              <h1 className={`text-xl sm:text-2xl font-bold ${dark ? "text-white" : "text-gray-800"}`}>Received</h1>
+              <p className={`text-sm mt-1 ${dark ? "!text-[#c4c9de]" : "!text-[#9097b0]"}`}>
+                Manage your incoming transfers
+              </p>
+            </div>
             {items.length > 0 && (
               <button
                 onClick={clearItems}
@@ -391,55 +397,57 @@ export default function Recieve() {
             )}
           </div>
 
-          {items.map((item) => {
-            if (item.kind === "text")
-              return <TextCard key={item.id} item={item} dark={dark} />;
-            if (item.kind === "file")
-              return <FileCard key={item.id} item={item} dark={dark} />;
-            if (item.kind === "request")
-              return (
-                <RequestCard
-                  key={item.id}
-                  item={item}
-                  dark={dark}
-                  onRespond={handleRespond}
-                />
-              );
-            return null;
-          })}
+          <div className="space-y-3">
+            {items.map((item) => {
+              if (item.kind === "text")
+                return <TextCard key={item.id} item={item} dark={dark} />;
+              if (item.kind === "file")
+                return <FileCard key={item.id} item={item} dark={dark} />;
+              if (item.kind === "request")
+                return (
+                  <RequestCard
+                    key={item.id}
+                    item={item}
+                    dark={dark}
+                    onRespond={handleRespond}
+                  />
+                );
+              return null;
+            })}
 
-          {!isRunning && !starting && items.length === 0 && (
-            <div className={`flex flex-col items-center py-20 gap-4 ${dark ? "text-gray-500" : "text-gray-400"}`}>
-              <div className="w-16 h-16 rounded-full bg-gray-500/5 flex items-center justify-center">
-                <svg className="w-8 h-8 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-bold">Server Offline</p>
-                <p className="text-xs mt-1">Start the server to receive files</p>
-              </div>
-            </div>
-          )}
-
-          {isRunning && items.length === 0 && (
-            <div
-              className={`flex flex-col items-center py-20 gap-4 ${dark ? "text-indigo-400/60" : "text-indigo-300"}`}
-            >
-              <div className="relative">
-                <div className="absolute inset-0 animate-ping rounded-full bg-indigo-500/20"></div>
-                <div className="relative w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center">
-                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-7-7l7 7-7 7" />
+            {!isRunning && !starting && items.length === 0 && (
+              <div className={`flex flex-col items-center py-20 gap-4 ${dark ? "text-gray-500" : "text-gray-400"}`}>
+                <div className="w-16 h-16 rounded-full bg-gray-500/5 flex items-center justify-center">
+                  <svg className="w-8 h-8 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                 </div>
+                <div className="text-center">
+                  <p className="text-sm font-bold">Server Offline</p>
+                  <p className="text-xs mt-1">Start the server to receive files</p>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-sm font-bold">Ready to Receive</p>
-                <p className="text-xs mt-1 opacity-60">Waiting for incoming transfers...</p>
+            )}
+
+            {isRunning && items.length === 0 && (
+              <div
+                className={`flex flex-col items-center py-20 gap-4 ${dark ? "text-indigo-400/60" : "text-indigo-300"}`}
+              >
+                <div className="relative">
+                  <div className="absolute inset-0 animate-ping rounded-full bg-indigo-500/20"></div>
+                  <div className="relative w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center">
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-7-7l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-bold">Ready to Receive</p>
+                  <p className="text-xs mt-1 opacity-60">Waiting for incoming transfers...</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
