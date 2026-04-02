@@ -11,9 +11,9 @@ use std::{
 };
 
 use log::{debug, info};
-use tauri::{Emitter, Runtime, Window};
+use tauri::{Emitter, Manager, Runtime, Window};
 
-use crate::{api, models};
+use crate::{api, models, server};
 
 static BCAST_PORT: u16 = 54321;
 
@@ -52,7 +52,10 @@ fn get_device_type() -> String {
     }
 }
 
-pub fn emit_info(port: u16, config: models::DeviceConfig, shutdown: Arc<AtomicBool>) {
+pub fn emit_info(config: models::DeviceConfig, shutdown: Arc<AtomicBool>) {
+    let server_status_guard = server::SERVER_STATUS.read().unwrap();
+    let server_status = server_status_guard.as_ref().unwrap(); // Safe
+    let port = server_status.port;
     let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
     socket.set_broadcast(true).unwrap();
     let payload = models::MulticastPayload {
@@ -113,4 +116,34 @@ pub fn recv_info<R: Runtime>(
             Err(_) => {}
         };
     }
+}
+
+pub fn configure_bcast<R: Runtime>(window: Window<R>) {
+    let transfer_mode_guard = api::TRANSFER_MODE.read().unwrap();
+    let transfer_mode = transfer_mode_guard.as_ref().unwrap(); // Safe to unwrap here
+    let mut bcast_thread_guard = api::BCAST_THREAD.lock().unwrap();
+    // drop(bcast_thread_guard);
+
+    // Stop current bcast sender/receiver
+    if let Some(bcast_thread) = bcast_thread_guard.take() {
+        bcast_thread.shutdown.store(true, Ordering::Relaxed);
+        let _ = bcast_thread.handle.join();
+    };
+
+    // Start appropriate bcast handler
+    let config_file_path = window.path().app_config_dir().unwrap().join("config.json");
+    let config_json = std::fs::read_to_string(config_file_path).unwrap();
+    let config: models::DeviceConfig = serde_json::from_str(&config_json).unwrap();
+    let shutdown = Arc::new(AtomicBool::new(false));
+    let shutdown_clone = shutdown.clone();
+    let bcast_thread_handle = match transfer_mode {
+        models::TransferMode::Send(_) => {
+            thread::spawn(|| recv_info(window, config, shutdown_clone))
+        }
+        models::TransferMode::Receive => thread::spawn(move || emit_info(config, shutdown_clone)),
+    };
+    *bcast_thread_guard = Some(models::BroadcastThread {
+        handle: bcast_thread_handle,
+        shutdown,
+    });
 }

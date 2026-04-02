@@ -116,10 +116,9 @@ pub fn send_file<R: Runtime>(
         files: Some(file_datas),
         text: None,
     });
-    {
-        let mut guard = TRANSFER_MODE.write().unwrap();
-        *guard = Some(mode);
-    }
+    let mut transfer_mode_guard = TRANSFER_MODE.write().unwrap();
+    *transfer_mode_guard = Some(mode);
+    drop(transfer_mode_guard);
     start_server(window)
 }
 
@@ -332,35 +331,33 @@ pub fn get_local_ip() -> String {
         .unwrap() // Usually does NOT crash, so yeah, somewhat safe to use.
 }
 
-/// Starts (or re-starts existing) actix web server in separate thread
+/// Starts actix web server in separate thread
 ///
-/// If the server has started successfully then the `port` number and (optionally detected) `ip` address will be returned
+/// If the server has started successfully then the `port` number and `ip` address will be returned
 ///
 /// In case of any detected errors, corresponding `Error` type will be returned
 fn start_server<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
     // Clear ongoing requests by toggling the termination flag
-    {
-        let mut guard = TERM_FLAG.write().unwrap();
-        if let Some(old_flag) = guard.take() {
-            old_flag.store(true, Ordering::Relaxed);
-            debug!("sent termination to previous connections");
-        }
-        *guard = Some(Arc::new(AtomicBool::new(false)));
+    let mut term_flag_guard = TERM_FLAG.write().unwrap();
+    if let Some(old_flag) = term_flag_guard.take() {
+        old_flag.store(true, Ordering::Relaxed);
+        debug!("sent termination to previous connections");
     }
-    // Clear pending upload requests
-    {
-        debug!("resetting manager...");
-        let mut guard = TRANSFER_MANAGER.lock().unwrap();
-        if let Some(manager) = guard.as_mut() {
-            let mut pending_guard = manager.pending.lock().unwrap();
-            pending_guard.clear();
-            let mut tokens_guard = manager.tokens.lock().unwrap();
-            tokens_guard.clear();
-        }
-        debug!("manager reset");
-    }
+    *term_flag_guard = Some(Arc::new(AtomicBool::new(false)));
+    drop(term_flag_guard);
 
-    // stop_server();
+    // Clear pending upload requests
+    debug!("resetting manager...");
+    let mut transfer_manager_guard = TRANSFER_MANAGER.lock().unwrap();
+    if let Some(manager) = transfer_manager_guard.as_mut() {
+        let mut pending_guard = manager.pending.lock().unwrap();
+        pending_guard.clear();
+        let mut tokens_guard = manager.tokens.lock().unwrap();
+        tokens_guard.clear();
+    }
+    drop(transfer_manager_guard);
+    debug!("manager reset");
+
     let server_guard = SERVER_HANDLE.lock().unwrap();
     if server_guard.is_some() {
         // Server already running
@@ -372,6 +369,7 @@ fn start_server<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
             port: server_status.port,
         });
     }
+    drop(server_guard);
 
     debug!("Starting server...");
 
@@ -393,33 +391,15 @@ fn start_server<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
 
     let ip = get_local_ip();
     // Setup `SERVER_STATUS`
-    let mut server_status = server::SERVER_STATUS.write().unwrap();
-    *server_status = Some(server::ServerStatus {
+    let mut server_status_guard = server::SERVER_STATUS.write().unwrap();
+    *server_status_guard = Some(server::ServerStatus {
         ip: ip.clone(),
         port,
     });
+    drop(server_status_guard);
+
     // Setup `BCAST_THREAD`
-    let config_file_path = window.path().app_config_dir().unwrap().join("config.json");
-    let config_json = std::fs::read_to_string(config_file_path).unwrap();
-    let config: models::DeviceConfig = serde_json::from_str(&config_json).unwrap();
-    let shutdown = Arc::new(AtomicBool::new(false));
-    let shutdown_clone = shutdown.clone();
-    let mode = TRANSFER_MODE.read().unwrap();
-    // Caller should ensure they setup `TRANSFER_MODE` beforehand.
-    // This makes the panic safe here.
-    let bcast_thread_handle = match mode.as_ref().unwrap() {
-        models::TransferMode::Send(_) => {
-            thread::spawn(|| bcast::recv_info(window, config, shutdown_clone))
-        }
-        models::TransferMode::Receive => {
-            thread::spawn(move || bcast::emit_info(port, config, shutdown_clone))
-        }
-    };
-    let mut thread_guard = BCAST_THREAD.lock().unwrap();
-    *thread_guard = Some(models::BroadcastThread {
-        handle: bcast_thread_handle,
-        shutdown,
-    });
+    bcast::configure_bcast(window);
     models::StartServerResponse::Success(models::Url { ip, port })
 }
 
