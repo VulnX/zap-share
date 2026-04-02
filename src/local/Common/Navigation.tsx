@@ -3,14 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { DeviceConfig } from "../types";
 import {
-  Button,
-  Dialog,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
   Switch,
 } from "@material-tailwind/react";
 import { SidePanel } from "./SidePanel";
+import { StatusSource } from "./StatusSource";
 
 export function ToggleThemeButton() {
   const { isTheme, toggleTheme } = useTheme();
@@ -92,44 +88,19 @@ export function ProfileButton() {
 export interface NavigationProps {
   tab: string;
   setTab: (tab: string) => void;
-  canSwitch: boolean;
-  setCanSwitch: (canSwitch: boolean) => void;
 }
 
 export default function Navigation({
   tab,
-  canSwitch,
   setTab,
-  setCanSwitch,
 }: NavigationProps) {
-  const [open, setOpen] = useState(false);
   const { isTheme } = useTheme();
   const [openSettings, setOpenSettings] = useState(false);
-  const [pendingTab, setPendingTab] = useState<string | null>(null);
 
   const handleTabSwitch = (newTab: string) => {
-    if (canSwitch) {
-      setTab(newTab);
-      return;
-    }
     if (tab !== newTab) {
-      setPendingTab(newTab);
-      setOpen(true);
+      setTab(newTab);
     }
-  };
-
-  const handleConfirm = () => {
-    if (pendingTab) {
-      setTab(pendingTab);
-      setCanSwitch(true);
-      setPendingTab(null);
-    }
-    setOpen(false);
-  };
-
-  const handleCancel = () => {
-    setPendingTab(null);
-    setOpen(false);
   };
 
   return (
@@ -178,30 +149,12 @@ export default function Navigation({
           }`}
           onClick={() => handleTabSwitch("send")}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 640 640"
-            fill={
-              tab === "send"
-                ? isTheme
-                  ? "white"
-                  : "#6366f1"
-                : isTheme
-                  ? "#c4c9de"
-                  : "#9097b0"
-            }
-            className="size-4 mr-2"
-          >
-            <path d="M568.4 37.7C578.2 34.2 589 36.7 596.4 44C603.8 51.3 606.2 62.2 602.7 72L424.7 568.9C419.7 582.8 406.6 592 391.9 592C377.7 592 364.9 583.4 359.6 570.3L295.4 412.3C290.9 401.3 292.9 388.7 300.6 379.7L395.1 267.3C400.2 261.2 399.8 252.3 394.2 246.7C388.6 241.1 379.6 240.7 373.6 245.8L261.2 340.1C252.1 347.7 239.6 349.7 228.6 345.3L70.1 280.8C57 275.5 48.4 262.7 48.4 248.5C48.4 233.8 57.6 220.7 71.5 215.7L568.4 37.7z" />
+          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
           </svg>
           <span className="text-sm font-semibold">Send</span>
-          {/* Active indicator bar */}
           {tab === "send" && (
-            <span
-              className={`absolute bottom-0 left-[0%] right-[0%] h-[2.5px] rounded-full ${
-                isTheme ? "bg-indigo-500" : "bg-indigo-500"
-              }`}
-            />
+            <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-indigo-500 rounded-full" />
           )}
         </div>
 
@@ -218,36 +171,12 @@ export default function Navigation({
           }`}
           onClick={() => handleTabSwitch("recv")}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="1.5"
-            stroke={
-              tab === "recv"
-                ? isTheme
-                  ? "white"
-                  : "#6366f1"
-                : isTheme
-                  ? "#c4c9de"
-                  : "#9097b0"
-            }
-            className="size-4 mr-2"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 3.75H6.912a2.25 2.25 0 0 0-2.15 1.588L2.35 13.177a2.25 2.25 0 0 0-.1.661V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 0 0-2.15-1.588H15M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859M12 3v8.25m0 0-3-3m3 3 3-3"
-            />
+          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
           </svg>
           <span className="text-sm font-semibold">Receive</span>
-          {/* Active indicator bar */}
           {tab === "recv" && (
-            <span
-              className={`absolute bottom-0 left-[0%] right-[0%] h-[2.5px] rounded-full ${
-                isTheme ? "bg-indigo-500" : "bg-indigo-500"
-              }`}
-            />
+            <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-indigo-500 rounded-full" />
           )}
         </div>
 
@@ -257,50 +186,7 @@ export default function Navigation({
         />
       </nav>
 
-      <Dialog
-        open={open}
-        handler={handleCancel}
-        className={
-          isTheme
-            ? "!bg-[#1a1d2a] text-white border border-[#2a2d3e]"
-            : "bg-white text-[#1a1d2e]"
-        }
-        {...({} as any)}
-      >
-        <DialogHeader
-          className={isTheme ? "text-white" : "text-[#1a1d2e]"}
-          {...({} as any)}
-        >
-          Are you sure you want to stop{" "}
-          {tab === "send" ? "Sharing" : "Receiving"}
-        </DialogHeader>
-        <DialogBody
-          className={isTheme ? "!text-[#c4c9de]" : "text-[#5b6178]"}
-          {...({} as any)}
-        >
-          Clicking confirm will stop {tab === "send" ? "Sharing" : "Receiving"}{" "}
-          and you will have to restart the server
-        </DialogBody>
-        <DialogFooter {...({} as any)}>
-          <Button
-            variant="text"
-            color="red"
-            onClick={handleCancel}
-            className="mr-1"
-            {...({} as any)}
-          >
-            <span>Cancel</span>
-          </Button>
-          <Button
-            variant="gradient"
-            color="green"
-            onClick={handleConfirm}
-            {...({} as any)}
-          >
-            <span>Confirm</span>
-          </Button>
-        </DialogFooter>
-      </Dialog>
+      <StatusSource />
     </>
   );
 }

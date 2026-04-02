@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import { Progress, Typography, Collapse } from "@material-tailwind/react";
+import { Collapse } from "@material-tailwind/react";
 import { useTheme } from "../Context/Theme";
 import { useQrContext } from "../Context/QrContext";
 import { useSharedDataContext } from "../Context/FileListContext";
@@ -12,7 +12,7 @@ export function ProgressBar() {
   const [progressMap, setProgressMap] = useState<
     Record<string, [string, number]>
   >({});
-  const { isTheme } = useTheme();
+  const { isTheme: dark } = useTheme();
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -22,8 +22,6 @@ export function ProgressBar() {
         unlisten = await listen<ProgressUpdatePayload>(
           "progress-update",
           (event) => {
-            // console.log("Progress event payload:", event.payload);
-
             setProgressMap((prevMap) => ({
               ...prevMap,
               [event.payload.id]: [
@@ -46,33 +44,57 @@ export function ProgressBar() {
   }, []);
 
   return (
-    <div className="w-full max-w-4xl mx-auto max-h-[500px] overflow-y-auto space-y-4">
-      {Object.entries(progressMap).map(([id, [filename, progress]]) => (
-        <div key={id} className="mb-4 sm:mb-6">
-          <div className="mb-2 flex items-center justify-between gap-4 text-wrap">
-            <Typography
-              color={isTheme ? `light-green` : "blue-gray"}
-              variant="h6"
-              {...({} as any)}
+    <div className="w-full max-w-4xl mx-auto space-y-3">
+      {Object.entries(progressMap).map(([id, [filename, progress]]) => {
+        const done = progress >= 100;
+        return (
+          <div
+            key={id}
+            className={`rounded-2xl p-4 border transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${
+              dark ? "bg-[#1a1d2a] border-[#2a2d3e] text-white" : "bg-white border-gray-200 shadow-sm"
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span
+                    className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                      dark
+                        ? "bg-[#2a2d3e] text-[#c4c9de]"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    SENDING
+                  </span>
+                  <span
+                    className={`text-xs ${dark ? "text-[#9ba2c0]" : "text-gray-500"}`}
+                  >
+                    {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <p
+                  className={`text-sm font-semibold truncate ${dark ? "text-white" : "text-gray-900"}`}
+                >
+                  {filename}
+                </p>
+              </div>
+              {done && (
+                <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full border border-green-500/20">
+                  ✓ Sent
+                </span>
+              )}
+            </div>
+            <div
+              className={`h-1.5 w-full rounded-full ${dark ? "bg-[#2a2d3e]" : "bg-gray-100"}`}
             >
-              Transfering {filename}
-            </Typography>
-            <Typography
-              color={isTheme ? `light-green` : "blue-gray"}
-              variant="h6"
-              {...({} as any)}
-            >
-              {progress}%
-            </Typography>
+              <div
+                className="h-full rounded-full bg-indigo-500 transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
-          <Progress
-            value={progress}
-            color={isTheme ? "light-green" : "gray"}
-            style={{ transition: "0.1s" }}
-            {...({} as any)}
-          />
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -139,13 +161,15 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           </div>
 
           {/* Stop Button */}
-          <button
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition"
-            onClick={onBack}
-          >
-            <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-            Stop
-          </button>
+          {onBack && (
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition"
+              onClick={onBack}
+            >
+              <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              Stop
+            </button>
+          )}
         </div>
 
         {/* Device List */}

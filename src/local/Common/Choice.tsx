@@ -1,22 +1,20 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect, useRef } from "react";
 import { DeviceProvider } from "../../App";
 import Navigation from "./Navigation";
 import SendDesktop from "../Send/Send";
 import Recieve from "../Receive/Recieve";
-import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { SendLogic } from "../Send/SendLogic";
 import { SharedText, SharedFiles } from "../types";
+import { useTheme } from "../Context/Theme";
 // import { SendMobile } from "../Send/SendMobile";
 
 export default function Choice({ children }: { children: React.ReactNode }) {
   const isMobile = useContext(DeviceProvider)?.isMobile;
+  const { isTheme } = useTheme();
 
   // Indicates active tab
   const [tab, setTab] = useState("send");
-
-  // Indicates whether we can switch tabs
-  const [canSwitch, setCanSwitch] = useState(true);
 
   const hasRun = useRef(false);
 
@@ -54,28 +52,24 @@ export default function Choice({ children }: { children: React.ReactNode }) {
             proceedWithSend(null, null);
           }
         }
-        console.log("data end");
       })();
     }
   }, []);
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden">
-      <nav className="flex-1 overflow-hidden">
-        <Navigation
-          tab={tab}
-          setTab={setTab}
-          canSwitch={canSwitch}
-          setCanSwitch={setCanSwitch}
-        />
+    <div className={`h-screen w-screen flex flex-col overflow-hidden transition-colors duration-300 ${
+      isTheme ? "bg-[#13151f] text-white" : "bg-[#f8f9fc] text-black"
+    }`}>
+      <Navigation tab={tab} setTab={setTab} />
+      <main className={`flex-1 overflow-hidden relative ${isTheme ? "bg-[#13151f]" : "bg-[#f8f9fc]"}`}>
         <div className="h-full overflow-y-auto">
           {tab === "send" ? (
-            <SendDesktop canSwitch={canSwitch} setCanSwitch={setCanSwitch} />
+            <SendDesktop />
           ) : (
-            <Recieve canSwitch={canSwitch} setCanSwitch={setCanSwitch} />
+            <Recieve />
           )}
         </div>
-      </nav>
+      </main>
       {children}
     </div>
   );

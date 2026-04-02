@@ -77,8 +77,9 @@ textarea,
 
 /* ── QR Code Container ────────────────────────────────────────────────────── */
 .qr-container svg {
-  width: 90%;
-  margin: auto;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 .qr-container-dark svg {

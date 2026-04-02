@@ -6,12 +6,6 @@ import { useQrContext } from "../Context/QrContext";
 import QRCode from "qrcode";
 import { flushSync } from "react-dom";
 import { ProgressUpdatePayload, TransferRequest } from "../types";
-
-interface RecieveProps {
-  canSwitch: boolean;
-  setCanSwitch: (value: boolean) => void;
-}
-
 interface RecvResponse {
   Success: { ip: string | null; port: number };
 }
@@ -245,159 +239,16 @@ function RequestCard({
   );
 }
 
-// ── QR + status panel ─────────────────────────────────────────────────────────
-
-interface QrPanelProps {
-  qrCode: string | null;
-  qrText: string | null;
-  dark: boolean;
-  starting: boolean;
-  isRunning: boolean;
-  onStop: () => void;
-  onStart: () => void;
-  onClear: () => void;
-  hasItems: boolean;
-}
-
-function QrPanel({
-  qrCode,
-  qrText,
-  dark,
-  starting,
-  isRunning,
-  onStop,
-  onStart,
-  onClear,
-  hasItems,
-}: QrPanelProps) {
-  const [expanded, setExpanded] = useState(true);
-  return (
-    <div
-      className={`rounded-2xl border overflow-hidden ${
-        dark ? "bg-[#1a1d2a] border-[#2a2d3e]" : "bg-white border-gray-200"
-      } shadow-sm`}
-    >
-      {/* Collapsible header */}
-      <div
-        className={`flex items-center justify-between px-5 py-4 cursor-pointer select-none ${
-          dark ? "hover:bg-[#212436]" : "hover:bg-gray-50"
-        } transition-colors`}
-        onClick={() => setExpanded((e) => !e)}
-      >
-        <div className="flex items-center gap-3">
-          {isRunning ? (
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-            </span>
-          ) : starting ? (
-            <div className="w-2.5 h-2.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <span
-              className={`w-2.5 h-2.5 rounded-full ${dark ? "bg-[#3a3f55]" : "bg-gray-400"}`}
-            />
-          )}
-          <span
-            className={`text-sm font-semibold ${dark ? "text-white" : "text-gray-900"}`}
-          >
-            {starting
-              ? "Starting…"
-              : isRunning
-                ? "Ready to receive"
-                : "Server stopped"}
-          </span>
-        </div>
-
-        <div
-          className="flex items-center gap-3"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {hasItems && (
-            <button
-              onClick={onClear}
-              className={`text-[10px] font-bold tracking-wider uppercase px-2 py-1 rounded transition-colors ${
-                dark
-                  ? "text-[#9ba2c0] hover:text-red-400"
-                  : "text-gray-400 hover:text-red-500"
-              }`}
-            >
-              Clear
-            </button>
-          )}
-          <button
-            onClick={isRunning ? onStop : onStart}
-            disabled={starting}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all disabled:opacity-40 ${
-              isRunning
-                ? "bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30"
-                : "bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/30"
-            }`}
-          >
-            {isRunning ? "Stop" : "Start"}
-          </button>
-          <svg
-            className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""} ${
-              dark ? "text-[#c4c9de]" : "text-gray-500"
-            }`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </div>
-      </div>
-
-      {expanded && isRunning && (
-        <div className="px-5 pb-5">
-          {qrText && (
-            <div
-              className={`mb-3 text-[11px] font-mono p-2 rounded-lg ${
-                dark
-                  ? "bg-[#13151f] text-indigo-300 border border-[#2a2d3e]"
-                  : "bg-gray-100 text-blue-600"
-              }`}
-            >
-              {qrText}
-            </div>
-          )}
-          <div
-            className={`rounded-xl flex items-center justify-center p-3 ${
-              dark ? " shadow-inner" : "border-2 border-gray-200"
-            }`}
-          >
-            {qrCode ? (
-              <div
-                className={`qr-container w-44 h-44 ${dark ? "qr-container-dark" : ""}`}
-                dangerouslySetInnerHTML={{ __html: qrCode }}
-              />
-            ) : (
-              <div className="w-44 h-44 flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Main component ─────────────────────────────────────────────────────────────
-
-export default function Recieve({ setCanSwitch }: RecieveProps) {
+export default function Recieve() {
   const { isTheme: dark } = useTheme();
-  const { setQrCode, qrCode, setQrText, qrText } = useQrContext();
+  const { setQrCode, setQrText, setServerStatus, serverStatus } = useQrContext();
   const [items, setItems] = useState<ReceivedItem[]>([]);
-  const [isRunning, setIsRunning] = useState(false);
-  const [starting, setStarting] = useState(false);
   const startedRef = useRef(false);
   const feedRef = useRef<HTMLDivElement>(null);
+
+  const isRunning = serverStatus === "active";
+  const starting = serverStatus === "starting";
 
   useEffect(() => {
     if (feedRef.current) {
@@ -408,7 +259,7 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
   const startServer = useCallback(async () => {
     if (startedRef.current) return;
     startedRef.current = true;
-    setStarting(true);
+    setServerStatus("starting");
     try {
       const resp = await invoke<RecvResponse>("recv");
       if (resp?.Success?.ip) {
@@ -417,35 +268,23 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
         flushSync(() => setQrText(url));
         const svg = await QRCode.toString(url, { type: "svg" });
         setQrCode(svg);
-        setIsRunning(true);
-        setCanSwitch(false);
+        setServerStatus("active");
       }
     } catch (err) {
       console.error("Failed to start receive server:", err);
       startedRef.current = false;
-    } finally {
-      setStarting(false);
+      setServerStatus("closed");
     }
-  }, [setQrCode, setQrText, setCanSwitch]);
-
-  const stopServer = useCallback(async () => {
-    await invoke("stop_server");
-    setIsRunning(false);
-    setCanSwitch(true);
-    setQrCode(null);
-    setQrText(null);
-    startedRef.current = false;
-  }, [setQrCode, setQrText, setCanSwitch]);
+  }, [setQrCode, setQrText, setServerStatus]);
 
   const clearItems = () => setItems([]);
 
   useEffect(() => {
+    // Force a start whenever the component mounts (tab switch to Receive)
+    // This ensures invoke("recv") is called to switch backend mode specifically for this view.
     startServer();
-    return () => {
-      invoke("stop_server").catch(() => {});
-      startedRef.current = false;
-    };
-  }, []);
+    // We don't stop the server on unmount anymore to allow background receiving
+  }, [startServer]);
 
   useEffect(() => {
     let unlistenFn: (() => void) | undefined;
@@ -536,17 +375,21 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
     >
       <div ref={feedRef} className="flex-1 overflow-y-auto px-4 pt-4">
         <div className="max-w-xl mx-auto space-y-3 pb-24">
-          <QrPanel
-            qrCode={qrCode}
-            qrText={qrText}
-            dark={dark}
-            starting={starting}
-            isRunning={isRunning}
-            onStop={stopServer}
-            onStart={startServer}
-            onClear={clearItems}
-            hasItems={items.length > 0}
-          />
+          <div className="flex justify-between items-center mb-6">
+            <h2 className={`text-lg font-bold ${dark ? "text-white" : "text-gray-900"}`}>
+              Received Items
+            </h2>
+            {items.length > 0 && (
+              <button
+                onClick={clearItems}
+                className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-lg transition-colors ${
+                  dark ? "text-gray-400 hover:text-red-400 bg-gray-500/10" : "text-gray-500 hover:text-red-600 bg-gray-100"
+                }`}
+              >
+                Clear All
+              </button>
+            )}
+          </div>
 
           {items.map((item) => {
             if (item.kind === "text")
@@ -565,12 +408,36 @@ export default function Recieve({ setCanSwitch }: RecieveProps) {
             return null;
           })}
 
-          {isRunning && items.length === 0 && !starting && (
+          {!isRunning && !starting && items.length === 0 && (
+            <div className={`flex flex-col items-center py-20 gap-4 ${dark ? "text-gray-500" : "text-gray-400"}`}>
+              <div className="w-16 h-16 rounded-full bg-gray-500/5 flex items-center justify-center">
+                <svg className="w-8 h-8 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-bold">Server Offline</p>
+                <p className="text-xs mt-1">Start the server to receive files</p>
+              </div>
+            </div>
+          )}
+
+          {isRunning && items.length === 0 && (
             <div
-              className={`flex flex-col items-center py-12 gap-2 ${dark ? "text-[#9ba2c0]" : "text-gray-400"}`}
+              className={`flex flex-col items-center py-20 gap-4 ${dark ? "text-indigo-400/60" : "text-indigo-300"}`}
             >
-              <p className="text-sm font-medium">No incoming transfers yet</p>
-              <p className="text-xs">Waiting for files or text...</p>
+              <div className="relative">
+                <div className="absolute inset-0 animate-ping rounded-full bg-indigo-500/20"></div>
+                <div className="relative w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center">
+                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-7-7l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-bold">Ready to Receive</p>
+                <p className="text-xs mt-1 opacity-60">Waiting for incoming transfers...</p>
+              </div>
             </div>
           )}
         </div>

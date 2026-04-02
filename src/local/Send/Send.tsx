@@ -3,10 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { SendLogic } from "./SendLogic";
 import { useTheme } from "../Context/Theme";
 import SendConfirmationDialog from "./SendConfirmation";
-import QrCode from "./SendQrCode";
 import { open } from "@tauri-apps/plugin-dialog";
-import { invoke } from "@tauri-apps/api/core";
-import { useSharedDataContext } from "../Context/FileListContext";
 import {
   Dialog,
   DialogHeader,
@@ -14,6 +11,19 @@ import {
   DialogFooter,
   Button,
 } from "@material-tailwind/react";
+import Swal from "sweetalert2";
+
+const Toast = Swal.mixin({
+  toast: true,
+  position: "top-end",
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.onmouseenter = Swal.stopTimer;
+    toast.onmouseleave = Swal.resumeTimer;
+  },
+});
 
 interface DragDropPayload {
   paths: string[];
@@ -144,45 +154,24 @@ const ErrorDialog: React.FC<{
   );
 };
 
-export default function Send({
-  setCanSwitch,
-}: {
-  canSwitch: boolean;
-  setCanSwitch: (value: boolean) => void;
-}) {
+import { DeviceList, ProgressBar } from "./SendQrCode";
+import { useQrContext } from "../Context/QrContext";
+import { ProgressUpdatePayload } from "../types";
+
+export default function Send() {
   const { proceedWithSend } = SendLogic();
   const { isTheme } = useTheme();
+  const { serverStatus, setServerStatus } = useQrContext();
   const hasRun = useRef(false);
 
   const [sendFile, setSendFile] = useState<boolean>(true);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [droppedFiles, setDroppedFiles] = useState<string[]>([]);
-  const [showQrCode, setShowQrCode] = useState(false);
-  const [showBackConfirmation, setShowBackConfirmation] = useState(false);
   const [error, setError] = useState<ErrorDialogState>({
     isOpen: false,
     message: "",
   });
 
-  const { setFileList, setText } = useSharedDataContext();
-
-  const stopServer = async () => {
-    try {
-      await invoke("stop_server");
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleBackFromQr = async () => {
-    setShowBackConfirmation(false);
-    await stopServer();
-    setShowQrCode(false);
-    setSendFile(true);
-    setFileList([]);
-    setText(undefined);
-    setCanSwitch(true);
-  };
 
   useEffect(() => {
     if (!hasRun.current) {
@@ -204,123 +193,156 @@ export default function Send({
     }
   }, []);
 
+  // Outgoing progress listener
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    const setup = async () => {
+      unlisten = await listen<ProgressUpdatePayload>("progress-update", (ev) => {
+        if (ev.payload.progress === 100) {
+          Toast.fire({
+            icon: "success",
+            title: "Successfully shared!",
+          });
+        }
+      });
+    };
+    setup();
+    return () => unlisten?.();
+  }, []);
+
+  const isServerActive = serverStatus === "active";
+
   return (
-    <div className="h-full">
-      {showQrCode ? (
-        <QrCode onBack={() => setShowBackConfirmation(true)} />
-      ) : (
-        <div
-          className={`h-full flex flex-col items-center pt-8 sm:pt-10 xl:pt-20 px-4 sm:px-6 ${
-            isTheme ? "bg-[#13151f] text-white" : "bg-[#f8f9fc] !text-[#1a1d2e]"
+    <div className="h-full flex flex-col items-center pt-8 sm:pt-10 px-4 sm:px-6 overflow-y-auto">
+      {/* Header */}
+      <div className="w-full max-w-4xl flex justify-between items-center mb-6 sm:mb-8">
+        <div>
+          <h1 className={`text-xl sm:text-2xl font-bold ${isTheme ? "text-white" : "text-gray-800"}`}>Share</h1>
+          <p className={`text-sm mt-1 ${isTheme ? "!text-[#c4c9de]" : "!text-[#9097b0]"}`}>
+            Choose what you want to share
+          </p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div
+        className={`w-full max-w-4xl flex rounded-xl p-1 mb-6 sm:mb-8 ${
+          isTheme ? "bg-[#1a1d2a] border border-[#2a2d3e]" : "bg-[#e8ebf2]"
+        }`}
+      >
+        {/* FILE TAB */}
+        <button
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${
+            sendFile
+              ? isTheme
+                ? "bg-[#2a2d3e] text-white shadow-sm border border-[#3a3f55]"
+                : "bg-white shadow-sm text-[#1a1d2e] border border-white/80"
+              : isTheme
+                ? "text-[#8b92b3] hover:text-slate-300"
+                : "text-[#9097b0] hover:text-[#5b6178]"
           }`}
+          onClick={() => setSendFile(true)}
         >
-          {/* Header */}
-          <div className="w-full max-w-4xl mb-6 sm:mb-8">
-            <h1 className={`text-xl sm:text-2xl font-bold ${isTheme ? "text-white" : "text-gray-800"}`}>Share</h1>
-            <p
-              className={`text-sm mt-1 ${isTheme ? "!text-[#c4c9de]" : "!text-[#9097b0]"}`}
-            >
-              Choose what you want to share
-            </p>
-          </div>
-
-          {/* Tabs */}
-          <div
-            className={`w-full max-w-4xl flex rounded-xl p-1 mb-6 sm:mb-8 ${
-              isTheme ? "bg-[#1a1d2a] border border-[#2a2d3e]" : "bg-[#e8ebf2]"
-            }`}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-4 h-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            {/* FILE TAB */}
-            <button
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${
-                sendFile
-                  ? isTheme
-                    ? "bg-[#2a2d3e] text-white shadow-sm border border-[#3a3f55]"
-                    : "bg-white shadow-sm text-[#1a1d2e] border border-white/80"
-                  : isTheme
-                    ? "text-[#8b92b3] hover:text-slate-300"
-                    : "text-[#9097b0] hover:text-[#5b6178]"
-              }`}
-              onClick={() => setSendFile(true)}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 3v12" />
-                <path d="m17 8-5-5-5 5" />
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              </svg>
-              Files
-            </button>
+            <path d="M12 3v12" />
+            <path d="m17 8-5-5-5 5" />
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          </svg>
+          Files
+        </button>
 
-            {/* TEXT TAB */}
-            <button
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${
-                !sendFile
-                  ? isTheme
-                    ? "bg-[#2a2d3e] text-white shadow-sm border border-[#3a3f55]"
-                    : "bg-white shadow-sm text-[#1a1d2e] border border-white/80"
-                  : isTheme
-                    ? "text-[#8b92b3] hover:text-slate-300"
-                    : "text-[#9097b0] hover:text-[#5b6178]"
-              }`}
-              onClick={() => setSendFile(false)}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 4v16" />
-                <path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2" />
-                <path d="M9 20h6" />
-              </svg>
-              Text
-            </button>
-          </div>
+        {/* TEXT TAB */}
+        <button
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${
+            !sendFile
+              ? isTheme
+                ? "bg-[#2a2d3e] text-white shadow-sm border border-[#3a3f55]"
+                : "bg-white shadow-sm text-[#1a1d2e] border border-white/80"
+              : isTheme
+                ? "text-[#8b92b3] hover:text-slate-300"
+                : "text-[#9097b0] hover:text-[#5b6178]"
+          }`}
+          onClick={() => setSendFile(false)}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-4 h-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 4v16" />
+            <path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2" />
+            <path d="M9 20h6" />
+          </svg>
+          Text
+        </button>
+      </div>
 
-          {/* Content */}
-          <div className="w-full max-w-4xl">
-            {sendFile ? (
-              <FilePicker
-                onError={(msg) => setError({ isOpen: true, message: msg })}
-                onShowConfirmation={(files) => {
-                  setDroppedFiles(files);
-                  setShowConfirmation(true);
-                }}
-              />
-            ) : (
-              <TextSender
-                onSendText={async (text) => {
-                  if (!text.trim()) {
-                    setError({
-                      isOpen: true,
-                      message: "Please enter some text before sending.",
-                    });
-                    return;
-                  }
-                  try {
-                    await proceedWithSend(null, text);
-                    setShowQrCode(true);
-                    setCanSwitch(false);
-                  } catch (err) {
-                    setError({ isOpen: true, message: "Failed to send text" });
-                  }
-                }}
-              />
-            )}
+      {/* Content */}
+      <div className="w-full max-w-4xl">
+        {sendFile ? (
+          <FilePicker
+            onError={(msg) => setError({ isOpen: true, message: msg })}
+            onShowConfirmation={(files) => {
+              setDroppedFiles(files);
+              setShowConfirmation(true);
+            }}
+          />
+        ) : (
+          <TextSender
+            onSendText={async (text) => {
+              if (!text.trim()) {
+                setError({
+                  isOpen: true,
+                  message: "Please enter some text before sending.",
+                });
+                return;
+              }
+              try {
+                Toast.fire({
+                  icon: "info",
+                  title: "Sharing text...",
+                });
+                setServerStatus("starting");
+                await proceedWithSend(null, text);
+                setServerStatus("active");
+                Toast.fire({
+                  icon: "success",
+                  title: "Text shared successfully!",
+                });
+              } catch (err) {
+                setError({ isOpen: true, message: "Failed to send text" });
+                setServerStatus("closed");
+              }
+            }}
+          />
+        )}
+      </div>
+
+      {/* Active Server Info (Below Picker) */}
+      {isServerActive && (
+        <div className="w-full max-w-4xl mt-12 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className={`p-6 rounded-3xl border ${isTheme ? "bg-[#13151f] border-[#2a2d3e]" : "bg-white border-gray-100 shadow-xl shadow-gray-200/50"}`}>
+            <h3 className={`text-lg font-bold mb-4 ${isTheme ? "text-white" : "text-gray-900"}`}>
+              Active Transfer Session
+            </h3>
+            <ProgressBar />
+            <div className="mt-8">
+              <DeviceList />
+            </div>
           </div>
         </div>
       )}
@@ -332,12 +354,17 @@ export default function Send({
         onCancel={() => setShowConfirmation(false)}
         onProceed={async () => {
           try {
+            Toast.fire({
+              icon: "info",
+              title: "Starting file share...",
+            });
+            setServerStatus("starting");
             await proceedWithSend(droppedFiles, null);
             setShowConfirmation(false);
-            setShowQrCode(true);
-            setCanSwitch(false);
+            setServerStatus("active");
           } catch (err) {
             setError({ isOpen: true, message: "Failed to send files" });
+            setServerStatus("closed");
           }
         }}
       />
@@ -348,47 +375,6 @@ export default function Send({
         onClose={() => setError({ isOpen: false, message: "" })}
         isTheme={isTheme}
       />
-
-      {/* Back Confirmation */}
-      <Dialog
-        open={showBackConfirmation}
-        handler={setShowBackConfirmation}
-        className={
-          isTheme
-            ? "!bg-[#1a1d2a] text-white border border-[#2a2d3e]"
-            : "bg-white text-[#1a1d2e]"
-        }
-        {...({} as any)}
-      >
-        <DialogHeader
-          className={isTheme ? "text-white" : "text-[#1a1d2e]"}
-          {...({} as any)}
-        >
-          Stop Server?
-        </DialogHeader>
-        <DialogBody
-          className={isTheme ? "!text-[#c4c9de]" : "text-[#5b6178]"}
-          {...({} as any)}
-        >
-          Stop the server and return to file picker?
-        </DialogBody>
-        <DialogFooter {...({} as any)}>
-          <Button
-            onClick={() => setShowBackConfirmation(false)}
-            {...({} as any)}
-          >
-            Cancel
-          </Button>
-          <Button
-            color="red"
-            onClick={handleBackFromQr}
-            {...({} as any)}
-            className="ml-3"
-          >
-            Stop & Go Back
-          </Button>
-        </DialogFooter>
-      </Dialog>
     </div>
   );
 }
