@@ -1,6 +1,6 @@
 use crate::{models, server};
 use actix_web::dev::ServerHandle;
-use log::debug;
+use log::{debug, error, info, warn};
 use std::{
     io::Read,
     path::PathBuf,
@@ -48,7 +48,9 @@ static SHARED_DATA: Mutex<Option<Option<tauri_plugin_ipd::SharedData>>> = Mutex:
 pub async fn get_shared_data<R: Runtime>(
     window: Window<R>,
 ) -> Option<tauri_plugin_ipd::SharedData> {
+    debug!("Command: get_shared_data called");
     let current_data = window.ipd().get_shared_data().unwrap().data;
+    debug!("Current shared data from plugin: {current_data:#?}");
     let mut prev_data = SHARED_DATA.lock().unwrap();
     match *prev_data {
         None => {
@@ -59,8 +61,10 @@ pub async fn get_shared_data<R: Runtime>(
         //       app will not detect it. Fix this somehow
         Some(ref prev_shared_data) => {
             if &current_data == prev_shared_data {
+                debug!("Shared data matches previous; returning None");
                 None
             } else {
+                debug!("Shared data updated; returning new data");
                 *prev_data = Some(current_data.clone());
                 current_data
             }
@@ -107,6 +111,7 @@ pub fn send_file<R: Runtime>(
     window: Window<R>,
     files: Vec<(SafeFilePath, String)>,
 ) -> models::StartServerResponse {
+    debug!("Command: send_file called with {} files", files.len());
     // TODO : Add file checks before starting server
     let file_datas: Vec<models::FileData> = files
         .into_iter()
@@ -133,8 +138,11 @@ pub async fn send_files_to<R: Runtime>(
     let client = reqwest::Client::new();
     let request_endpoint = format!("http://{}:{}/upload/request", to.ip, to.port);
     let files_endpoint = format!("http://{}:{}/upload/files", to.ip, to.port);
+    debug!("Sending files to endpoint: {request_endpoint}");
+    debug!("Files endpoint: {files_endpoint}");
 
     for (filepath, filename) in files {
+        debug!("Processing file: {filename} at path: {filepath:#?}");
         let (mut file, _) = open_file(&filepath, &window);
         let mut file_contents = Vec::new();
         file.read_to_end(&mut file_contents).unwrap();
@@ -157,11 +165,13 @@ pub async fn send_files_to<R: Runtime>(
 
         match resp {
             Ok(resp) if resp.status().is_success() => {
+                debug!("Transfer request for {filename} succeeded (online)");
                 let transfer_resp: models::TransferResponse = resp.json().await.unwrap();
+                debug!("Transfer response received: {transfer_resp:#?}");
                 if transfer_resp.accepted {
                     if let Some(token) = transfer_resp.token {
                         // 2. Send File with token
-                        println!("sending {filename:#?} to {files_endpoint:#?}");
+                        info!("sending {filename:#?} to {files_endpoint:#?}");
                         client
                             .post(&files_endpoint)
                             .header("X-Filename", urlencoding::encode(&filename).into_owned())
@@ -172,11 +182,11 @@ pub async fn send_files_to<R: Runtime>(
                             .unwrap();
                     }
                 } else {
-                    println!("Transfer rejected by receiver for {filename}");
+                    warn!("Transfer rejected by receiver for {filename}");
                 }
             }
             _ => {
-                println!("Transfer request failed or rejected for {filename}");
+                error!("Transfer request failed or rejected for {filename}");
             }
         }
     }
@@ -203,12 +213,13 @@ pub async fn send_text_to<R: Runtime>(
         filesize: Some(text.len() as u64),
     };
 
-    println!("sending text request to {request_endpoint:#?}");
+    info!("sending text request to {request_endpoint:#?}");
     let resp = client
         .post(&request_endpoint)
         .json(&transfer_request)
         .send()
         .await;
+    debug!("Text transfer request sent. Response pending...");
 
     match resp {
         Ok(resp) if resp.status().is_success() => {
@@ -216,7 +227,7 @@ pub async fn send_text_to<R: Runtime>(
             if transfer_resp.accepted {
                 if let Some(token) = transfer_resp.token {
                     // 2. Send Text with token
-                    println!("sending text to {text_endpoint:#?}");
+                    info!("sending text to {text_endpoint:#?}");
                     client
                         .post(text_endpoint)
                         .header("Content-Type", "text/plain")
@@ -227,11 +238,11 @@ pub async fn send_text_to<R: Runtime>(
                         .unwrap();
                 }
             } else {
-                println!("Text transfer rejected by receiver");
+                warn!("Text transfer rejected by receiver");
             }
         }
         _ => {
-            println!("Text transfer request failed or rejected");
+            error!("Text transfer request failed or rejected");
         }
     }
 }
@@ -249,6 +260,7 @@ pub fn get_device_config<R: Runtime>(window: Window<R>) -> models::DeviceConfig 
 #[allow(dead_code)]
 #[tauri::command]
 pub fn send_text<R: Runtime>(window: Window<R>, text: String) -> models::StartServerResponse {
+    debug!("Command: send_text called; text length: {}", text.len());
     let mode = models::TransferMode::Send(models::Send {
         files: None,
         text: Some(text),
@@ -267,6 +279,7 @@ pub fn send_text<R: Runtime>(window: Window<R>, text: String) -> models::StartSe
 #[allow(dead_code)]
 #[tauri::command]
 pub fn recv<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
+    debug!("Command: recv (Receive mode requested)");
     let mode = models::TransferMode::Receive;
     {
         let mut guard = TRANSFER_MODE.write().unwrap();
@@ -278,6 +291,7 @@ pub fn recv<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
 #[allow(dead_code)]
 #[tauri::command]
 pub fn respond_to_transfer_request(id: String, accepted: bool) {
+    debug!("Command: respond_to_transfer_request id: {id}, accepted: {accepted}");
     let manager_guard = TRANSFER_MANAGER.lock().unwrap();
     if let Some(manager) = manager_guard.as_ref() {
         let mut pending = manager.pending.lock().unwrap();
@@ -373,7 +387,7 @@ fn start_server<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
     }
     drop(server_guard);
 
-    debug!("Starting server...");
+    info!("Starting server...");
 
     // Used to transfer port number between actix thread and API responder thread
     let (tx, rx) = mpsc::channel::<u16>();

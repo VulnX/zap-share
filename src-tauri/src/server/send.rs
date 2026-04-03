@@ -4,7 +4,7 @@ use actix_web::{
     web, Error, HttpRequest, HttpResponse, Responder,
 };
 use futures_util::stream;
-use log::debug;
+use log::{debug, info};
 use tauri::{Emitter, Window};
 use tokio::io::AsyncReadExt;
 
@@ -37,9 +37,14 @@ pub async fn serve_download_ui() -> impl Responder {
 pub async fn get_shared_content() -> impl Responder {
     let mode = api::TRANSFER_MODE.read().unwrap();
     let mode = mode.as_ref().unwrap();
+    debug!("GET /api/shared-content; current mode: {:?}", mode);
     let models::TransferMode::Send(ref data) = mode else {
+        debug!("Request forbidden: not in Send mode");
         return HttpResponse::Forbidden().body("Forbidden");
     };
+    debug!("Returning shared content: {} files, text length: {:?}", 
+           data.files.as_ref().map(|f| f.len()).unwrap_or(0),
+           data.text.as_ref().map(|t| t.len()));
     HttpResponse::Ok().json(data)
 }
 
@@ -70,20 +75,24 @@ pub async fn get_file(window: web::Data<Window>, req: HttpRequest) -> impl Respo
     };
 
     let Some(file_id) = req.match_info().get("id").map(String::from) else {
+        debug!("GET /download/files/{id} - missing id in path");
         return HttpResponse::NotFound().body("File not found");
     };
+    debug!("GET /download/files/{} requested", file_id);
 
     let window = window.into_inner();
     let Some(file_data) = files.iter().find(|fd| fd.id == file_id) else {
+        debug!("File ID {} not found in shared files list", file_id);
         return HttpResponse::NotFound().body("File not found");
     };
+    debug!("Matched File ID {} to file: {}", file_id, file_data.filename);
 
     let (file, _) = api::open_file(&file_data.filepath, &window);
     let file: tokio::fs::File = tokio::fs::File::from_std(file);
     let file_name = file_data.filename.clone();
     let file_size = file_data.filesize;
 
-    debug!("Serving file: {file_name:#?} ({file_size} bytes)");
+    info!("Serving file: {file_name:#?} ({file_size} bytes)");
 
     let transferred: usize = 0;
     let payload = models::ProgressUpdatePayload {
@@ -98,7 +107,7 @@ pub async fn get_file(window: web::Data<Window>, req: HttpRequest) -> impl Respo
         move |(mut file, mut transferred, mut payload, window, term_flag)| async move {
             if let Some(ref flag) = term_flag {
                 if flag.load(std::sync::atomic::Ordering::Relaxed) {
-                    debug!("Termination signal received, stopping stream");
+                    info!("Termination signal received, stopping stream");
                     return None;
                 }
             }
@@ -113,8 +122,9 @@ pub async fn get_file(window: web::Data<Window>, req: HttpRequest) -> impl Respo
                     if payload.progress < rounded {
                         payload.progress = rounded;
                         window.emit("progress-update", &payload).unwrap();
-                        debug!("Progress: {:.1}%", payload.progress);
+                        debug!("Progress update for {}: {:.1}%", payload.filename, payload.progress);
                     }
+                    debug!("Read chunk of size {} from {}", chunk.len(), file_name);
                     Some((
                         Ok::<_, Error>(web::Bytes::from(chunk)),
                         (file, transferred, payload, window, term_flag),

@@ -33,7 +33,6 @@ pub fn get_event_sender() -> &'static broadcast::Sender<String> {
 /// The assigned port is sent back to the caller via `tx`.
 /// `SERVER_HANDLE` is registered once the server starts successfully.
 pub fn start_server<R: Runtime>(window: tauri::Window<R>, tx: mpsc::Sender<u16>) {
-    let _ = env_logger::try_init_from_env(env_logger::Env::new().default_filter_or("debug"));
     let server;
     loop {
         let window_clone = window.clone();

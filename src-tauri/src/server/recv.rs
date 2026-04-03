@@ -3,7 +3,7 @@ use actix_web::http::header;
 use actix_web::web::BytesMut;
 use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, Responder};
 use futures_util::StreamExt;
-use log::debug;
+use log::{debug, error, info};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -57,6 +57,7 @@ pub async fn handle_request(
 
     let request_id = req.id.clone();
     debug!("Incoming transfer request: {:#?}", req);
+    debug!("Request type: {}, filename: {:?}, size: {:?}", req.r#type, req.filename, req.filesize);
 
     let (tx, rx) = oneshot::channel();
     {
@@ -66,7 +67,7 @@ pub async fn handle_request(
 
     // Emit event to frontend
     if let Err(e) = window.emit("transfer-request", req.into_inner()) {
-        debug!("Failed to emit transfer-request: {e}");
+        error!("Failed to emit transfer-request: {e}");
         return HttpResponse::InternalServerError().body("Failed to notify receiver");
     }
 
@@ -75,6 +76,7 @@ pub async fn handle_request(
         Ok(Ok(accepted)) => {
             if accepted {
                 let token = uuid::Uuid::new_v4().to_string();
+                debug!("Transfer accepted for request_id {request_id}; generated token: {token}");
                 {
                     let mut tokens = manager.tokens.lock().unwrap();
                     tokens.insert(token.clone());
@@ -142,7 +144,10 @@ pub async fn receive_file(
         .get("X-Transfer-Token")
         .and_then(|v| v.to_str().ok())
     {
-        Some(token) => token,
+        Some(token) => {
+            debug!("Received upload attempt with token: {token}");
+            token
+        }
         None => {
             return HttpResponse::Unauthorized().body("Missing X-Transfer-Token header");
         }
@@ -151,8 +156,10 @@ pub async fn receive_file(
     {
         let mut tokens = manager.tokens.lock().unwrap();
         if !tokens.remove(token) {
+            debug!("Token validation failed for: {token}");
             return HttpResponse::Forbidden().body("Invalid or expired token");
         }
+        debug!("Token {token} validated and consumed");
     }
 
     // Extract filename from the X-Filename header (percent-decoded)
@@ -178,6 +185,7 @@ pub async fn receive_file(
         .get("Content-Length")
         .and_then(|v| v.to_str().ok())
         .and_then(|s| s.parse().ok());
+    debug!("Content-Length header parsed as: {:?}", filesize);
 
     // Sanitize filename to prevent path traversal and OS-specific invalid chars (/, \, :)
     // TOOD: Is this sanitization *really* needed?
@@ -199,11 +207,11 @@ pub async fn receive_file(
     let file = match fs::File::create(&write_path).await {
         Ok(f) => f,
         Err(e) => {
-            debug!("Failed to create file: {e:#?}");
+            error!("Failed to create file: {e:#?}");
             return HttpResponse::InternalServerError().body(format!("Failed to create file: {e}"));
         }
     };
-    debug!("Saving file to {write_path:#?}");
+    info!("Saving file to {write_path:#?}");
 
     let mut bufwriter = BufWriter::new(file);
     let mut written: u64 = 0;
@@ -216,7 +224,7 @@ pub async fn receive_file(
     while let Some(chunk_result) = body.next().await {
         if let Some(ref flag) = term_flag {
             if flag.load(std::sync::atomic::Ordering::Relaxed) {
-                debug!("Termination signal received, stopping receive_file");
+                info!("Termination signal received, stopping receive_file");
                 return HttpResponse::InternalServerError()
                     .body("Transfer terminated by server reset");
             }
@@ -224,14 +232,14 @@ pub async fn receive_file(
         let chunk = match chunk_result {
             Ok(c) => c,
             Err(e) => {
-                debug!("Error reading body chunk: {e:#?}");
+                error!("Error reading body chunk: {e:#?}");
                 return HttpResponse::InternalServerError()
                     .body(format!("Transfer interrupted: {e}"));
             }
         };
 
         if let Err(e) = bufwriter.write_all(&chunk).await {
-            debug!("Failed to write chunk: {e:#?}");
+            error!("Failed to write chunk: {e:#?}");
             return HttpResponse::InternalServerError()
                 .body(format!("Failed to write to disk: {e}"));
         }
@@ -248,17 +256,19 @@ pub async fn receive_file(
     }
 
     if let Err(e) = bufwriter.flush().await {
-        debug!("Failed to flush file: {e:#?}");
+        error!("Failed to flush file: {e:#?}");
         return HttpResponse::InternalServerError().body(format!("Failed to finalize file: {e}"));
     }
-    debug!("File saved to disk");
+    info!("File saved to disk");
 
     HttpResponse::new(StatusCode::CREATED)
 }
 
 fn get_unique_file_path(write_path: &mut PathBuf, filename: &str) {
+    debug!("Resolving unique file path for: {} in {:?}", filename, write_path);
     if !write_path.join(filename).exists() {
         write_path.push(filename);
+        debug!("Target path is unique: {:?}", write_path);
         return;
     }
 
@@ -274,6 +284,7 @@ fn get_unique_file_path(write_path: &mut PathBuf, filename: &str) {
         };
         if !write_path.join(&new_name).exists() {
             write_path.push(new_name);
+            debug!("Selected unique index-appended path: {:?}", write_path);
             return;
         }
     }
@@ -316,7 +327,7 @@ pub async fn receive_text(
     while let Some(chunk_result) = body.next().await {
         if let Some(ref flag) = term_flag {
             if flag.load(std::sync::atomic::Ordering::Relaxed) {
-                debug!("Termination signal received, stopping receive_text");
+                info!("Termination signal received, stopping receive_text");
                 return HttpResponse::InternalServerError()
                     .body("Transfer terminated by server reset");
             }

@@ -19,6 +19,7 @@ static BCAST_PORT: u16 = 54321;
 
 // TODO: Doesn't work on SVKM network. Fix pls
 fn detect_broadcast_target(socket: &UdpSocket) -> SocketAddrV4 {
+    debug!("Detecting broadcast target address...");
     let ip = api::get_local_ip();
     let ip = Ipv4Addr::from_str(&ip).unwrap();
     let [a, b, c, _d] = ip.octets();
@@ -32,6 +33,7 @@ fn detect_broadcast_target(socket: &UdpSocket) -> SocketAddrV4 {
         let target = SocketAddrV4::new(addr, BCAST_PORT);
         match socket.send_to(&[0u8; 1], target) {
             Ok(_) => {
+                debug!("Probe successful for broadcast target: {addr}");
                 info!("using broadcast address: {addr}");
                 return target;
             }
@@ -57,7 +59,9 @@ pub fn emit_info(config: models::DeviceConfig, shutdown: Arc<AtomicBool>) {
     let server_status = server_status_guard.as_ref().unwrap(); // Safe
     let port = server_status.port;
     let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
+    debug!("UDP Socket bound to ephemeral port for emission");
     socket.set_broadcast(true).unwrap();
+    debug!("Broadcasting enabled on socket");
     let payload = models::MulticastPayload {
         port,
         fingerprint: config.fingerprint,
@@ -69,8 +73,10 @@ pub fn emit_info(config: models::DeviceConfig, shutdown: Arc<AtomicBool>) {
     let target = detect_broadcast_target(&socket);
     while !shutdown.load(Ordering::Relaxed) {
         socket.send_to(payload.as_bytes(), target).unwrap();
+        // debug!("Payload sent to {target}"); // maybe too noisy for 500ms
         thread::sleep(Duration::from_millis(500));
     }
+    debug!("Broadcast emission thread shutting down");
 }
 
 pub fn recv_info<R: Runtime>(
@@ -78,8 +84,10 @@ pub fn recv_info<R: Runtime>(
     config: models::DeviceConfig,
     shutdown: Arc<AtomicBool>,
 ) {
+    debug!("Starting info receiver on port {}", BCAST_PORT);
     // TODO: No unwrap here pls, this CAN fail!
     let socket = UdpSocket::bind(("0.0.0.0", BCAST_PORT)).unwrap();
+    debug!("UDP Socket bound to port {} for reception", BCAST_PORT);
     let mut buf = [0u8; 0x1000]; // TODO: Can we use sizeof(models::MulticastPayload) here?
     let mut devices = HashSet::new();
     while !shutdown.load(Ordering::Relaxed) {
@@ -88,8 +96,10 @@ pub fn recv_info<R: Runtime>(
             .unwrap();
         match socket.recv_from(&mut buf) {
             Ok((amt, from)) => {
+                debug!("Received {} bytes on UDP from {:?}", amt, from);
                 if let Ok(payload) = serde_json::from_slice::<models::MulticastPayload>(&buf[..amt])
                 {
+                    debug!("Decoded multicast payload: {payload:#?}");
                     if payload.fingerprint == config.fingerprint {
                         // Self device detected
                         continue;
@@ -122,7 +132,6 @@ pub fn configure_bcast<R: Runtime>(window: Window<R>) {
     let transfer_mode_guard = api::TRANSFER_MODE.read().unwrap();
     let transfer_mode = transfer_mode_guard.as_ref().unwrap(); // Safe to unwrap here
     let mut bcast_thread_guard = api::BCAST_THREAD.lock().unwrap();
-    // drop(bcast_thread_guard);
 
     // Stop current bcast sender/receiver
     if let Some(bcast_thread) = bcast_thread_guard.take() {
