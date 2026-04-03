@@ -1,7 +1,7 @@
 use actix_web::{
-    Error, HttpRequest, HttpResponse, Responder, body::SizedStream, http::{
-        StatusCode, header::{self, ContentDisposition, ContentType}
-    }, web
+    body::SizedStream,
+    http::header::{self, ContentDisposition, ContentType},
+    web, Error, HttpRequest, HttpResponse, Responder,
 };
 use futures_util::stream;
 use log::debug;
@@ -16,24 +16,31 @@ const CHUNK_SIZE: usize = 1024 * 1024; // 1 MiB
 ///
 /// Serves the download UI page with the list of available files
 /// embedded as URL-encoded JSON.
+/// Serves the download or text UI page.
 pub async fn serve_download_ui() -> impl Responder {
     let mode = api::TRANSFER_MODE.read().unwrap();
     let mode = mode.as_ref().unwrap();
     let models::TransferMode::Send(ref data) = mode else {
-        return HttpResponse::Found().append_header((header::LOCATION, "/")).finish();
+        return HttpResponse::Found()
+            .append_header((header::LOCATION, "/"))
+            .finish();
     };
-    if let Some(text) = &data.text {
-        // TODO: Please handle text in a better way, than raw response
-        HttpResponse::new(StatusCode::OK).set_body(actix_web::body::BoxBody::new(text.clone()))
+    if data.text.is_some() {
+        let page = include_str!("../static/receive-text.html");
+        HttpResponse::Ok().body(page)
     } else {
-        let files = data.files.as_ref().unwrap();
-        let files_json = serde_json::to_string(&files).unwrap();
-        let files_json = urlencoding::encode(&files_json);
-        let page = include_str!("../static/download-file.html").to_string();
-        let page = page.replace("<FILE_DATA_HERE>", &files_json);
-        // TODO: This needs to go! Please     ^^^^^^^^^^^^^^^^^.
+        let page = include_str!("../static/download-file.html");
         HttpResponse::Ok().body(page)
     }
+}
+
+pub async fn get_shared_content() -> impl Responder {
+    let mode = api::TRANSFER_MODE.read().unwrap();
+    let mode = mode.as_ref().unwrap();
+    let models::TransferMode::Send(ref data) = mode else {
+        return HttpResponse::Forbidden().body("Forbidden");
+    };
+    HttpResponse::Ok().json(data)
 }
 
 /// Handles `GET /download/files/{id}` in Send mode

@@ -1,7 +1,13 @@
-use crate::{api::{self, SERVER_HANDLE}, models};
-use actix_web::{App, HttpServer, middleware::Logger, rt, web};
-use std::sync::{Arc, RwLock, mpsc};
+use crate::{
+    api::{self, SERVER_HANDLE},
+    models,
+};
+use actix_web::{middleware::Logger, rt, web, App, HttpServer, Responder};
+use futures_util::stream;
+use log::debug;
+use std::sync::{mpsc, Arc, OnceLock, RwLock};
 use tauri::Runtime;
+use tokio::sync::broadcast;
 
 pub mod recv;
 mod send;
@@ -12,6 +18,14 @@ pub struct ServerStatus {
 }
 
 pub static SERVER_STATUS: RwLock<Option<ServerStatus>> = RwLock::new(None);
+static EVENT_SENDER: OnceLock<broadcast::Sender<String>> = OnceLock::new();
+
+pub fn get_event_sender() -> &'static broadcast::Sender<String> {
+    EVENT_SENDER.get_or_init(|| {
+        let (tx, _) = broadcast::channel(16);
+        tx
+    })
+}
 
 /// Starts an actix-web server and registers REST routes based on `mode`.
 ///
@@ -38,10 +52,14 @@ pub fn start_server<R: Runtime>(window: tauri::Window<R>, tx: mpsc::Sender<u16>)
             // individual handlers based on current mode. This will allow us to
             // use same server when switching between SEND and RECV modes.
             app = app
-            .route("/", web::get().to(handle_root))
+                .route("/", web::get().to(handle_root))
+                .route("/events", web::get().to(handle_events))
+                .route(
+                    "/api/shared-content",
+                    web::get().to(send::get_shared_content),
+                )
                 .route("/download", web::get().to(send::serve_download_ui))
                 .route("/download/files/{id}", web::get().to(send::get_file))
-                // .route("/download/text", web::get().to(send::get_text))
                 .route("/upload", web::get().to(recv::serve_upload_ui))
                 .route("/upload/request", web::post().to(recv::handle_request))
                 .route("/upload/files", web::post().to(recv::receive_file))
@@ -80,4 +98,31 @@ async fn handle_root() -> web::Redirect {
         models::TransferMode::Send(_) => web::Redirect::to("/download"),
         models::TransferMode::Receive => web::Redirect::to("/upload"),
     }
+}
+
+async fn handle_events() -> impl Responder {
+    let rx = get_event_sender().subscribe();
+    let stream = stream::unfold(rx, |mut rx| async move {
+        match rx.recv().await {
+            Ok(msg) => {
+                debug!("Received event: {}", msg);
+                Some((
+                    Ok::<_, actix_web::Error>(actix_web_lab::sse::Event::Data(
+                        actix_web_lab::sse::Data::new(msg),
+                    )),
+                    rx,
+                ))
+            }
+            Err(broadcast::error::RecvError::Lagged(_)) => {
+                // Ignore lagged messages but keep going
+                Some((
+                    Ok::<_, actix_web::Error>(actix_web_lab::sse::Event::Comment("ping".into())),
+                    rx,
+                ))
+            }
+            Err(broadcast::error::RecvError::Closed) => None,
+        }
+    });
+
+    actix_web_lab::sse::Sse::from_stream(stream).with_keep_alive(std::time::Duration::from_secs(15))
 }

@@ -33,7 +33,9 @@ pub async fn serve_upload_ui() -> impl Responder {
     let mode = api::TRANSFER_MODE.read().unwrap();
     let mode = mode.as_ref().unwrap();
     if matches!(mode, models::TransferMode::Send(_)) {
-        return HttpResponse::Found().append_header((header::LOCATION, "/")).finish();
+        return HttpResponse::Found()
+            .append_header((header::LOCATION, "/"))
+            .finish();
     }
 
     HttpResponse::Ok().body(include_str!("../static/upload-portal.html"))
@@ -215,7 +217,8 @@ pub async fn receive_file(
         if let Some(ref flag) = term_flag {
             if flag.load(std::sync::atomic::Ordering::Relaxed) {
                 debug!("Termination signal received, stopping receive_file");
-                return HttpResponse::InternalServerError().body("Transfer terminated by server reset");
+                return HttpResponse::InternalServerError()
+                    .body("Transfer terminated by server reset");
             }
         }
         let chunk = match chunk_result {
@@ -314,7 +317,8 @@ pub async fn receive_text(
         if let Some(ref flag) = term_flag {
             if flag.load(std::sync::atomic::Ordering::Relaxed) {
                 debug!("Termination signal received, stopping receive_text");
-                return HttpResponse::InternalServerError().body("Transfer terminated by server reset");
+                return HttpResponse::InternalServerError()
+                    .body("Transfer terminated by server reset");
             }
         }
         let chunk = match chunk_result {

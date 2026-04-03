@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Received Text</title>
+
+    <style>
+      :root {
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --bg: #0f0f11;
+        --surface: #1a1a1d;
+        --border: #2a2a2e;
+        --text-main: #f4f4f5;
+        --text-secondary: #a1a1aa;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+        background: var(--bg);
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 500px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 32px;
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 6px;
+      }
+
+      p {
+        text-align: center;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+      }
+
+      .text-box {
+        background: #0f0f12;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        min-height: 120px;
+        margin-bottom: 20px;
+      }
+
+      #receivedText {
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .btn {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        background: var(--primary);
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .btn.success {
+        background: #10b981;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Shared Text</h1>
+      <p>From connected device</p>
+
+      <div class="text-box">
+        <div id="receivedText">Loading...</div>
+      </div>
+
+      <button class="btn" id="copyBtn">📋 Copy to clipboard</button>
+    </div>
+
+    <script>
+      const textEl = document.getElementById("receivedText");
+      const btn = document.getElementById("copyBtn");
+
+      // 🔹 Load content (fix your API if needed)
+      async function loadContent() {
+        try {
+          const res = await fetch("/api/shared-content");
+          const data = await res.json();
+
+          textEl.textContent = data.text || "No content";
+        } catch (err) {
+          console.error(err);
+          textEl.textContent = "Failed to load content";
+        }
+      }
+
+      loadContent();
+
+      // 🔹 Copy function (WORKS ON HTTP + HTTPS)
+      async function copyText() {
+        const original = btn.innerHTML;
+        const text = textEl.textContent;
+
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            // Modern (HTTPS)
+            await navigator.clipboard.writeText(text);
+          } else {
+            // Fallback (HTTP)
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+
+            textarea.focus();
+            textarea.select();
+
+            document.execCommand("copy");
+
+            document.body.removeChild(textarea);
+          }
+
+          showSuccess(original);
+        } catch (err) {
+          console.error(err);
+
+          // LAST RESORT: select text manually
+          const range = document.createRange();
+          range.selectNodeContents(textEl);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+
+          alert("Press CTRL+C (or long press on mobile) to copy");
+        }
+      }
+
+      // 🔹 Button click
+      btn.addEventListener("click", copyText);
+
+      // 🔹 UI feedback
+      function showSuccess(original) {
+        btn.innerHTML = "✔ Copied!";
+        btn.classList.add("success");
+
+        setTimeout(() => {
+          btn.innerHTML = original;
+          btn.classList.remove("success");
+        }, 2000);
+      }
+
+      // 🔹 SSE (unchanged)
+      let evtSource = new EventSource("/events");
+
+      evtSource.onmessage = (event) => {
+        if (event.data === "reload") {
+          document.body.innerHTML = `
+            <div style="height:100vh;display:flex;align-items:center;justify-content:center;">
+                Switching portal...
+            </div>
+        `;
+          window.location.href = "/";
+        }
+      };
+
+      evtSource.onerror = () => {
+        console.log("SSE reconnecting...");
+      };
+
+      window.addEventListener("beforeunload", () => {
+        evtSource.close();
+      });
+    </script>
+  </body>
+</html>

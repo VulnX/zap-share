@@ -1,226 +1,251 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Download Shared Files</title>
     <style>
-        :root {
-            --primary: #3b82f6;
-            --primary-hover: #2563eb;
-            --bg: #ffffff;
-            --surface: #f8fafc;
-            --border: #e2e8f0;
-            --text-main: #0f172a;
-            --text-secondary: #64748b;
+      :root {
+        --primary: #3b82f6;
+        --primary-hover: #2563eb;
+        --bg: #ffffff;
+        --surface: #f8fafc;
+        --border: #e2e8f0;
+        --text-main: #0f172a;
+        --text-secondary: #64748b;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+          sans-serif;
+        background-color: var(--bg);
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 440px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 32px;
+        box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
+        animation: fadeIn 0.4s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
         }
 
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
+      }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
+      header {
+        text-align: center;
+        margin-bottom: 28px;
+      }
 
-        .container {
-            width: 100%;
-            max-width: 440px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 32px;
-            box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
-            animation: fadeIn 0.4s ease-out;
-        }
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin-bottom: 8px;
+      }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(8px);
-            }
+      header p {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+      }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+      .file-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
 
-        header {
-            text-align: center;
-            margin-bottom: 28px;
-        }
+      .file-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px 18px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
+      }
 
-        h1 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            margin-bottom: 8px;
-        }
+      .file-item:hover {
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px -2px rgba(59, 130, 246, 0.12);
+        transform: translateY(-2px);
+      }
 
-        header p {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
+      .file-info {
+        flex: 1;
+        min-width: 0;
+        margin-right: 16px;
+      }
 
-        .file-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+      .file-name {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 2px;
+      }
 
-        .file-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 14px 18px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            text-decoration: none;
-            color: inherit;
-            cursor: pointer;
-        }
+      .file-meta {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
 
-        .file-item:hover {
-            border-color: var(--primary);
-            box-shadow: 0 4px 12px -2px rgba(59, 130, 246, 0.12);
-            transform: translateY(-2px);
-        }
+      .download-btn {
+        background: var(--primary);
+        color: white;
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        transition: background 0.15s;
+        flex-shrink: 0;
+      }
 
-        .file-info {
-            flex: 1;
-            min-width: 0;
-            margin-right: 16px;
-        }
+      .file-item:hover .download-btn {
+        background: var(--primary-hover);
+      }
 
-        .file-name {
-            font-size: 0.9375rem;
-            font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 2px;
-        }
+      .empty-state {
+        text-align: center;
+        padding: 20px;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        font-style: italic;
+      }
 
-        .file-meta {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .download-btn {
-            background: var(--primary);
-            color: white;
-            border-radius: 10px;
-            padding: 8px 14px;
-            font-size: 0.8125rem;
-            font-weight: 700;
-            transition: background 0.15s;
-            flex-shrink: 0;
-        }
-
-        .file-item:hover .download-btn {
-            background: var(--primary-hover);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 20px;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            font-style: italic;
-        }
-
-        footer {
-            margin-top: 24px;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
+      footer {
+        margin-top: 24px;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="container">
-        <header>
-            <h1>Received Files</h1>
-            <p>Ready for download</p>
-        </header>
+      <header>
+        <h1>Received Files</h1>
+        <p>Ready for download</p>
+      </header>
 
-        <div class="file-list" id="fileList">
-            <!-- Files injected here -->
-        </div>
+      <div class="file-list" id="fileList">
+        <!-- Files injected here -->
+      </div>
 
-        <div id="emptyState" class="empty-state" style="display: none;">
-            No files were shared yet.
-        </div>
+      <div id="emptyState" class="empty-state" style="display: none">
+        No files were shared yet.
+      </div>
     </div>
 
     <footer>Secure Local Transfer</footer>
 
     <script>
-        const fileListData = "<FILE_DATA_HERE>";
-        let files = [];
+      const listEl = document.getElementById("fileList");
+      const emptyEl = document.getElementById("emptyState");
 
+      async function loadContent() {
         try {
-            if (fileListData && fileListData !== "<FILE_DATA" + "_HERE>") {
-                files = JSON.parse(decodeURIComponent(fileListData));
-            }
-        } catch (e) {
-            console.error("Failed to parse file data", e);
-        }
+          const res = await fetch("/api/shared-content");
+          const data = await res.json();
+          const files = data.files || [];
 
-        const listEl = document.getElementById('fileList');
-        const emptyEl = document.getElementById('emptyState');
+          if (files.length === 0) {
+            emptyEl.style.display = "block";
+          } else {
+            listEl.innerHTML = "";
+            files.forEach((file) => {
+              const item = document.createElement("a");
+              item.className = "file-item";
+              item.href = `/download/files/${file.id}`;
+              item.setAttribute("download", file.filename);
 
-        if (files.length === 0) {
-            emptyEl.style.display = 'block';
-        } else {
-            files.forEach(file => {
-                const item = document.createElement('a');
-                item.className = 'file-item';
-                item.href = `/download/files/${file.id}`;
-                item.setAttribute('download', file.filename);
+              const sizeStr = file.filesize
+                ? formatBytes(file.filesize)
+                : "Ready";
 
-                // Format size if available (Backend should ideally provide this)
-                const sizeStr = file.size ? formatBytes(file.size) : "Ready";
+              item.innerHTML = `
+                            <div class="file-info">
+                                <div class="file-name">${file.filename}</div>
+                                <div class="file-meta">${sizeStr}</div>
+                            </div>
+                            <div class="download-btn">Download</div>
+                        `;
 
-                item.innerHTML = `
-                    <div class="file-info">
-                        <div class="file-name">${file.filename}</div>
-                        <div class="file-meta">${sizeStr}</div>
-                    </div>
-                    <div class="download-btn">Download</div>
-                `;
-
-                listEl.appendChild(item);
+              listEl.appendChild(item);
             });
+          }
+        } catch (err) {
+          console.error("Failed to load content", err);
         }
+      }
 
-        function formatBytes(bytes, decimals = 1) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+      loadContent();
+
+      function formatBytes(bytes, decimals = 1) {
+        if (bytes === 0) return "0 B";
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ["B", "KB", "MB", "GB", "TB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return (
+          parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i]
+        );
+      }
+
+      // Live portal updates via SSE
+      let evtSource = new EventSource("/events");
+      evtSource.onmessage = (event) => {
+        if (event.data === "reload") {
+          console.log("Reload signal received, redirecting...");
+          document.body.innerHTML = `
+                    <div style="height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; background: white; color: #333;">
+                        <p style="font-weight: 500;">Switching portal...</p>
+                    </div>
+                `;
+          window.location.href = "/";
         }
+      };
+      evtSource.onerror = (e) => {
+        console.error("SSE Connection error. Reconnecting...", e);
+      };
+      window.addEventListener("beforeunload", () => {
+        evtSource.close();
+      });
     </script>
-</body>
-
+  </body>
 </html>

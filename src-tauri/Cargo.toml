@@ -36,3 +36,5 @@ tauri-plugin-os = "2"
 tauri-plugin-ipd = { path = "../tauri-plugin-ipd" }
 uuid = { version = "1.18.1", features = ["v4"] }
 reqwest = { version = "0.12.23", default-features = false, features = ["json", "rustls-tls"] }
+actix-web-lab = "0.22.0"
+

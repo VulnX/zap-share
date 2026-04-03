@@ -57,7 +57,7 @@ impl FileData {
         let id = uuid::Uuid::new_v4().to_string();
         let (file, _) = api::open_file(&filepath, window);
         let filesize = file.metadata().unwrap().len();
-        // TODO: Why not pass the raw File object itself??
+        // NOTE: Do not pass the raw File object here since it cannot be Cloned.
         Self {
             id,
             filepath,
@@ -67,13 +67,13 @@ impl FileData {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct Send {
     pub files: Option<Vec<FileData>>,
     pub text: Option<String>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub enum TransferMode {
     Send(Send),
     Receive,

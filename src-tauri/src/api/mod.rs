@@ -361,8 +361,10 @@ fn start_server<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
     let server_guard = SERVER_HANDLE.lock().unwrap();
     if server_guard.is_some() {
         // Server already running
-        debug!("Server already running");
+        debug!("Server already running, triggering mode-switch reload...");
+        let _ = server::get_event_sender().send("reload".to_string());
         let server_status = server::SERVER_STATUS.read().unwrap();
+
         let server_status = server_status.as_ref().unwrap(); // Safe to unwrap
         return models::StartServerResponse::Success(models::Url {
             ip: server_status.ip.clone(),
@@ -400,6 +402,11 @@ fn start_server<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
 
     // Setup `BCAST_THREAD`
     bcast::configure_bcast(window);
+
+    // Notify any existing clients (though usually none on fresh start)
+    debug!("broadcasting initial reload event...");
+    let _ = server::get_event_sender().send("reload".to_string());
+
     models::StartServerResponse::Success(models::Url { ip, port })
 }
 
