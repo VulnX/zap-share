@@ -16,7 +16,7 @@ pub struct ProgressUpdatePayload {
     pub progress: f32,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MulticastPayload {
     pub port: u16,
     pub fingerprint: String,
@@ -67,13 +67,13 @@ impl FileData {
     }
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Send {
     pub files: Option<Vec<FileData>>,
     pub text: Option<String>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub enum TransferMode {
     Send(Send),
     Receive,

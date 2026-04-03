@@ -75,7 +75,7 @@ pub async fn get_file(window: web::Data<Window>, req: HttpRequest) -> impl Respo
     };
 
     let Some(file_id) = req.match_info().get("id").map(String::from) else {
-        debug!("GET /download/files/{id} - missing id in path");
+        debug!("GET /download/files/:id - missing id in path");
         return HttpResponse::NotFound().body("File not found");
     };
     debug!("GET /download/files/{} requested", file_id);
@@ -124,7 +124,7 @@ pub async fn get_file(window: web::Data<Window>, req: HttpRequest) -> impl Respo
                         window.emit("progress-update", &payload).unwrap();
                         debug!("Progress update for {}: {:.1}%", payload.filename, payload.progress);
                     }
-                    debug!("Read chunk of size {} from {}", chunk.len(), file_name);
+                    debug!("Read chunk of size {} from {}", chunk.len(), payload.filename);
                     Some((
                         Ok::<_, Error>(web::Bytes::from(chunk)),
                         (file, transferred, payload, window, term_flag),
