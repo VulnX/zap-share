@@ -12,6 +12,7 @@ import {
   Button,
 } from "@material-tailwind/react";
 import Swal from "sweetalert2";
+import { SharedDataPreview } from "./SharedDataPreview";
 
 const Toast = Swal.mixin({
   toast: true,
@@ -52,11 +53,10 @@ const FilePicker = ({
           );
         }
       }}
-      className={`w-full h-56 sm:h-64 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${
-        isTheme
+      className={`w-full h-56 sm:h-64 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${isTheme
           ? "border-[#2a2d3e] hover:border-indigo-500/50 hover:bg-indigo-500/5 text-[#8b92b3] hover:text-indigo-300"
           : "border-[#d1d5e0] hover:border-indigo-400/50 hover:bg-indigo-50/50 text-[#9097b0] hover:text-indigo-500"
-      }`}
+        }`}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -93,20 +93,18 @@ const TextSender = ({ onSendText }: { onSendText: (text: string) => void }) => {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        className={`w-full h-56 sm:h-64 p-4 rounded-2xl resize-none border outline-none transition-colors focus:ring-2 text-sm leading-relaxed ${
-          isTheme
+        className={`w-full h-56 sm:h-64 p-4 rounded-2xl resize-none border outline-none transition-colors focus:ring-2 text-sm leading-relaxed ${isTheme
             ? "bg-[#1a1d2a] text-white border-[#2a2d3e] placeholder-[#5a6080] focus:border-indigo-500/50 focus:ring-indigo-500/20"
             : "bg-white text-[#1a1d2e] border-[#d1d5e0] placeholder-[#9097b0] focus:border-indigo-400 focus:ring-indigo-100"
-        }`}
+          }`}
         placeholder="Type your message here..."
       />
       <button
         onClick={() => text.trim() && onSendText(text)}
-        className={`w-full mt-4 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
-          isTheme
+        className={`w-full mt-4 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${isTheme
             ? "bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-40 shadow-lg shadow-indigo-900/30"
             : "bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-40 shadow-md shadow-indigo-200/60"
-        }`}
+          }`}
         disabled={!text.trim()}
       >
         Share Text
@@ -171,6 +169,13 @@ export default function Send() {
     isOpen: false,
     message: "",
   });
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  const scrollToPreview = () => {
+    setTimeout(() => {
+      previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
 
 
   useEffect(() => {
@@ -226,21 +231,19 @@ export default function Send() {
 
       {/* Tabs */}
       <div
-        className={`w-full max-w-4xl flex rounded-xl p-1 mb-6 sm:mb-8 ${
-          isTheme ? "bg-[#1a1d2a] border border-[#2a2d3e]" : "bg-[#e8ebf2]"
-        }`}
+        className={`w-full max-w-4xl flex rounded-xl p-1 mb-6 sm:mb-8 ${isTheme ? "bg-[#1a1d2a] border border-[#2a2d3e]" : "bg-[#e8ebf2]"
+          }`}
       >
         {/* FILE TAB */}
         <button
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${
-            sendFile
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${sendFile
               ? isTheme
                 ? "bg-[#2a2d3e] text-white shadow-sm border border-[#3a3f55]"
                 : "bg-white shadow-sm text-[#1a1d2e] border border-white/80"
               : isTheme
                 ? "text-[#8b92b3] hover:text-slate-300"
                 : "text-[#9097b0] hover:text-[#5b6178]"
-          }`}
+            }`}
           onClick={() => setSendFile(true)}
         >
           <svg
@@ -262,15 +265,14 @@ export default function Send() {
 
         {/* TEXT TAB */}
         <button
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${
-            !sendFile
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${!sendFile
               ? isTheme
                 ? "bg-[#2a2d3e] text-white shadow-sm border border-[#3a3f55]"
                 : "bg-white shadow-sm text-[#1a1d2e] border border-white/80"
               : isTheme
                 ? "text-[#8b92b3] hover:text-slate-300"
                 : "text-[#9097b0] hover:text-[#5b6178]"
-          }`}
+            }`}
           onClick={() => setSendFile(false)}
         >
           <svg
@@ -319,6 +321,7 @@ export default function Send() {
                 setServerStatus("starting");
                 await proceedWithSend(null, text);
                 setServerStatus("active");
+                scrollToPreview();
                 Toast.fire({
                   icon: "success",
                   title: "Text shared successfully!",
@@ -331,6 +334,9 @@ export default function Send() {
           />
         )}
       </div>
+
+      {/* Shared Data Preview */}
+      <SharedDataPreview containerRef={previewRef} />
 
       {/* Active Server Info (Below Picker) */}
       {isServerActive && (
@@ -362,6 +368,7 @@ export default function Send() {
             await proceedWithSend(droppedFiles, null);
             setShowConfirmation(false);
             setServerStatus("active");
+            scrollToPreview();
           } catch (err) {
             setError({ isOpen: true, message: "Failed to send files" });
             setServerStatus("closed");

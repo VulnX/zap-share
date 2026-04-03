@@ -10,6 +10,7 @@ import {
   Button,
   Typography,
 } from "@material-tailwind/react";
+import { formatBytes } from "../Utils/format";
 
 interface SendConfirmationDialogProps {
   isOpen: boolean;
@@ -29,16 +30,6 @@ const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
   const { isTheme } = useTheme();
   const [fileNames, setFileNames] = useState("");
   const [totalSize, setTotalSize] = useState("");
-
-  const formatBytes = (bytes: number, decimals = 2) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const dm = Math.max(0, decimals);
-    const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    const size = parseFloat((bytes / Math.pow(k, i)).toFixed(dm));
-    return `${size} ${sizes[i]}`;
-  };
 
   useEffect(() => {
     if (!isOpen || fileList.length === 0) return;
@@ -65,7 +56,7 @@ const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
   return (
     <Dialog
       open={isOpen}
-      handler={isLoading ? () => {} : onCancel}
+      handler={isLoading ? () => { } : onCancel}
       className={
         isTheme
           ? "!bg-[#1a1d2a] text-white border border-[#2a2d3e]"
