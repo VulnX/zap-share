@@ -11,39 +11,33 @@ use std::{
 };
 
 use log::{debug, info};
+use network_interface::{NetworkInterfaceConfig};
 use tauri::{Emitter, Manager, Runtime, Window};
 
 use crate::{api, models, server};
 
 static BCAST_PORT: u16 = 54321;
 
-// TODO: Doesn't work on SVKM network. Fix pls
-fn detect_broadcast_target(socket: &UdpSocket) -> SocketAddrV4 {
+fn detect_broadcast_addr() -> Ipv4Addr {
     debug!("Detecting broadcast target address...");
-    let ip = api::get_local_ip();
-    let ip = Ipv4Addr::from_str(&ip).unwrap();
-    let [a, b, c, _d] = ip.octets();
-    let candidates = [
-        Ipv4Addr::new(a, b, c, 255),
-        Ipv4Addr::new(a, b, 255, 255),
-        Ipv4Addr::new(a, 255, 255, 255),
-        Ipv4Addr::new(255, 255, 255, 255),
-    ];
-    for addr in candidates {
-        let target = SocketAddrV4::new(addr, BCAST_PORT);
-        match socket.send_to(&[0u8; 1], target) {
-            Ok(_) => {
-                debug!("Probe successful for broadcast target: {addr}");
-                info!("using broadcast address: {addr}");
-                return target;
-            }
-            Err(e) => {
-                debug!("broadcast {addr} failed: {e}");
-            }
+
+    let local_ip = api::get_local_ip();
+    let local_ip = Ipv4Addr::from_str(&local_ip).unwrap();
+    let net_ifaces = network_interface::NetworkInterface::show().unwrap();
+
+    for iface in net_ifaces {
+        for addr in &iface.addr {
+            if let network_interface::Addr::V4(addr) = addr {
+                if addr.ip == local_ip {
+                    info!("Found interface: {iface:#?}");
+                    info!("Found addr:{addr:#?}");
+                    return addr.broadcast.unwrap();
+                }
+            };
         }
     }
 
-    unreachable!("should have found a valid bcast candidate");
+    unreachable!("should have found a valid broadcast address");
 }
 
 fn get_device_type() -> String {
@@ -70,10 +64,10 @@ pub fn emit_info(config: models::DeviceConfig, shutdown: Arc<AtomicBool>) {
     };
     let payload = serde_json::to_string(&payload).unwrap();
     debug!("sending {payload}");
-    let target = detect_broadcast_target(&socket);
+    let bcast_addr = detect_broadcast_addr();
+    let target = SocketAddrV4::new(bcast_addr, BCAST_PORT);
     while !shutdown.load(Ordering::Relaxed) {
         socket.send_to(payload.as_bytes(), target).unwrap();
-        // debug!("Payload sent to {target}"); // maybe too noisy for 500ms
         thread::sleep(Duration::from_millis(500));
     }
     debug!("Broadcast emission thread shutting down");
