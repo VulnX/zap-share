@@ -2,9 +2,7 @@ import { useTheme } from "../Context/Theme";
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { DeviceConfig } from "../types";
-import {
-  Switch,
-} from "@material-tailwind/react";
+import { Switch } from "@material-tailwind/react";
 import { SidePanel } from "./SidePanel";
 import { StatusSource } from "./StatusSource";
 
@@ -90,10 +88,7 @@ export interface NavigationProps {
   setTab: (tab: string) => void;
 }
 
-export default function Navigation({
-  tab,
-  setTab,
-}: NavigationProps) {
+export default function Navigation({ tab, setTab }: NavigationProps) {
   const { isTheme } = useTheme();
   const [openSettings, setOpenSettings] = useState(false);
 
@@ -149,8 +144,18 @@ export default function Navigation({
           }`}
           onClick={() => handleTabSwitch("send")}
         >
-          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          <svg
+            className="w-4 h-4 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+            />
           </svg>
           <span className="text-sm font-semibold">Send</span>
           {tab === "send" && (
@@ -171,8 +176,18 @@ export default function Navigation({
           }`}
           onClick={() => handleTabSwitch("recv")}
         >
-          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          <svg
+            className="w-4 h-4 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 14l-7 7m0 0l-7-7m7 7V3"
+            />
           </svg>
           <span className="text-sm font-semibold">Receive</span>
           {tab === "recv" && (

@@ -56,7 +56,7 @@ const SendConfirmationDialog: React.FC<SendConfirmationDialogProps> = ({
   return (
     <Dialog
       open={isOpen}
-      handler={isLoading ? () => { } : onCancel}
+      handler={isLoading ? () => {} : onCancel}
       className={
         isTheme
           ? "!bg-[#1a1d2a] text-white border border-[#2a2d3e]"

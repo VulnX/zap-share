@@ -53,10 +53,11 @@ const FilePicker = ({
           );
         }
       }}
-      className={`w-full h-56 sm:h-64 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${isTheme
+      className={`w-full h-56 sm:h-64 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${
+        isTheme
           ? "border-[#2a2d3e] hover:border-indigo-500/50 hover:bg-indigo-500/5 text-[#8b92b3] hover:text-indigo-300"
           : "border-[#d1d5e0] hover:border-indigo-400/50 hover:bg-indigo-50/50 text-[#9097b0] hover:text-indigo-500"
-        }`}
+      }`}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -93,18 +94,20 @@ const TextSender = ({ onSendText }: { onSendText: (text: string) => void }) => {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        className={`w-full h-56 sm:h-64 p-4 rounded-2xl resize-none border outline-none transition-colors focus:ring-2 text-sm leading-relaxed ${isTheme
+        className={`w-full h-56 sm:h-64 p-4 rounded-2xl resize-none border outline-none transition-colors focus:ring-2 text-sm leading-relaxed ${
+          isTheme
             ? "bg-[#1a1d2a] text-white border-[#2a2d3e] placeholder-[#5a6080] focus:border-indigo-500/50 focus:ring-indigo-500/20"
             : "bg-white text-[#1a1d2e] border-[#d1d5e0] placeholder-[#9097b0] focus:border-indigo-400 focus:ring-indigo-100"
-          }`}
+        }`}
         placeholder="Type your message here..."
       />
       <button
         onClick={() => text.trim() && onSendText(text)}
-        className={`w-full mt-4 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${isTheme
+        className={`w-full mt-4 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+          isTheme
             ? "bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-40 shadow-lg shadow-indigo-900/30"
             : "bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-40 shadow-md shadow-indigo-200/60"
-          }`}
+        }`}
         disabled={!text.trim()}
       >
         Share Text
@@ -140,7 +143,10 @@ const ErrorDialog: React.FC<{
       >
         Error
       </DialogHeader>
-      <DialogBody className={isTheme ? "!text-[#c4c9de]" : "text-[#5b6178]"} {...({} as any)}>
+      <DialogBody
+        className={isTheme ? "!text-[#c4c9de]" : "text-[#5b6178]"}
+        {...({} as any)}
+      >
         {error.message}
       </DialogBody>
       <DialogFooter {...({} as any)}>
@@ -173,10 +179,12 @@ export default function Send() {
 
   const scrollToPreview = () => {
     setTimeout(() => {
-      previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      previewRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     }, 100);
   };
-
 
   useEffect(() => {
     if (!hasRun.current) {
@@ -202,14 +210,17 @@ export default function Send() {
   useEffect(() => {
     let unlisten: (() => void) | undefined;
     const setup = async () => {
-      unlisten = await listen<ProgressUpdatePayload>("progress-update", (ev) => {
-        if (ev.payload.progress === 100) {
-          Toast.fire({
-            icon: "success",
-            title: "Successfully shared!",
-          });
-        }
-      });
+      unlisten = await listen<ProgressUpdatePayload>(
+        "progress-update",
+        (ev) => {
+          if (ev.payload.progress === 100) {
+            Toast.fire({
+              icon: "success",
+              title: "Successfully shared!",
+            });
+          }
+        },
+      );
     };
     setup();
     return () => unlisten?.();
@@ -222,8 +233,14 @@ export default function Send() {
       {/* Header */}
       <div className="w-full max-w-4xl flex justify-between items-center mb-6 sm:mb-8">
         <div>
-          <h1 className={`text-xl sm:text-2xl font-bold ${isTheme ? "text-white" : "text-gray-800"}`}>Share</h1>
-          <p className={`text-sm mt-1 ${isTheme ? "!text-[#c4c9de]" : "!text-[#9097b0]"}`}>
+          <h1
+            className={`text-xl sm:text-2xl font-bold ${isTheme ? "text-white" : "text-gray-800"}`}
+          >
+            Share
+          </h1>
+          <p
+            className={`text-sm mt-1 ${isTheme ? "!text-[#c4c9de]" : "!text-[#9097b0]"}`}
+          >
             Choose what you want to share
           </p>
         </div>
@@ -231,19 +248,21 @@ export default function Send() {
 
       {/* Tabs */}
       <div
-        className={`w-full max-w-4xl flex rounded-xl p-1 mb-6 sm:mb-8 ${isTheme ? "bg-[#1a1d2a] border border-[#2a2d3e]" : "bg-[#e8ebf2]"
-          }`}
+        className={`w-full max-w-4xl flex rounded-xl p-1 mb-6 sm:mb-8 ${
+          isTheme ? "bg-[#1a1d2a] border border-[#2a2d3e]" : "bg-[#e8ebf2]"
+        }`}
       >
         {/* FILE TAB */}
         <button
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${sendFile
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${
+            sendFile
               ? isTheme
                 ? "bg-[#2a2d3e] text-white shadow-sm border border-[#3a3f55]"
                 : "bg-white shadow-sm text-[#1a1d2e] border border-white/80"
               : isTheme
                 ? "text-[#8b92b3] hover:text-slate-300"
                 : "text-[#9097b0] hover:text-[#5b6178]"
-            }`}
+          }`}
           onClick={() => setSendFile(true)}
         >
           <svg
@@ -265,14 +284,15 @@ export default function Send() {
 
         {/* TEXT TAB */}
         <button
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${!sendFile
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${
+            !sendFile
               ? isTheme
                 ? "bg-[#2a2d3e] text-white shadow-sm border border-[#3a3f55]"
                 : "bg-white shadow-sm text-[#1a1d2e] border border-white/80"
               : isTheme
                 ? "text-[#8b92b3] hover:text-slate-300"
                 : "text-[#9097b0] hover:text-[#5b6178]"
-            }`}
+          }`}
           onClick={() => setSendFile(false)}
         >
           <svg
@@ -341,8 +361,12 @@ export default function Send() {
       {/* Active Server Info (Below Picker) */}
       {isServerActive && (
         <div className="w-full max-w-4xl mt-12 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className={`p-6 rounded-3xl border ${isTheme ? "bg-[#13151f] border-[#2a2d3e]" : "bg-white border-gray-100 shadow-xl shadow-gray-200/50"}`}>
-            <h3 className={`text-lg font-bold mb-4 ${isTheme ? "text-white" : "text-gray-900"}`}>
+          <div
+            className={`p-6 rounded-3xl border ${isTheme ? "bg-[#13151f] border-[#2a2d3e]" : "bg-white border-gray-100 shadow-xl shadow-gray-200/50"}`}
+          >
+            <h3
+              className={`text-lg font-bold mb-4 ${isTheme ? "text-white" : "text-gray-900"}`}
+            >
               Active Transfer Session
             </h3>
             <ProgressBar />

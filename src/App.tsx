@@ -32,7 +32,7 @@ function App() {
       <ThemeProvider>
         <QrProvider>
           <SharedDataProvider>
-            <Choice children={null}/>
+            <Choice children={null} />
           </SharedDataProvider>
         </QrProvider>
       </ThemeProvider>

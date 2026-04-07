@@ -57,7 +57,10 @@ pub async fn handle_request(
 
     let request_id = req.id.clone();
     debug!("Incoming transfer request: {:#?}", req);
-    debug!("Request type: {}, filename: {:?}, size: {:?}", req.r#type, req.filename, req.filesize);
+    debug!(
+        "Request type: {}, filename: {:?}, size: {:?}",
+        req.r#type, req.filename, req.filesize
+    );
 
     let (tx, rx) = oneshot::channel();
     {
@@ -265,7 +268,10 @@ pub async fn receive_file(
 }
 
 fn get_unique_file_path(write_path: &mut PathBuf, filename: &str) {
-    debug!("Resolving unique file path for: {} in {:?}", filename, write_path);
+    debug!(
+        "Resolving unique file path for: {} in {:?}",
+        filename, write_path
+    );
     if !write_path.join(filename).exists() {
         write_path.push(filename);
         debug!("Target path is unique: {:?}", write_path);

@@ -4,7 +4,7 @@ use crate::{
 };
 use actix_web::{middleware::Logger, rt, web, App, HttpServer, Responder};
 use futures_util::stream;
-use log::{debug, info};
+use log::debug;
 use std::sync::{mpsc, Arc, OnceLock, RwLock};
 use tauri::Runtime;
 use tokio::sync::broadcast;
@@ -88,7 +88,6 @@ pub fn start_server<R: Runtime>(window: tauri::Window<R>, tx: mpsc::Sender<u16>)
     // this function blocks on the server future.
     drop(guard);
     rt::System::new().block_on(server).unwrap();
-    info!("SERVER BAND HO GAYA");
 }
 
 async fn handle_root() -> web::Redirect {

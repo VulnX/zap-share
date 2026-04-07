@@ -42,9 +42,11 @@ pub async fn get_shared_content() -> impl Responder {
         debug!("Request forbidden: not in Send mode");
         return HttpResponse::Forbidden().body("Forbidden");
     };
-    debug!("Returning shared content: {} files, text length: {:?}", 
-           data.files.as_ref().map(|f| f.len()).unwrap_or(0),
-           data.text.as_ref().map(|t| t.len()));
+    debug!(
+        "Returning shared content: {} files, text length: {:?}",
+        data.files.as_ref().map(|f| f.len()).unwrap_or(0),
+        data.text.as_ref().map(|t| t.len())
+    );
     HttpResponse::Ok().json(data)
 }
 
@@ -85,7 +87,10 @@ pub async fn get_file(window: web::Data<Window>, req: HttpRequest) -> impl Respo
         debug!("File ID {} not found in shared files list", file_id);
         return HttpResponse::NotFound().body("File not found");
     };
-    debug!("Matched File ID {} to file: {}", file_id, file_data.filename);
+    debug!(
+        "Matched File ID {} to file: {}",
+        file_id, file_data.filename
+    );
 
     let (file, _) = api::open_file(&file_data.filepath, &window);
     let file: tokio::fs::File = tokio::fs::File::from_std(file);
@@ -122,9 +127,16 @@ pub async fn get_file(window: web::Data<Window>, req: HttpRequest) -> impl Respo
                     if payload.progress < rounded {
                         payload.progress = rounded;
                         window.emit("progress-update", &payload).unwrap();
-                        debug!("Progress update for {}: {:.1}%", payload.filename, payload.progress);
+                        debug!(
+                            "Progress update for {}: {:.1}%",
+                            payload.filename, payload.progress
+                        );
                     }
-                    debug!("Read chunk of size {} from {}", chunk.len(), payload.filename);
+                    debug!(
+                        "Read chunk of size {} from {}",
+                        chunk.len(),
+                        payload.filename
+                    );
                     Some((
                         Ok::<_, Error>(web::Bytes::from(chunk)),
                         (file, transferred, payload, window, term_flag),

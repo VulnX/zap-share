@@ -40,7 +40,9 @@ function TextCard({
   return (
     <div
       className={`rounded-2xl p-4 border ${
-        dark ? "bg-[#1a1d2a] border-[#2a2d3e] text-white" : "bg-white border-gray-200"
+        dark
+          ? "bg-[#1a1d2a] border-[#2a2d3e] text-white"
+          : "bg-white border-gray-200"
       } shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -95,7 +97,9 @@ function FileCard({
   return (
     <div
       className={`rounded-2xl p-4 border ${
-        dark ? "bg-[#1a1d2a] border-[#2a2d3e] text-white" : "bg-white border-gray-200"
+        dark
+          ? "bg-[#1a1d2a] border-[#2a2d3e] text-white"
+          : "bg-white border-gray-200"
       } shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2`}
     >
       <div className="flex items-center gap-2 mb-3">
@@ -242,7 +246,8 @@ function RequestCard({
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function Recieve() {
   const { isTheme: dark } = useTheme();
-  const { setQrCode, setQrText, setServerStatus, serverStatus } = useQrContext();
+  const { setQrCode, setQrText, setServerStatus, serverStatus } =
+    useQrContext();
   const [items, setItems] = useState<ReceivedItem[]>([]);
   const startedRef = useRef(false);
   const feedRef = useRef<HTMLDivElement>(null);
@@ -373,15 +378,21 @@ export default function Recieve() {
     <div
       className={`flex flex-col h-full overflow-hidden ${dark ? "bg-[#13151f]" : "bg-white"}`}
     >
-      <div 
-        ref={feedRef} 
+      <div
+        ref={feedRef}
         className="flex-1 overflow-y-auto pt-8 sm:pt-10 px-4 sm:px-6 flex flex-col items-center"
       >
         <div className="w-full max-w-4xl pb-24">
           <div className="flex justify-between items-center mb-6 sm:mb-8">
             <div>
-              <h1 className={`text-xl sm:text-2xl font-bold ${dark ? "text-white" : "text-gray-800"}`}>Received</h1>
-              <p className={`text-sm mt-1 ${dark ? "!text-[#c4c9de]" : "!text-[#9097b0]"}`}>
+              <h1
+                className={`text-xl sm:text-2xl font-bold ${dark ? "text-white" : "text-gray-800"}`}
+              >
+                Received
+              </h1>
+              <p
+                className={`text-sm mt-1 ${dark ? "!text-[#c4c9de]" : "!text-[#9097b0]"}`}
+              >
                 Manage your incoming transfers
               </p>
             </div>
@@ -389,7 +400,9 @@ export default function Recieve() {
               <button
                 onClick={clearItems}
                 className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-lg transition-colors ${
-                  dark ? "text-gray-400 hover:text-red-400 bg-gray-500/10" : "text-gray-500 hover:text-red-600 bg-gray-100"
+                  dark
+                    ? "text-gray-400 hover:text-red-400 bg-gray-500/10"
+                    : "text-gray-500 hover:text-red-600 bg-gray-100"
                 }`}
               >
                 Clear All
@@ -416,15 +429,29 @@ export default function Recieve() {
             })}
 
             {!isRunning && !starting && items.length === 0 && (
-              <div className={`flex flex-col items-center py-20 gap-4 ${dark ? "text-gray-500" : "text-gray-400"}`}>
+              <div
+                className={`flex flex-col items-center py-20 gap-4 ${dark ? "text-gray-500" : "text-gray-400"}`}
+              >
                 <div className="w-16 h-16 rounded-full bg-gray-500/5 flex items-center justify-center">
-                  <svg className="w-8 h-8 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  <svg
+                    className="w-8 h-8 opacity-20"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                    />
                   </svg>
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-bold">Server Offline</p>
-                  <p className="text-xs mt-1">Start the server to receive files</p>
+                  <p className="text-xs mt-1">
+                    Start the server to receive files
+                  </p>
                 </div>
               </div>
             )}
@@ -436,14 +463,26 @@ export default function Recieve() {
                 <div className="relative">
                   <div className="absolute inset-0 animate-ping rounded-full bg-indigo-500/20"></div>
                   <div className="relative w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center">
-                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-7-7l7 7-7 7" />
+                    <svg
+                      className="w-8 h-8"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 12h14m-7-7l7 7-7 7"
+                      />
                     </svg>
                   </div>
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-bold">Ready to Receive</p>
-                  <p className="text-xs mt-1 opacity-60">Waiting for incoming transfers...</p>
+                  <p className="text-xs mt-1 opacity-60">
+                    Waiting for incoming transfers...
+                  </p>
                 </div>
               </div>
             )}

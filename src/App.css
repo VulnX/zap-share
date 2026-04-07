@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
 /* // Dark mode palette used consistently:
 // bg-[#13151f]   → page background
 // bg-[#1a1d2a]   → card surface / nav
@@ -47,7 +46,12 @@ body,
   overflow: hidden;
   margin: 0;
   padding: 0;
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -119,7 +123,6 @@ textarea,
 }
 
 @keyframes pulseGlow {
-
   0%,
   100% {
     box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.3);

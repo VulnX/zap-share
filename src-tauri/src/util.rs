@@ -49,7 +49,10 @@ pub fn create_device_config(
     std::fs::create_dir_all(&config_dir)?; // Ensure exists
     let config_file_path = config_dir.join("config.json");
     if config_file_path.exists() {
-        debug!("Configuration file already exists at {:?}", config_file_path);
+        debug!(
+            "Configuration file already exists at {:?}",
+            config_file_path
+        );
         // If already exists, do NOT overwrite
         return Ok(());
     }

@@ -51,7 +51,9 @@ export function ProgressBar() {
           <div
             key={id}
             className={`rounded-2xl p-4 border transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${
-              dark ? "bg-[#1a1d2a] border-[#2a2d3e] text-white" : "bg-white border-gray-200 shadow-sm"
+              dark
+                ? "bg-[#1a1d2a] border-[#2a2d3e] text-white"
+                : "bg-white border-gray-200 shadow-sm"
             }`}
           >
             <div className="flex items-center gap-2 mb-3">
@@ -69,7 +71,10 @@ export function ProgressBar() {
                   <span
                     className={`text-xs ${dark ? "text-[#9ba2c0]" : "text-gray-500"}`}
                   >
-                    {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date().toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 </div>
                 <p

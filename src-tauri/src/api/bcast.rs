@@ -103,7 +103,10 @@ pub fn recv_info<R: Runtime>(
 
     // Bind to 0.0.0.0 so we receive on all interfaces.
     let socket = UdpSocket::bind(("0.0.0.0", BCAST_PORT)).unwrap();
-    info!("UDP socket bound to port {} for multicast reception", BCAST_PORT);
+    info!(
+        "UDP socket bound to port {} for multicast reception",
+        BCAST_PORT
+    );
 
     // Join the multicast group on every local interface.
     for local_ip in local_ipv4_addrs() {
@@ -122,9 +125,7 @@ pub fn recv_info<R: Runtime>(
             .unwrap();
         match socket.recv_from(&mut buf) {
             Ok((amt, from)) => {
-                info!("Received {} bytes on UDP from {:?}", amt, from);
-                if let Ok(payload) =
-                    serde_json::from_slice::<models::MulticastPayload>(&buf[..amt])
+                if let Ok(payload) = serde_json::from_slice::<models::MulticastPayload>(&buf[..amt])
                 {
                     info!("Decoded multicast payload: {payload:#?}");
                     if payload.fingerprint == config.fingerprint {

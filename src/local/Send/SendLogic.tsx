@@ -85,7 +85,10 @@ export function SendLogic() {
     }
   };
 
-  const saveSharedDataToState = (text: string | null, files: string[] | null) => {
+  const saveSharedDataToState = (
+    text: string | null,
+    files: string[] | null,
+  ) => {
     if (text !== null) {
       // Text was shared
       setText(text);

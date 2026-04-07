@@ -57,17 +57,17 @@ export default function Choice({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className={`h-screen w-screen flex flex-col overflow-hidden transition-colors duration-300 ${
-      isTheme ? "bg-[#13151f] text-white" : "bg-[#f8f9fc] text-black"
-    }`}>
+    <div
+      className={`h-screen w-screen flex flex-col overflow-hidden transition-colors duration-300 ${
+        isTheme ? "bg-[#13151f] text-white" : "bg-[#f8f9fc] text-black"
+      }`}
+    >
       <Navigation tab={tab} setTab={setTab} />
-      <main className={`flex-1 overflow-hidden relative ${isTheme ? "bg-[#13151f]" : "bg-[#f8f9fc]"}`}>
+      <main
+        className={`flex-1 overflow-hidden relative ${isTheme ? "bg-[#13151f]" : "bg-[#f8f9fc]"}`}
+      >
         <div className="h-full overflow-y-auto">
-          {tab === "send" ? (
-            <SendDesktop />
-          ) : (
-            <Recieve />
-          )}
+          {tab === "send" ? <SendDesktop /> : <Recieve />}
         </div>
       </main>
       {children}
