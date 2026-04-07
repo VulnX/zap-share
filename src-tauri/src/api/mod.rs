@@ -226,6 +226,19 @@ pub async fn send_text_to<R: Runtime>(
             let transfer_resp: models::TransferResponse = resp.json().await.unwrap();
             if transfer_resp.accepted {
                 if let Some(token) = transfer_resp.token {
+                    // It is possible that main server stopped, stop this process
+                    let server = tokio::task::spawn_blocking(|| {
+                        let guard = SERVER_HANDLE.lock().unwrap();
+                        info!("server guard is {guard:#?}");
+                        guard.clone()
+                    })
+                    .await
+                    .unwrap();
+                    if server.is_none() {
+                        info!("server is none");
+                        return;
+                    }
+
                     // 2. Send Text with token
                     info!("sending text to {text_endpoint:#?}");
                     client
@@ -304,22 +317,23 @@ pub fn respond_to_transfer_request(id: String, accepted: bool) {
 #[allow(dead_code)]
 #[tauri::command]
 pub fn stop_server() {
-    // let mut handle_guard = SERVER_HANDLE.lock().unwrap();
-    // if let Some(server_handle) = handle_guard.take() {
-    //     let rt = tokio::runtime::Runtime::new().unwrap();
-    //     rt.block_on(async {
-    //         server_handle.stop(true).await;
-    //     });
-    // }
-    // let mut thread_guard = BCAST_THREAD.lock().unwrap();
-    // if let Some(bcast_thread) = thread_guard.take() {
-    //     bcast_thread.shutdown.store(true, Ordering::Relaxed);
-    //     // Ignore the error
-    //     let _ = bcast_thread.handle.join();
-    //     *thread_guard = None;
-    // }
-    // let mut manager_guard = TRANSFER_MANAGER.lock().unwrap();
-    // *manager_guard = None;
+    clear_server_state();
+    let mut handle_guard = SERVER_HANDLE.lock().unwrap();
+    if let Some(server_handle) = handle_guard.take() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            server_handle.stop(true).await;
+        });
+    }
+    let mut thread_guard = BCAST_THREAD.lock().unwrap();
+    if let Some(bcast_thread) = thread_guard.take() {
+        bcast_thread.shutdown.store(true, Ordering::Relaxed);
+        // Ignore the error
+        let _ = bcast_thread.handle.join();
+        *thread_guard = None;
+    }
+    let mut manager_guard = TRANSFER_MANAGER.lock().unwrap();
+    *manager_guard = None;
 }
 
 pub fn get_local_ip() -> String {
@@ -351,31 +365,17 @@ pub fn get_local_ip() -> String {
 ///
 /// In case of any detected errors, corresponding `Error` type will be returned
 fn start_server<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
-    // Clear ongoing requests by toggling the termination flag
-    let mut term_flag_guard = TERM_FLAG.write().unwrap();
-    if let Some(old_flag) = term_flag_guard.take() {
-        old_flag.store(true, Ordering::Relaxed);
-        debug!("sent termination to previous connections");
-    }
-    *term_flag_guard = Some(Arc::new(AtomicBool::new(false)));
-    drop(term_flag_guard);
-
-    // Clear pending upload requests
-    debug!("resetting manager...");
-    let mut transfer_manager_guard = TRANSFER_MANAGER.lock().unwrap();
-    if let Some(manager) = transfer_manager_guard.as_mut() {
-        let mut pending_guard = manager.pending.lock().unwrap();
-        pending_guard.clear();
-        let mut tokens_guard = manager.tokens.lock().unwrap();
-        tokens_guard.clear();
-    }
-    drop(transfer_manager_guard);
-    debug!("manager reset");
+    clear_server_state();
 
     let server_guard = SERVER_HANDLE.lock().unwrap();
     if server_guard.is_some() {
         // Server already running
+
         debug!("Server already running, triggering mode-switch reload...");
+
+        // Setup `BCAST_THREAD`
+        bcast::configure_bcast(window);
+
         let _ = server::get_event_sender().send("reload".to_string());
         let server_status = server::SERVER_STATUS.read().unwrap();
 
@@ -446,4 +446,34 @@ pub fn open_file<R: Runtime>(
             (file, path)
         }
     }
+}
+
+fn clear_server_state() {
+    // Clear ongoing requests by toggling the termination flag
+    let mut term_flag_guard = TERM_FLAG.write().unwrap();
+    if let Some(old_flag) = term_flag_guard.take() {
+        old_flag.store(true, Ordering::Relaxed);
+        debug!("sent termination to previous connections");
+    }
+    *term_flag_guard = Some(Arc::new(AtomicBool::new(false)));
+    drop(term_flag_guard);
+
+    // Clear pending upload requests
+    debug!("resetting manager...");
+    let mut transfer_manager_guard = TRANSFER_MANAGER.lock().unwrap();
+    if let Some(manager) = transfer_manager_guard.as_mut() {
+        let mut pending_guard = manager.pending.lock().unwrap();
+
+        // Reject all existing requests
+        for (_, tx) in pending_guard.drain() {
+            let _ = tx.send(false);
+        }
+
+        pending_guard.clear();
+
+        let mut tokens_guard = manager.tokens.lock().unwrap();
+        tokens_guard.clear();
+    }
+    drop(transfer_manager_guard);
+    debug!("manager reset");
 }
