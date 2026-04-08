@@ -122,7 +122,6 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       const listener = await listen<string>("device-list-updated", (event) => {
         const parsedDevices: ServerConfiguration[] = JSON.parse(event.payload);
         setNearbyDevices(parsedDevices);
-        console.log(parsedDevices);
       });
 
       listeners.push(listener);
@@ -305,8 +304,6 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
   useEffect(() => {
     if (!hasRun.current) {
       hasRun.current = true;
-      console.log("QR Code URL updated:", qrCode);
-      console.log(qrText);
     }
   }, []);
 

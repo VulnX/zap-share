@@ -5,7 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import QRCode from "qrcode";
 import { flushSync } from "react-dom";
 
-export function StatusSource() {
+export function StatusSource({ activeTab }: { activeTab: string }) {
   const { isTheme: dark } = useTheme();
   const {
     qrCode,
@@ -255,10 +255,11 @@ export function StatusSource() {
         )}
 
         {/* Global Stop/Start Toggle */}
+
         <button
           onClick={toggleServer}
           disabled={serverStatus === "starting"}
-          className={`text-[10px] sm:text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition-all shadow-sm order-3 ${
+          className={`${activeTab === "recv" || serverStatus == "active" ? "visible" : "invisible"} text-[10px] sm:text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition-all shadow-sm order-3 ${
             serverStatus === "active"
               ? "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/30"
               : "bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white border border-green-500/30"

@@ -201,7 +201,7 @@ export default function Navigation({ tab, setTab }: NavigationProps) {
         />
       </nav>
 
-      <StatusSource />
+      <StatusSource activeTab={tab} />
     </>
   );
 }

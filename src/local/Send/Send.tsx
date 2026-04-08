@@ -160,9 +160,15 @@ const ErrorDialog: React.FC<{
 
 import { DeviceList, ProgressBar } from "./SendQrCode";
 import { useQrContext } from "../Context/QrContext";
-import { ProgressUpdatePayload } from "../types";
+import { ProgressUpdatePayload, SharedFiles, SharedText } from "../types";
 
-export default function Send() {
+export default function Send({
+  sharedData,
+  onProcessed,
+}: {
+  sharedData: SharedText | SharedFiles | null;
+  onProcessed: () => void;
+}) {
   const { proceedWithSend } = SendLogic();
   const { isTheme } = useTheme();
   const { serverStatus, setServerStatus } = useQrContext();
@@ -185,6 +191,91 @@ export default function Send() {
       });
     }, 100);
   };
+
+  useEffect(() => {
+    if (!sharedData) return;
+
+    let isMounted = true;
+
+    const processSharedData = async () => {
+      try {
+        // ✅ TEXT HANDLING
+        if ("SharedText" in sharedData) {
+          const text =
+            (sharedData.SharedText ?? "")
+              .split("\n")[0]
+              .replace(/^"|"$/g, "")
+              .trim() || "";
+
+          if (!text) return;
+
+          setSendFile(false);
+
+          Toast.fire({
+            icon: "info",
+            title: "Sharing text...",
+          });
+
+          setServerStatus("starting");
+
+          await proceedWithSend(null, text);
+
+          if (!isMounted) return;
+
+          setServerStatus("active");
+          scrollToPreview();
+
+          Toast.fire({
+            icon: "success",
+            title: "Text shared successfully!",
+          });
+        }
+
+        // ✅ FILE HANDLING
+        else if ("URIList" in sharedData && sharedData.URIList) {
+          let uriArray: string[] = [];
+
+          const raw = sharedData.URIList;
+
+          if (typeof raw === "string") {
+            try {
+              uriArray = JSON.parse(raw);
+            } catch {
+              uriArray = raw
+                .replace(/^\[|\]$/g, "")
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+            }
+          } else {
+            uriArray = raw;
+          }
+
+          if (!uriArray.length) return;
+
+          if (!isMounted) return;
+
+          setDroppedFiles(uriArray);
+          setShowConfirmation(true);
+        }
+
+        // ✅ IMPORTANT: delay clearing parent state
+        setTimeout(() => {
+          if (isMounted) onProcessed();
+        }, 300);
+      } catch (err) {
+        console.error("Processing shared data failed:", err);
+        setError({ isOpen: true, message: "Failed to process shared data" });
+        setServerStatus("closed");
+      }
+    };
+
+    processSharedData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sharedData]);
 
   useEffect(() => {
     if (!hasRun.current) {

@@ -34,7 +34,6 @@ export function SendLogic() {
       // Invoke Tauri command to send files
       let response: SendFileResponse | SendTextResponse | null = null;
       if (text === null || text === "") {
-        console.log(files);
 
         const filePairs: string[][] = await Promise.all(
           Array.from(files).map(async (file) => {
@@ -42,13 +41,10 @@ export function SendLogic() {
             return [file, name];
           }),
         );
-        console.log("File Pairs:", filePairs);
-        console.log("sending :", files);
         response = await invoke<SendFileResponse>("send_file", {
           files: filePairs,
         });
       } else {
-        // console.log("invoked send text:", text);
         response = await invoke<SendTextResponse>("send_text", { text });
       }
       // Check if response has valid IP and port
@@ -58,13 +54,10 @@ export function SendLogic() {
         flushSync(() => {
           setQrText(qr);
         });
-        console.log("Generating QR for URL:", qr);
 
         // Generate QR code URL
         const url = await QRCode.toString(qr, { type: "svg" });
-        console.log(url);
 
-        // console.log("Generated QR Code URL:", url);
 
         // Update state and persist to session storage
         setQrCode(url);

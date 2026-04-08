@@ -33,7 +33,7 @@ export interface SharedText {
   SharedText: string | null;
 }
 export interface SharedFiles {
-  URIList: string[] | null;
+  URIList: string | string[] | null;
 }
 
 export type TransferRequest = {
