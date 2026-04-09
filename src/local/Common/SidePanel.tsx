@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Drawer, Switch } from "@material-tailwind/react";
 import { ToggleThemeButton } from "./Navigation";
 import { invoke } from "@tauri-apps/api/core";
-import { DeviceConfig } from "../types";
+import { AppConfig } from "../types";
 import { useTheme } from "../Context/Theme";
 
 interface SidePanelProps {
@@ -13,31 +13,37 @@ interface SidePanelProps {
 export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
   const closeDrawer = () => setOpenSettings(false);
   const { isTheme: dark } = useTheme();
-  const [endToEndEncryption, setEndToEndEncryption] = useState(true);
-  const [autoDiscovery, setAutoDiscovery] = useState(true);
-  const [deviceName, setDeviceName] = useState("");
-  const hasRun = useRef(false);
+  const [config, setConfig] = useState<AppConfig | null>(null);
 
   useEffect(() => {
-    if (hasRun.current) return;
-    hasRun.current = true;
-    async function getDeviceName() {
-      const config: DeviceConfig = await invoke("get_device_config");
-      setDeviceName(config.name);
+    async function loadConfig() {
+      try {
+        const cfg: AppConfig = await invoke("get_app_config");
+        setConfig(cfg);
+      } catch (error) {
+        console.error("Failed to load config:", error);
+      }
     }
-    getDeviceName();
+    loadConfig();
   }, []);
 
-  const sectionLabelClass = `text-[10px] font-bold uppercase tracking-[0.12em] mb-3 ${
-    dark ? "!text-[#5a6080]" : "!text-[#9097b0]"
-  }`;
+  const updateConfig = async (newConfig: AppConfig) => {
+    setConfig(newConfig);
+    try {
+      await invoke("update_app_config", { newConfig });
+    } catch (error) {
+      console.error("Failed to update config:", error);
+    }
+  };
+
+  const sectionLabelClass = `text-[10px] font-bold uppercase tracking-[0.12em] mb-3 ${dark ? "!text-[#5a6080]" : "!text-[#9097b0]"
+    }`;
   const rowClass = `flex items-center justify-between py-3`;
   const iconClass = `w-5 h-5 ${dark ? "!text-[#8b92b3]" : "!text-[#9097b0]"}`;
   const labelClass = `text-sm font-medium ${dark ? "!text-slate-200" : "!text-[#1a1d2e]"}`;
   const sublabelClass = `text-xs mt-0.5 ${dark ? "!text-[#5a6080]" : "!text-[#9097b0]"}`;
-  const badgeClass = `text-xs font-semibold px-2.5 py-1 rounded-lg ${
-    dark ? "bg-[#2a2d3e] !text-[#8b92b3]" : "bg-[#f1f3f8] !text-[#5b6178]"
-  }`;
+  const badgeClass = `text-xs font-semibold px-2.5 py-1 rounded-lg ${dark ? "bg-[#2a2d3e] !text-[#8b92b3]" : "bg-[#f1f3f8] !text-[#5b6178]"
+    }`;
   const dividerClass = `border-t ${dark ? "border-[#2a2d3e]" : "border-[#e2e5ef]"}`;
 
   return (
@@ -67,11 +73,10 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
             </div>
             <button
               onClick={closeDrawer}
-              className={`p-2 rounded-xl transition-all ${
-                dark
-                  ? "!text-[#8b92b3] hover:bg-[#2a2d3e] hover:!text-slate-200"
-                  : "!text-[#9097b0] hover:bg-[#e8ebf2] hover:!text-[#5b6178]"
-              }`}
+              className={`p-2 rounded-xl transition-all ${dark
+                ? "!text-[#8b92b3] hover:bg-[#2a2d3e] hover:!text-slate-200"
+                : "!text-[#9097b0] hover:bg-[#e8ebf2] hover:!text-[#5b6178]"
+                }`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -149,8 +154,8 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
               </div>
               <div className="ml-3 self-start mt-0.5">
                 <Switch
-                  checked={endToEndEncryption}
-                  onChange={(e) => setEndToEndEncryption(e.target.checked)}
+                  checked={config?.encryption || false}
+                  onChange={(e) => config && updateConfig({ ...config, encryption: e.target.checked })}
                   id="custom-switch-component-2"
                   ripple={false}
                   className={`h-full w-full bg-blue-gray-400 checked:bg-blue-gray-800`}
@@ -218,8 +223,8 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
                 </div>
               </div>
               <Switch
-                checked={autoDiscovery}
-                onChange={(e) => setAutoDiscovery(e.target.checked)}
+                checked={config?.nearby_share || false}
+                onChange={(e) => config && updateConfig({ ...config, nearby_share: e.target.checked })}
                 id="custom-switch-component-3"
                 ripple={false}
                 className="h-full w-full bg-blue-gray-400 checked:bg-blue-gray-800"
@@ -249,11 +254,52 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
                 </svg>
                 <span className={labelClass}>Device Name</span>
               </div>
-              <span
-                className={`text-sm ${dark ? "!text-[#8b92b3]" : "!text-[#9097b0]"} max-w-[40%] truncate text-right`}
-              >
-                {deviceName || "Loading..."}
-              </span>
+              <input
+                type="text"
+                value={config?.device_name || ""}
+                onChange={(e) => config && updateConfig({ ...config, device_name: e.target.value })}
+                className={`text-sm outline-none bg-transparent text-right max-w-[50%] ${dark ? "text-[#8b92b3] focus:text-slate-200" : "text-[#9097b0] focus:text-[#1a1d2e]"
+                  } transition-colors`}
+              />
+            </div>
+
+            {/* Preferred Port */}
+            <div className={rowClass}>
+              <div className="flex items-center gap-3">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className={iconClass}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
+                  />
+                </svg>
+                <div className="flex flex-col">
+                  <span className={labelClass}>Server Port</span>
+                  <span className={sublabelClass}>0 for Auto</span>
+                </div>
+              </div>
+              <input
+                type="number"
+                min="0"
+                max="65535"
+                value={config?.preferred_port ?? 0}
+                onChange={(e) =>
+                  config &&
+                  updateConfig({
+                    ...config,
+                    preferred_port: parseInt(e.target.value) || 0,
+                  })
+                }
+                className={`text-sm outline-none bg-transparent text-right w-20 ${dark ? "text-[#8b92b3] focus:text-slate-200" : "text-[#9097b0] focus:text-[#1a1d2e]"
+                  } transition-colors`}
+              />
             </div>
           </div>
 

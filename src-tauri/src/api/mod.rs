@@ -151,7 +151,7 @@ pub async fn send_files_to<R: Runtime>(
         // 1. Send Request
         let transfer_request = models::TransferRequest {
             id: uuid::Uuid::new_v4().to_string(),
-            device_name: config.name.clone(),
+            device_name: config.device_name.clone(),
             r#type: "file".to_string(),
             filename: Some(filename.clone()),
             filesize: Some(filesize),
@@ -199,7 +199,7 @@ pub async fn send_text_to<R: Runtime>(
     text: String,
     to: models::ServerConfiguration,
 ) {
-    let config = get_device_config(window.clone());
+    let config = get_app_config(window.clone());
     let client = reqwest::Client::new();
     let request_endpoint = format!("http://{}:{}/upload/request", to.ip, to.port);
     let text_endpoint = format!("http://{}:{}/upload/text", to.ip, to.port);
@@ -207,7 +207,7 @@ pub async fn send_text_to<R: Runtime>(
     // 1. Send Request
     let transfer_request = models::TransferRequest {
         id: uuid::Uuid::new_v4().to_string(),
-        device_name: config.name.clone(),
+        device_name: config.device_name.clone(),
         r#type: "text".to_string(),
         filename: None,
         filesize: Some(text.len() as u64),
@@ -262,12 +262,42 @@ pub async fn send_text_to<R: Runtime>(
 
 #[allow(dead_code)]
 #[tauri::command]
-pub fn get_device_config<R: Runtime>(window: Window<R>) -> models::DeviceConfig {
+pub fn get_app_config<R: Runtime>(window: Window<R>) -> models::AppConfig {
     let config_dir = window.path().app_config_dir().unwrap();
-    let config_file_path = config_dir.join("config.json");
+    let config_file_path = config_dir.join("app_config.json");
     let config_file_string = std::fs::read_to_string(config_file_path).unwrap();
-    let config: models::DeviceConfig = serde_json::from_str(&config_file_string).unwrap();
+    let config: models::AppConfig = serde_json::from_str(&config_file_string).unwrap();
     config
+}
+
+#[allow(dead_code)]
+#[tauri::command]
+pub fn update_app_config<R: Runtime>(window: Window<R>, new_config: models::AppConfig) {
+    let config_dir = window.path().app_config_dir().unwrap();
+    let config_file_path = config_dir.join("app_config.json");
+    let config_json = serde_json::to_string_pretty(&new_config).unwrap();
+    std::fs::write(config_file_path, config_json).unwrap();
+
+    // Re-start server if it's running to apply changes (e.g. port)
+    // Actually, any change will cause a server-restart as per user req.
+    let server_running = {
+        let guard = SERVER_HANDLE.lock().unwrap();
+        guard.is_some()
+    };
+
+    if server_running {
+        debug!("Config updated, restarting server...");
+        stop_server();
+        start_server(window);
+    } else {
+        debug!("Config updated, server not running.");
+    }
+}
+
+#[allow(dead_code)]
+#[tauri::command]
+pub fn get_device_config<R: Runtime>(window: Window<R>) -> models::AppConfig {
+    get_app_config(window)
 }
 
 #[allow(dead_code)]

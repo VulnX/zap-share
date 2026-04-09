@@ -11,6 +11,14 @@ export type ServerConfiguration = {
   type: string;
 };
 
+export type AppConfig = {
+  fingerprint: string;
+  device_name: string;
+  preferred_port: number;
+  encryption: boolean;
+  nearby_share: boolean;
+};
+
 export type DeviceConfig = {
   fingerprint: string;
   name: string;

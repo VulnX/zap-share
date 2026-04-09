@@ -18,12 +18,14 @@ pub fn run() {
             api::send_text_to,
             api::recv,
             api::get_shared_data,
+            api::get_app_config,
+            api::update_app_config,
             api::get_device_config,
             api::send_text,
             api::respond_to_transfer_request,
             api::stop_server
         ])
-        .setup(|app| util::create_device_config(app.handle()))
+        .setup(|app| util::init_app_config(app.handle()))
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

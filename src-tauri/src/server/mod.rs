@@ -36,13 +36,14 @@ pub fn start_server<R: Runtime>(window: tauri::Window<R>, tx: mpsc::Sender<u16>)
     let server;
     loop {
         let window_clone = window.clone();
-        let window_data = web::Data::new(window_clone);
+        let window_data = web::Data::new(window_clone.clone());
         let manager = Arc::new(recv::TransferManager::new());
         {
             let mut global_manager = crate::api::TRANSFER_MANAGER.lock().unwrap();
             *global_manager = Some(manager.clone());
         }
         let manager_data = web::Data::from(manager);
+        let config = api::get_app_config(window_clone.clone());
         let _server = HttpServer::new(move || {
             let app = App::new();
             let mut app = app.wrap(Logger::default());
@@ -66,7 +67,7 @@ pub fn start_server<R: Runtime>(window: tauri::Window<R>, tx: mpsc::Sender<u16>)
             app = app.app_data(window_data.clone());
             app
         });
-        if let Ok(_server) = _server.bind(("0.0.0.0", 0)) {
+        if let Ok(_server) = _server.bind(("0.0.0.0", config.preferred_port)) {
             // port `0` triggers automatic random port assignment
             server = _server;
             break;

@@ -11,7 +11,7 @@ use std::{
 
 use log::{debug, info, warn};
 use network_interface::NetworkInterfaceConfig;
-use tauri::{Emitter, Manager, Runtime, Window};
+use tauri::{Emitter, Runtime, Window};
 
 use crate::{api, models, server};
 
@@ -54,7 +54,7 @@ fn get_device_type() -> String {
     }
 }
 
-pub fn emit_info(config: models::DeviceConfig, shutdown: Arc<AtomicBool>) {
+pub fn emit_info(config: models::AppConfig, shutdown: Arc<AtomicBool>) {
     let server_status_guard = server::SERVER_STATUS.read().unwrap();
     let server_status = server_status_guard.as_ref().unwrap(); // Safe
     let port = server_status.port;
@@ -78,7 +78,7 @@ pub fn emit_info(config: models::DeviceConfig, shutdown: Arc<AtomicBool>) {
     let payload = models::MulticastPayload {
         port,
         fingerprint: config.fingerprint,
-        name: config.name,
+        name: config.device_name,
         r#type: get_device_type(),
     };
     let payload = serde_json::to_string(&payload).unwrap();
@@ -96,7 +96,7 @@ pub fn emit_info(config: models::DeviceConfig, shutdown: Arc<AtomicBool>) {
 
 pub fn recv_info<R: Runtime>(
     window: Window<R>,
-    config: models::DeviceConfig,
+    config: models::AppConfig,
     shutdown: Arc<AtomicBool>,
 ) {
     debug!("Starting multicast receiver on port {}", BCAST_PORT);
@@ -174,9 +174,12 @@ pub fn configure_bcast<R: Runtime>(window: Window<R>) {
     };
 
     // Start appropriate multicast handler
-    let config_file_path = window.path().app_config_dir().unwrap().join("config.json");
-    let config_json = std::fs::read_to_string(config_file_path).unwrap();
-    let config: models::DeviceConfig = serde_json::from_str(&config_json).unwrap();
+    let config = api::get_app_config(window.clone());
+    if !config.nearby_share {
+        debug!("Nearby share is disabled, not starting broadcast/receiver.");
+        return;
+    }
+
     let shutdown = Arc::new(AtomicBool::new(false));
     let shutdown_clone = shutdown.clone();
     let bcast_thread_handle = match transfer_mode {

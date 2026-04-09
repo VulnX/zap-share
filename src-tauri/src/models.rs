@@ -79,10 +79,13 @@ pub enum TransferMode {
     Receive,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DeviceConfig {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AppConfig {
     pub fingerprint: String,
-    pub name: String,
+    pub device_name: String,
+    pub preferred_port: u16,
+    pub encryption: bool,
+    pub nearby_share: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
