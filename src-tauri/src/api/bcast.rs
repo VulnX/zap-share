@@ -80,6 +80,7 @@ pub fn emit_info(config: models::AppConfig, shutdown: Arc<AtomicBool>) {
         fingerprint: config.fingerprint,
         name: config.device_name,
         r#type: get_device_type(),
+        encryption: config.encryption,
     };
     let payload = serde_json::to_string(&payload).unwrap();
     debug!("Multicast payload: {payload}");
@@ -137,6 +138,7 @@ pub fn recv_info<R: Runtime>(
                         port: payload.port,
                         name: payload.name,
                         r#type: payload.r#type,
+                        encryption: payload.encryption,
                     };
                     // Keep set unique by IP.
                     devices.retain(|device: &models::ServerConfiguration| {

@@ -5,12 +5,28 @@ use crate::{
 use actix_web::{middleware::Logger, rt, web, App, HttpServer, Responder};
 use futures_util::stream;
 use log::debug;
+use rustls::{
+    pki_types::{CertificateDer, PrivateKeyDer},
+    ServerConfig,
+};
 use std::sync::{mpsc, Arc, OnceLock, RwLock};
 use tauri::Runtime;
 use tokio::sync::broadcast;
 
 pub mod recv;
 mod send;
+
+fn generate_tls_config() -> ServerConfig {
+    debug!("generating tls config");
+    let cert = rcgen::generate_simple_self_signed([api::get_local_ip()]).unwrap();
+    let cert_der = CertificateDer::from(cert.cert.der().to_vec());
+    let key_der = PrivateKeyDer::Pkcs8(cert.signing_key.serialize_der().into());
+    debug!("yeah done");
+    ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(vec![cert_der], key_der)
+        .unwrap()
+}
 
 pub struct ServerStatus {
     pub ip: String,
@@ -44,6 +60,12 @@ pub fn start_server<R: Runtime>(window: tauri::Window<R>, tx: mpsc::Sender<u16>)
         }
         let manager_data = web::Data::from(manager);
         let config = api::get_app_config(window_clone.clone());
+        let tls_config = if config.encryption {
+            Some(generate_tls_config())
+        } else {
+            None
+        };
+
         let _server = HttpServer::new(move || {
             let app = App::new();
             let mut app = app.wrap(Logger::default());
@@ -67,7 +89,14 @@ pub fn start_server<R: Runtime>(window: tauri::Window<R>, tx: mpsc::Sender<u16>)
             app = app.app_data(window_data.clone());
             app
         });
-        if let Ok(_server) = _server.bind(("0.0.0.0", config.preferred_port)) {
+
+        let bind_result = if let Some(tls) = tls_config {
+            _server.bind_rustls_0_23(("0.0.0.0", config.preferred_port), tls)
+        } else {
+            _server.bind(("0.0.0.0", config.preferred_port))
+        };
+
+        if let Ok(_server) = bind_result {
             // port `0` triggers automatic random port assignment
             server = _server;
             break;

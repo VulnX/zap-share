@@ -9,6 +9,7 @@ export type ServerConfiguration = {
   port: number;
   name: string;
   type: string;
+  encryption: boolean;
 };
 
 export type AppConfig = {
@@ -28,12 +29,14 @@ export interface SendFileResponse {
   Success: {
     ip: string | null;
     port: number;
+    encryption: boolean;
   };
 }
 export interface SendTextResponse {
   Success: {
     ip: string | null;
     port: number;
+    encryption: boolean;
   };
 }
 

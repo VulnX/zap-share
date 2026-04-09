@@ -22,6 +22,7 @@ pub struct MulticastPayload {
     pub fingerprint: String,
     pub name: String,
     pub r#type: String,
+    pub encryption: bool,
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
@@ -30,12 +31,14 @@ pub struct ServerConfiguration {
     pub port: u16,
     pub name: String,
     pub r#type: String,
+    pub encryption: bool,
 }
 
 #[derive(Debug, Serialize)]
 pub struct Url {
     pub ip: String,
     pub port: u16,
+    pub encryption: bool,
 }
 
 #[derive(Debug, Serialize)]
