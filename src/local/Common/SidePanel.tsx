@@ -14,18 +14,24 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
   const closeDrawer = () => setOpenSettings(false);
   const { isTheme: dark } = useTheme();
   const [config, setConfig] = useState<AppConfig | null>(null);
+  const [localDeviceName, setLocalDeviceName] = useState("");
+  const [localPort, setLocalPort] = useState("");
 
   useEffect(() => {
     async function loadConfig() {
       try {
         const cfg: AppConfig = await invoke("get_app_config");
         setConfig(cfg);
+        setLocalDeviceName(cfg.device_name);
+        setLocalPort(cfg.preferred_port.toString());
       } catch (error) {
         console.error("Failed to load config:", error);
       }
     }
-    loadConfig();
-  }, []);
+    if (openSettings) {
+      loadConfig();
+    }
+  }, [openSettings]);
 
   const updateConfig = async (newConfig: AppConfig) => {
     setConfig(newConfig);
@@ -34,6 +40,21 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
       window.dispatchEvent(new CustomEvent("config-updated", { detail: newConfig }));
     } catch (error) {
       console.error("Failed to update config:", error);
+    }
+  };
+
+  const handleDeviceNameBlur = () => {
+    if (config && localDeviceName !== config.device_name) {
+      updateConfig({ ...config, device_name: localDeviceName });
+    }
+  };
+
+  const handlePortBlur = () => {
+    if (config) {
+      const port = parseInt(localPort) || 0;
+      if (port !== config.preferred_port) {
+        updateConfig({ ...config, preferred_port: port });
+      }
     }
   };
 
@@ -258,8 +279,9 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
               </div>
               <input
                 type="text"
-                value={config?.device_name || ""}
-                onChange={(e) => config && updateConfig({ ...config, device_name: e.target.value })}
+                value={localDeviceName}
+                onChange={(e) => setLocalDeviceName(e.target.value)}
+                onBlur={handleDeviceNameBlur}
                 className={`text-sm outline-none bg-transparent text-right max-w-[50%] ${dark ? "text-[#8b92b3] focus:text-slate-200" : "text-[#9097b0] focus:text-[#1a1d2e]"
                   } transition-colors`}
               />
@@ -297,14 +319,9 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
                   type="number"
                   min="0"
                   max="65535"
-                  value={config?.preferred_port ?? 0}
-                  onChange={(e) =>
-                    config &&
-                    updateConfig({
-                      ...config,
-                      preferred_port: parseInt(e.target.value) || 0,
-                    })
-                  }
+                  value={localPort}
+                  onChange={(e) => setLocalPort(e.target.value)}
+                  onBlur={handlePortBlur}
                   className={`text-sm font-semibold outline-none bg-transparent text-right w-16 ${dark ? "text-white" : "text-[#1a1d2e]"
                     }`}
                 />

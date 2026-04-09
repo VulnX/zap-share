@@ -273,22 +273,26 @@ pub fn get_app_config<R: Runtime>(window: Window<R>) -> models::AppConfig {
 #[allow(dead_code)]
 #[tauri::command]
 pub fn update_app_config<R: Runtime>(window: Window<R>, new_config: models::AppConfig) {
+    let old_config = get_app_config(window.clone());
     let config_dir = window.path().app_config_dir().unwrap();
     let config_file_path = config_dir.join("app_config.json");
     let config_json = serde_json::to_string_pretty(&new_config).unwrap();
     std::fs::write(config_file_path, config_json).unwrap();
 
-    // Re-start server if it's running to apply changes (e.g. port)
-    // Actually, any change will cause a server-restart as per user req.
     let server_running = {
         let guard = SERVER_HANDLE.lock().unwrap();
         guard.is_some()
     };
 
     if server_running {
-        debug!("Config updated, restarting server...");
-        stop_server();
-        start_server(window);
+        if new_config.preferred_port != old_config.preferred_port {
+            debug!("Port changed, restarting server...");
+            stop_server();
+            start_server(window);
+        } else {
+            debug!("Config updated, updating broadcast...");
+            bcast::configure_bcast(window);
+        }
     } else {
         debug!("Config updated, server not running.");
     }
