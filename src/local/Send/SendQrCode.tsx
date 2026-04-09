@@ -109,8 +109,39 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const hasRun = useRef(false);
 
   const [nearbyDevices, setNearbyDevices] = useState<ServerConfiguration[]>([]);
+  const [isNearbyEnabled, setIsNearbyEnabled] = useState(true);
 
   const { fileList, text } = useSharedDataContext();
+
+  useEffect(() => {
+    const handleConfigUpdate = (event: any) => {
+      const newConfig = event.detail;
+      setIsNearbyEnabled(newConfig.nearby_share);
+      if (!newConfig.nearby_share) {
+        setNearbyDevices([]);
+      }
+    };
+
+    window.addEventListener(
+      "config-updated",
+      handleConfigUpdate as EventListener,
+    );
+
+    // Initial fetch
+    invoke("get_app_config").then((cfg: any) => {
+      setIsNearbyEnabled(cfg.nearby_share);
+      if (!cfg.nearby_share) {
+        setNearbyDevices([]);
+      }
+    });
+
+    return () => {
+      window.removeEventListener(
+        "config-updated",
+        handleConfigUpdate as EventListener,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     if (hasRun.current) return;
@@ -120,15 +151,20 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
     const setupListener = async () => {
       const listener = await listen<string>("device-list-updated", (event) => {
+        // Only update if nearby is enabled
         const parsedDevices: ServerConfiguration[] = JSON.parse(event.payload);
-        setNearbyDevices(parsedDevices);
+        setNearbyDevices(() => (isNearbyEnabled ? parsedDevices : []));
       });
 
       listeners.push(listener);
     };
 
     setupListener();
-  }, []);
+
+    return () => {
+      listeners.forEach((unsub) => unsub());
+    };
+  }, [isNearbyEnabled]);
 
   return (
     <div className="w-full max-w-3xl mx-auto mt-6">
@@ -178,108 +214,190 @@ export const DeviceList: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
         {/* Device List */}
         <div className="p-4 space-y-3">
-          {nearbyDevices.map((device, index) => {
-            return (
+          {!isNearbyEnabled ? (
+            <div className="flex flex-col items-center py-10 text-center animate-in fade-in duration-500">
               <div
-                key={index}
-                className={`flex items-center justify-between p-4 border rounded-xl transition cursor-pointer ${
-                  isTheme
-                    ? "bg-[#13151f] border-[#2a2d3e] hover:bg-[#2a2d3e]"
-                    : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
+                  isTheme ? "bg-red-500/10" : "bg-red-50"
                 }`}
-                onClick={async () => {
-                  if (text === undefined) {
-                    const filePairs = await Promise.all(
-                      fileList.map(async (file) => {
-                        const name = await basename(file);
-                        return [file, name];
-                      }),
-                    );
-
-                    await invoke("send_files_to", {
-                      files: filePairs,
-                      to: device,
-                    });
-                  } else {
-                    await invoke("send_text_to", {
-                      text,
-                      to: device,
-                    });
-                  }
-                }}
               >
-                {/* LEFT */}
-                <div className="flex items-center gap-4">
-                  {/* ICON */}
-                  <div
-                    className={`w-10 h-10 flex items-center justify-center rounded-full ${
-                      isTheme ? "bg-[#2a2d3e]" : "bg-gray-200"
-                    }`}
+                {/* <svg
+                  className={`w-6 h-6 ${isTheme ? "text-red-400" : "text-red-500"}`}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636"
+                  />
+                </svg> */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`lucide lucide-ban-icon lucide-ban ${isTheme ? "text-red-400" : "text-red-500"}`}
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M4.929 4.929 19.07 19.071" />
+                </svg>
+              </div>
+              <p
+                className={`text-sm font-bold ${isTheme ? "text-white" : "text-gray-900"}`}
+              >
+                Discovery Disabled
+              </p>
+              <p
+                className={`text-xs mt-1 max-w-[200px] ${isTheme ? "text-[#c4c9de]" : "text-gray-500"}`}
+              >
+                Nearby sharing is turned off in settings
+              </p>
+            </div>
+          ) : nearbyDevices.length === 0 ? (
+            <div className="flex flex-col items-center py-10 text-center">
+              <div className="relative mb-4">
+                <div className="absolute inset-0 animate-ping rounded-full bg-blue-500/20"></div>
+                <div
+                  className={`relative w-12 h-12 rounded-2xl flex items-center justify-center ${isTheme ? "bg-blue-500/10" : "bg-blue-50"}`}
+                >
+                  <svg
+                    className={`w-6 h-6 text-blue-500 animate-pulse`}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
                   >
-                    {device.type === "mobile" && (
-                      <svg
-                        className={`w-5 h-5 ${
-                          isTheme ? "text-slate-200" : "text-gray-700"
-                        }`}
-                        viewBox="0 0 384 512"
-                        fill="currentColor"
-                      >
-                        <path d="M16 64C16 28.7 44.7 0 80 0L304 0c35.3 0 64 28.7 64 64l0 384c0 35.3-28.7 64-64 64L80 512c-35.3 0-64-28.7-64-64L16 64zm64 0l0 304 224 0 0-304-224 0zM192 472c17.7 0 32-14.3 32-32s-14.3-32-32-32-32 14.3-32 32 14.3 32 32 32z" />
-                      </svg>
-                    )}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <p
+                className={`text-sm font-bold ${isTheme ? "text-white" : "text-gray-900"}`}
+              >
+                Searching...
+              </p>
+              <p
+                className={`text-xs mt-1 ${isTheme ? "text-[#c4c9de]" : "text-gray-500"}`}
+              >
+                Looking for nearby devices
+              </p>
+            </div>
+          ) : (
+            nearbyDevices.map((device, index) => {
+              return (
+                <div
+                  key={index}
+                  className={`flex items-center justify-between p-4 border rounded-xl transition cursor-pointer ${
+                    isTheme
+                      ? "bg-[#13151f] border-[#2a2d3e] hover:bg-[#2a2d3e]"
+                      : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                  }`}
+                  onClick={async () => {
+                    if (text === undefined) {
+                      const filePairs = await Promise.all(
+                        fileList.map(async (file) => {
+                          const name = await basename(file);
+                          return [file, name];
+                        }),
+                      );
 
-                    {device.type === "computer" && (
-                      <svg
-                        className={`w-5 h-5 ${
-                          isTheme ? "text-slate-200" : "text-gray-700"
-                        }`}
-                        viewBox="0 0 640 512"
-                        fill="currentColor"
-                      >
-                        <path d="M128 32C92.7 32 64 60.7 64 96l0 256 512 0 0-256c0-35.3-28.7-64-64-64L128 32zM0 400c0 26.5 21.5 48 48 48l544 0c26.5 0 48-21.5 48-48l0-16L0 384l0 16z" />
-                      </svg>
-                    )}
-                  </div>
+                      await invoke("send_files_to", {
+                        files: filePairs,
+                        to: device,
+                      });
+                    } else {
+                      await invoke("send_text_to", {
+                        text,
+                        to: device,
+                      });
+                    }
+                  }}
+                >
+                  {/* LEFT */}
+                  <div className="flex items-center gap-4">
+                    {/* ICON */}
+                    <div
+                      className={`w-10 h-10 flex items-center justify-center rounded-full ${
+                        isTheme ? "bg-[#2a2d3e]" : "bg-gray-200"
+                      }`}
+                    >
+                      {device.type === "mobile" && (
+                        <svg
+                          className={`w-5 h-5 ${
+                            isTheme ? "text-slate-200" : "text-gray-700"
+                          }`}
+                          viewBox="0 0 384 512"
+                          fill="currentColor"
+                        >
+                          <path d="M16 64C16 28.7 44.7 0 80 0L304 0c35.3 0 64 28.7 64 64l0 384c0 35.3-28.7 64-64 64L80 512c-35.3 0-64-28.7-64-64L16 64zm64 0l0 304 224 0 0-304-224 0zM192 472c17.7 0 32-14.3 32-32s-14.3-32-32-32-32 14.3-32 32 14.3 32 32 32z" />
+                        </svg>
+                      )}
 
-                  {/* TEXT */}
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-sm font-medium ${
-                          isTheme ? "text-white" : "text-gray-800"
-                        }`}
-                      >
-                        {device.name}
-                      </span>
-                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      {device.type === "computer" && (
+                        <svg
+                          className={`w-5 h-5 ${
+                            isTheme ? "text-slate-200" : "text-gray-700"
+                          }`}
+                          viewBox="0 0 640 512"
+                          fill="currentColor"
+                        >
+                          <path d="M128 32C92.7 32 64 60.7 64 96l0 256 512 0 0-256c0-35.3-28.7-64-64-64L128 32zM0 400c0 26.5 21.5 48 48 48l544 0c26.5 0 48-21.5 48-48l0-16L0 384l0 16z" />
+                        </svg>
+                      )}
                     </div>
 
-                    {/* Chips */}
-                    <div className="flex gap-2 mt-1">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-md w-fit whitespace-nowrap ${
-                          isTheme
-                            ? "bg-[#2a2d3e] text-[#c4c9de]"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
-                      >
-                        Available
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-md ${
-                          isTheme
-                            ? "bg-[#2a2d3e] text-[#c4c9de]"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
-                      >
-                        {device.type === "mobile" ? "Phone" : "Laptop"}
-                      </span>
+                    {/* TEXT */}
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-sm font-medium ${
+                            isTheme ? "text-white" : "text-gray-800"
+                          }`}
+                        >
+                          {device.name}
+                        </span>
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      </div>
+
+                      {/* Chips */}
+                      <div className="flex gap-2 mt-1">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-md w-fit whitespace-nowrap ${
+                            isTheme
+                              ? "bg-[#2a2d3e] text-[#c4c9de]"
+                              : "bg-gray-200 text-gray-600"
+                          }`}
+                        >
+                          Available
+                        </span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-md ${
+                            isTheme
+                              ? "bg-[#2a2d3e] text-[#c4c9de]"
+                              : "bg-gray-200 text-gray-600"
+                          }`}
+                        >
+                          {device.type === "mobile" ? "Phone" : "Laptop"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
         {/* Footer */}
@@ -334,13 +452,23 @@ export default function QrCode({ onBack }: { onBack?: () => void }) {
             }`}
           >
             <div className="p-6 pb-0">
-              <h2
-                className={`text-lg font-semibold text-center ${
-                  isTheme ? "text-white" : "text-black"
-                }`}
-              >
-                {qrText}
-              </h2>
+              <div className="flex flex-col items-center gap-2 mb-4">
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-widest ${isTheme ? "text-indigo-400" : "text-indigo-600"}`}
+                >
+                  Connection URL
+                </span>
+                <div
+                  className={`px-4 py-2 rounded-xl font-mono text-sm border shadow-inner ${
+                    isTheme
+                      ? "bg-[#13151f] border-[#2a2d3e] text-indigo-100"
+                      : "bg-gray-50 border-gray-200 text-indigo-900"
+                  }`}
+                >
+                  {qrText?.replace("http://", "")}
+                </div>
+              </div>
+
               <div
                 className={` rounded-2xl  flex justify-center  transition-all duration-300 ease-in-out`}
               >

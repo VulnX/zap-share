@@ -31,10 +31,12 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
     setConfig(newConfig);
     try {
       await invoke("update_app_config", { newConfig });
+      window.dispatchEvent(new CustomEvent("config-updated", { detail: newConfig }));
     } catch (error) {
       console.error("Failed to update config:", error);
     }
   };
+
 
   const sectionLabelClass = `text-[10px] font-bold uppercase tracking-[0.12em] mb-3 ${dark ? "!text-[#5a6080]" : "!text-[#9097b0]"
     }`;
@@ -266,41 +268,49 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
             {/* Preferred Port */}
             <div className={rowClass}>
               <div className="flex items-center gap-3">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className={iconClass}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
-                  />
-                </svg>
+                <div className={`p-2 rounded-xl ${dark ? "bg-indigo-500/10" : "bg-indigo-50"}`}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className={`w-5 h-5 ${dark ? "text-indigo-400" : "text-indigo-600"}`}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
+                    />
+                  </svg>
+                </div>
                 <div className="flex flex-col">
                   <span className={labelClass}>Server Port</span>
                   <span className={sublabelClass}>0 for Auto</span>
                 </div>
               </div>
-              <input
-                type="number"
-                min="0"
-                max="65535"
-                value={config?.preferred_port ?? 0}
-                onChange={(e) =>
-                  config &&
-                  updateConfig({
-                    ...config,
-                    preferred_port: parseInt(e.target.value) || 0,
-                  })
-                }
-                className={`text-sm outline-none bg-transparent text-right w-20 ${dark ? "text-[#8b92b3] focus:text-slate-200" : "text-[#9097b0] focus:text-[#1a1d2e]"
-                  } transition-colors`}
-              />
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-all ${dark
+                  ? "bg-[#1a1d2a] border-[#2a2d3e] focus-within:border-indigo-500/50"
+                  : "bg-white border-[#e2e5ef] focus-within:border-indigo-400"
+                }`}>
+                <input
+                  type="number"
+                  min="0"
+                  max="65535"
+                  value={config?.preferred_port ?? 0}
+                  onChange={(e) =>
+                    config &&
+                    updateConfig({
+                      ...config,
+                      preferred_port: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  className={`text-sm font-semibold outline-none bg-transparent text-right w-16 ${dark ? "text-white" : "text-[#1a1d2e]"
+                    }`}
+                />
+              </div>
             </div>
+
           </div>
 
           <div className={dividerClass} />
