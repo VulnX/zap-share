@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Drawer, Switch } from "@material-tailwind/react";
+import { Drawer, Switch, Dialog, DialogHeader, DialogBody, DialogFooter, Button } from "@material-tailwind/react";
 import { ToggleThemeButton } from "./Navigation";
 import { invoke } from "@tauri-apps/api/core";
 import { AppConfig } from "../types";
@@ -14,15 +14,15 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
   const closeDrawer = () => setOpenSettings(false);
   const { isTheme: dark } = useTheme();
   const [config, setConfig] = useState<AppConfig | null>(null);
-  const [localDeviceName, setLocalDeviceName] = useState("");
   const [localPort, setLocalPort] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState("");
 
   useEffect(() => {
     async function loadConfig() {
       try {
         const cfg: AppConfig = await invoke("get_app_config");
         setConfig(cfg);
-        setLocalDeviceName(cfg.device_name);
         setLocalPort(cfg.preferred_port.toString());
       } catch (error) {
         console.error("Failed to load config:", error);
@@ -43,11 +43,6 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
     }
   };
 
-  const handleDeviceNameBlur = () => {
-    if (config && localDeviceName !== config.device_name) {
-      updateConfig({ ...config, device_name: localDeviceName });
-    }
-  };
 
   const handlePortBlur = () => {
     if (config) {
@@ -61,6 +56,18 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
 
   const sectionLabelClass = `text-[10px] font-bold uppercase tracking-[0.12em] mb-3 ${dark ? "!text-[#5a6080]" : "!text-[#9097b0]"
     }`;
+
+  const handleSaveName = () => {
+    if (config && tempName.trim() !== "") {
+      updateConfig({ ...config, device_name: tempName });
+      setIsEditingName(false);
+    }
+  };
+
+  const handleOpenEditName = () => {
+    setTempName(config?.device_name || "");
+    setIsEditingName(true);
+  };
   const rowClass = `flex items-center justify-between py-3`;
   const iconClass = `w-5 h-5 ${dark ? "!text-[#8b92b3]" : "!text-[#9097b0]"}`;
   const labelClass = `text-sm font-medium ${dark ? "!text-slate-200" : "!text-[#1a1d2e]"}`;
@@ -277,14 +284,24 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
                 </svg>
                 <span className={labelClass}>Device Name</span>
               </div>
-              <input
-                type="text"
-                value={localDeviceName}
-                onChange={(e) => setLocalDeviceName(e.target.value)}
-                onBlur={handleDeviceNameBlur}
-                className={`text-sm outline-none bg-transparent text-right max-w-[50%] ${dark ? "text-[#8b92b3] focus:text-slate-200" : "text-[#9097b0] focus:text-[#1a1d2e]"
-                  } transition-colors`}
-              />
+              <div
+                className="flex items-center gap-2 cursor-pointer group"
+                onClick={handleOpenEditName}
+              >
+                <span className={`text-sm ${dark ? "text-[#8b92b3] group-hover:text-slate-200" : "text-[#9097b0] group-hover:text-[#1a1d2e]"} transition-colors`}>
+                  {config?.device_name || "Unknown"}
+                </span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className={`w-4 h-4 ${dark ? "text-[#5a6080] group-hover:text-slate-200" : "text-[#9097b0] group-hover:text-[#1a1d2e]"} transition-colors`}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>
+              </div>
             </div>
 
             {/* Preferred Port */}
@@ -386,6 +403,56 @@ export function SidePanel({ openSettings, setOpenSettings }: SidePanelProps) {
           </div>
         </div>
       </Drawer>
+
+      <Dialog
+        open={isEditingName}
+        handler={() => setIsEditingName(false)}
+        className={dark ? "!bg-[#1a1d2a] text-white border border-[#2a2d3e]" : "bg-white text-[#1a1d2e]"}
+        {...({} as any)}
+      >
+        <DialogHeader className={dark ? "text-white" : "text-[#1a1d2e]"} {...({} as any)}>
+          Edit Device Name
+        </DialogHeader>
+        <DialogBody className="space-y-4" {...({} as any)}>
+          <div className="flex flex-col gap-2">
+            <span className={`text-xs font-semibold ${dark ? "text-[#8b92b3]" : "text-[#9097b0]"}`}>
+              NAME
+            </span>
+            <div className={`px-4 py-3 rounded-xl border transition-all ${dark
+                ? "bg-[#13151f] border-[#2a2d3e] focus-within:border-blue-500/50"
+                : "bg-gray-50 border-[#e2e5ef] focus-within:border-blue-400"
+              }`}>
+              <input
+                type="text"
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                autoFocus
+                className={`w-full bg-transparent outline-none text-sm font-medium ${dark ? "text-slate-200" : "text-[#1a1d2e]"}`}
+                onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+              />
+            </div>
+          </div>
+        </DialogBody>
+        <DialogFooter className="space-x-2" {...({} as any)}>
+          <Button
+            variant="text"
+            color="red"
+            onClick={() => setIsEditingName(false)}
+            className={`rounded-xl ${dark ? "hover:bg-red-500/10 text-red-400" : ""}`}
+            {...({} as any)}
+          >
+            Cancel
+          </Button>
+          <Button
+            color="blue"
+            onClick={handleSaveName}
+            className="rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800"
+            {...({} as any)}
+          >
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </React.Fragment>
   );
 }
