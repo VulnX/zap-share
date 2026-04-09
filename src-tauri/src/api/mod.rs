@@ -134,10 +134,14 @@ pub async fn send_files_to<R: Runtime>(
     files: Vec<(SafeFilePath, String)>,
     to: models::ServerConfiguration,
 ) {
-    let config = get_device_config(window.clone());
-    let client = reqwest::Client::new();
-    let request_endpoint = format!("http://{}:{}/upload/request", to.ip, to.port);
-    let files_endpoint = format!("http://{}:{}/upload/files", to.ip, to.port);
+    let config = get_app_config(window.clone());
+    let client = reqwest::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .build()
+        .unwrap();
+    let protocol = if to.encryption { "https" } else { "http" };
+    let request_endpoint = format!("{protocol}://{}:{}/upload/request", to.ip, to.port);
+    let files_endpoint = format!("{protocol}://{}:{}/upload/files", to.ip, to.port);
     debug!("Sending files to endpoint: {request_endpoint}");
     debug!("Files endpoint: {files_endpoint}");
 
@@ -200,9 +204,13 @@ pub async fn send_text_to<R: Runtime>(
     to: models::ServerConfiguration,
 ) {
     let config = get_app_config(window.clone());
-    let client = reqwest::Client::new();
-    let request_endpoint = format!("http://{}:{}/upload/request", to.ip, to.port);
-    let text_endpoint = format!("http://{}:{}/upload/text", to.ip, to.port);
+    let client = reqwest::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .build()
+        .unwrap();
+    let protocol = if to.encryption { "https" } else { "http" };
+    let request_endpoint = format!("{protocol}://{}:{}/upload/request", to.ip, to.port);
+    let text_endpoint = format!("{protocol}://{}:{}/upload/text", to.ip, to.port);
 
     // 1. Send Request
     let transfer_request = models::TransferRequest {
@@ -408,15 +416,17 @@ fn start_server<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
         debug!("Server already running, triggering mode-switch reload...");
 
         // Setup `BCAST_THREAD`
-        bcast::configure_bcast(window);
+        bcast::configure_bcast(window.clone());
 
         let _ = server::get_event_sender().send("reload".to_string());
         let server_status = server::SERVER_STATUS.read().unwrap();
 
         let server_status = server_status.as_ref().unwrap(); // Safe to unwrap
+        let config = get_app_config(window.clone());
         return models::StartServerResponse::Success(models::Url {
             ip: server_status.ip.clone(),
             port: server_status.port,
+            encryption: config.encryption,
         });
     }
     drop(server_guard);
@@ -440,6 +450,7 @@ fn start_server<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
     };
 
     let ip = get_local_ip();
+    let config = get_app_config(window.clone());
     // Setup `SERVER_STATUS`
     let mut server_status_guard = server::SERVER_STATUS.write().unwrap();
     *server_status_guard = Some(server::ServerStatus {
@@ -455,7 +466,11 @@ fn start_server<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
     debug!("broadcasting initial reload event...");
     let _ = server::get_event_sender().send("reload".to_string());
 
-    models::StartServerResponse::Success(models::Url { ip, port })
+    models::StartServerResponse::Success(models::Url {
+        ip,
+        port,
+        encryption: config.encryption,
+    })
 }
 
 pub fn open_file<R: Runtime>(

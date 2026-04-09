@@ -44,6 +44,9 @@ fn generate_device_name() -> String {
 pub fn init_app_config(
     app_handle: &AppHandle,
 ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    // For HTTPS connections
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+
     let config_dir = app_handle.path().app_config_dir()?;
     debug!("Using config directory: {:?}", config_dir);
     std::fs::create_dir_all(&config_dir)?; // Ensure exists

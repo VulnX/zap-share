@@ -5,10 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useQrContext } from "../Context/QrContext";
 import QRCode from "qrcode";
 import { flushSync } from "react-dom";
-import { ProgressUpdatePayload, TransferRequest } from "../types";
-interface RecvResponse {
-  Success: { ip: string | null; port: number };
-}
+import { ProgressUpdatePayload, TransferRequest, SendFileResponse } from "../types";
 
 type ReceivedItem =
   | { kind: "text"; id: string; content: string; at: string }
@@ -39,18 +36,16 @@ function TextCard({
   };
   return (
     <div
-      className={`rounded-2xl p-4 border ${
-        dark
-          ? "bg-[#1a1d2a] border-[#2a2d3e] text-white"
-          : "bg-white border-gray-200"
-      } shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2`}
+      className={`rounded-2xl p-4 border ${dark
+        ? "bg-[#1a1d2a] border-[#2a2d3e] text-white"
+        : "bg-white border-gray-200"
+        } shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
           <span
-            className={`text-xs font-semibold px-2 py-0.5 rounded ${
-              dark ? "bg-[#2a2d3e] text-[#c4c9de]" : "bg-gray-100 text-gray-600"
-            }`}
+            className={`text-xs font-semibold px-2 py-0.5 rounded ${dark ? "bg-[#2a2d3e] text-[#c4c9de]" : "bg-gray-100 text-gray-600"
+              }`}
           >
             TEXT
           </span>
@@ -62,21 +57,19 @@ function TextCard({
         </div>
         <button
           onClick={copy}
-          className={`text-xs px-3 py-1 rounded-full font-semibold transition-all ${
-            copied
-              ? "bg-green-500 text-white"
-              : dark
-                ? "bg-[#2a2d3e] text-[#c4c9de] hover:bg-[#343748] hover:text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          }`}
+          className={`text-xs px-3 py-1 rounded-full font-semibold transition-all ${copied
+            ? "bg-green-500 text-white"
+            : dark
+              ? "bg-[#2a2d3e] text-[#c4c9de] hover:bg-[#343748] hover:text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
         >
           {copied ? "Copied!" : "Copy"}
         </button>
       </div>
       <p
-        className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${
-          dark ? "text-slate-200" : "text-gray-800"
-        }`}
+        className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${dark ? "text-slate-200" : "text-gray-800"
+          }`}
       >
         {item.content}
       </p>
@@ -96,21 +89,19 @@ function FileCard({
   const done = item.progress >= 100;
   return (
     <div
-      className={`rounded-2xl p-4 border ${
-        dark
-          ? "bg-[#1a1d2a] border-[#2a2d3e] text-white"
-          : "bg-white border-gray-200"
-      } shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2`}
+      className={`rounded-2xl p-4 border ${dark
+        ? "bg-[#1a1d2a] border-[#2a2d3e] text-white"
+        : "bg-white border-gray-200"
+        } shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-bottom-2`}
     >
       <div className="flex items-center gap-2 mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span
-              className={`text-xs font-semibold px-2 py-0.5 rounded ${
-                dark
-                  ? "bg-[#2a2d3e] text-[#c4c9de]"
-                  : "bg-gray-100 text-gray-600"
-              }`}
+              className={`text-xs font-semibold px-2 py-0.5 rounded ${dark
+                ? "bg-[#2a2d3e] text-[#c4c9de]"
+                : "bg-gray-100 text-gray-600"
+                }`}
             >
               FILE
             </span>
@@ -158,18 +149,16 @@ function RequestCard({
   const { request } = item;
   return (
     <div
-      className={`rounded-2xl p-5 border-2 ${
-        dark
-          ? "bg-indigo-500/5 border-indigo-500/25 shadow-lg shadow-indigo-900/20 text-white"
-          : "bg-blue-50 border-blue-100 shadow-sm"
-      } transition-all duration-500 animate-in zoom-in-95`}
+      className={`rounded-2xl p-5 border-2 ${dark
+        ? "bg-indigo-500/5 border-indigo-500/25 shadow-lg shadow-indigo-900/20 text-white"
+        : "bg-blue-50 border-blue-100 shadow-sm"
+        } transition-all duration-500 animate-in zoom-in-95`}
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${
-              dark ? "bg-[#2a2d3e]" : "bg-white"
-            }`}
+            className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${dark ? "bg-[#2a2d3e]" : "bg-white"
+              }`}
           >
             {request.type === "file" ? "📁" : "💬"}
           </div>
@@ -190,11 +179,10 @@ function RequestCard({
           </div>
         </div>
         <span
-          className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-            dark
-              ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
-              : "bg-blue-500/10 text-blue-600"
-          }`}
+          className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${dark
+            ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+            : "bg-blue-500/10 text-blue-600"
+            }`}
         >
           Pending
         </span>
@@ -202,9 +190,8 @@ function RequestCard({
 
       {request.type === "file" && (
         <div
-          className={`p-3 rounded-xl border mb-4 ${
-            dark ? "bg-[#13151f] border-[#2a2d3e]" : "bg-white border-blue-100"
-          }`}
+          className={`p-3 rounded-xl border mb-4 ${dark ? "bg-[#13151f] border-[#2a2d3e]" : "bg-white border-blue-100"
+            }`}
         >
           <p
             className={`text-sm font-medium truncate ${dark ? "text-slate-200" : "text-gray-700"}`}
@@ -224,11 +211,10 @@ function RequestCard({
       <div className="flex gap-2">
         <button
           onClick={() => onRespond(request.id, false)}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-            dark
-              ? "bg-[#2a2d3e] hover:bg-[#343748] text-[#c4c9de] hover:text-white border border-[#3a3f55]"
-              : "bg-gray-100 hover:bg-gray-200 text-gray-600"
-          }`}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${dark
+            ? "bg-[#2a2d3e] hover:bg-[#343748] text-[#c4c9de] hover:text-white border border-[#3a3f55]"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+            }`}
         >
           Reject
         </button>
@@ -266,10 +252,10 @@ export default function Recieve() {
     startedRef.current = true;
     setServerStatus("starting");
     try {
-      const resp = await invoke<RecvResponse>("recv");
+      const resp = await invoke<SendFileResponse>("recv");
       if (resp?.Success?.ip) {
-        const { ip, port } = resp.Success;
-        const url = `http://${ip}:${port}`;
+        const { ip, port, encryption } = resp.Success;
+        const url = `${encryption ? "https" : "http"}://${ip}:${port}`;
         flushSync(() => setQrText(url));
         const svg = await QRCode.toString(url, { type: "svg" });
         setQrCode(svg);
@@ -399,11 +385,10 @@ export default function Recieve() {
             {items.length > 0 && (
               <button
                 onClick={clearItems}
-                className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-lg transition-colors ${
-                  dark
-                    ? "text-gray-400 hover:text-red-400 bg-gray-500/10"
-                    : "text-gray-500 hover:text-red-600 bg-gray-100"
-                }`}
+                className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-lg transition-colors ${dark
+                  ? "text-gray-400 hover:text-red-400 bg-gray-500/10"
+                  : "text-gray-500 hover:text-red-600 bg-gray-100"
+                  }`}
               >
                 Clear All
               </button>
