@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ipd",
+  "productName": "Zap Share",
   "version": "0.1.0",
   "identifier": "com.ipd.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "ipd",
+        "title": "Zap Share",
         "width": 900,
         "height": 650
       }

@@ -1,7 +1,7 @@
 [package]
-name = "ipd"
+name = "zap_share"
 version = "0.1.0"
-description = "A Tauri App"
+description = "A Smart File-Sharing App"
 authors = ["you"]
 edition = "2021"
 
