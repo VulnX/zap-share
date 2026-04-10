@@ -2456,36 +2456,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ipd"
-version = "0.1.0"
-dependencies = [
- "actix-web",
- "actix-web-lab",
- "env_logger",
- "futures-util",
- "local-ip-address",
- "log",
- "network-interface",
- "rand 0.9.2",
- "rcgen",
- "reqwest 0.12.28",
- "rustls",
- "rustls-pki-types",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-ipd",
- "tauri-plugin-opener",
- "tauri-plugin-os",
- "tokio",
- "urlencoding",
- "uuid",
-]
-
-[[package]]
 name = "ipnet"
 version = "2.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6836,6 +6806,36 @@ dependencies = [
  "quote",
  "syn 2.0.117",
  "synstructure",
+]
+
+[[package]]
+name = "zap_share"
+version = "0.1.0"
+dependencies = [
+ "actix-web",
+ "actix-web-lab",
+ "env_logger",
+ "futures-util",
+ "local-ip-address",
+ "log",
+ "network-interface",
+ "rand 0.9.2",
+ "rcgen",
+ "reqwest 0.12.28",
+ "rustls",
+ "rustls-pki-types",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-ipd",
+ "tauri-plugin-opener",
+ "tauri-plugin-os",
+ "tokio",
+ "urlencoding",
+ "uuid",
 ]
 
 [[package]]
