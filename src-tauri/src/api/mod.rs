@@ -140,58 +140,78 @@ pub async fn send_files_to<R: Runtime>(
         .build()
         .unwrap();
     let protocol = if to.encryption { "https" } else { "http" };
-    let request_endpoint = format!("{protocol}://{}:{}/upload/request", to.ip, to.port);
+    let batch_request_endpoint = format!("{protocol}://{}:{}/upload/request-batch", to.ip, to.port);
     let files_endpoint = format!("{protocol}://{}:{}/upload/files", to.ip, to.port);
-    debug!("Sending files to endpoint: {request_endpoint}");
-    debug!("Files endpoint: {files_endpoint}");
+    debug!("Batch request endpoint: {batch_request_endpoint}");
 
+    // Read all files into memory and build the batch metadata
+    struct FilePayload {
+        id: String,
+        filename: String,
+        contents: Vec<u8>,
+    }
+
+    let mut payloads: Vec<FilePayload> = Vec::new();
     for (filepath, filename) in files {
-        debug!("Processing file: {filename} at path: {filepath:#?}");
         let (mut file, _) = open_file(&filepath, &window);
-        let mut file_contents = Vec::new();
-        file.read_to_end(&mut file_contents).unwrap();
-        let filesize = file_contents.len() as u64;
-
-        // 1. Send Request
-        let transfer_request = models::TransferRequest {
+        let mut contents = Vec::new();
+        file.read_to_end(&mut contents).unwrap();
+        payloads.push(FilePayload {
             id: uuid::Uuid::new_v4().to_string(),
-            device_name: config.device_name.clone(),
-            r#type: "file".to_string(),
-            filename: Some(filename.clone()),
-            filesize: Some(filesize),
-        };
+            filename,
+            contents,
+        });
+    }
 
-        let resp = client
-            .post(&request_endpoint)
-            .json(&transfer_request)
-            .send()
-            .await;
+    // Build the batch request
+    let batch_request = models::BatchTransferRequest {
+        batch_id: uuid::Uuid::new_v4().to_string(),
+        device_name: config.device_name.clone(),
+        files: payloads
+            .iter()
+            .map(|p| models::FileInfo {
+                id: p.id.clone(),
+                filename: p.filename.clone(),
+                filesize: p.contents.len() as u64,
+            })
+            .collect(),
+    };
 
-        match resp {
-            Ok(resp) if resp.status().is_success() => {
-                debug!("Transfer request for {filename} succeeded (online)");
-                let transfer_resp: models::TransferResponse = resp.json().await.unwrap();
-                debug!("Transfer response received: {transfer_resp:#?}");
-                if transfer_resp.accepted {
-                    if let Some(token) = transfer_resp.token {
-                        // 2. Send File with token
-                        info!("sending {filename:#?} to {files_endpoint:#?}");
-                        client
-                            .post(&files_endpoint)
-                            .header("X-Filename", urlencoding::encode(&filename).into_owned())
-                            .header("X-Transfer-Token", token)
-                            .body(file_contents)
-                            .send()
-                            .await
-                            .unwrap();
+    debug!("Sending batch request for {} files", payloads.len());
+    let resp = client
+        .post(&batch_request_endpoint)
+        .json(&batch_request)
+        .send()
+        .await;
+
+    match resp {
+        Ok(resp) if resp.status().is_success() => {
+            let batch_resp: models::BatchTransferResponse = resp.json().await.unwrap();
+            if !batch_resp.accepted {
+                warn!("Batch transfer rejected by receiver");
+                return;
+            }
+            // Tokens are ordered parallel to payloads
+            for (payload, token) in payloads.into_iter().zip(batch_resp.tokens.into_iter()) {
+                info!("Uploading {:?} to {files_endpoint:?}", payload.filename);
+                let result = client
+                    .post(&files_endpoint)
+                    .header("X-Filename", urlencoding::encode(&payload.filename).into_owned())
+                    .header("X-Transfer-Token", token)
+                    .body(payload.contents)
+                    .send()
+                    .await;
+                match result {
+                    Ok(r) if r.status().is_success() => {
+                        debug!("Uploaded {:?} successfully", payload.filename);
                     }
-                } else {
-                    warn!("Transfer rejected by receiver for {filename}");
+                    Ok(r) => error!("Upload of {:?} failed with status {}", payload.filename, r.status()),
+                    Err(e) => error!("Upload of {:?} network error: {e}", payload.filename),
                 }
             }
-            _ => {
-                error!("Transfer request failed or rejected for {filename}");
-            }
+        }
+        _ => {
+            error!("Batch transfer request failed");
         }
     }
 }
@@ -343,14 +363,29 @@ pub fn recv<R: Runtime>(window: Window<R>) -> models::StartServerResponse {
     start_server(window)
 }
 
+/// Resolves a pending text transfer request (single-file handshake via `/upload/request`).
 #[allow(dead_code)]
 #[tauri::command]
 pub fn respond_to_transfer_request(id: String, accepted: bool) {
-    debug!("Command: respond_to_transfer_request id: {id}, accepted: {accepted}");
+    debug!("Command: respond_to_transfer_request id={id}, accepted={accepted}");
     let manager_guard = TRANSFER_MANAGER.lock().unwrap();
     if let Some(manager) = manager_guard.as_ref() {
         let mut pending = manager.pending.lock().unwrap();
         if let Some(tx) = pending.remove(&id) {
+            let _ = tx.send(accepted);
+        }
+    }
+}
+
+/// Resolves a pending batch transfer request (multi-file handshake via `/upload/request-batch`).
+#[allow(dead_code)]
+#[tauri::command]
+pub fn respond_to_batch_transfer_request(batch_id: String, accepted: bool) {
+    debug!("Command: respond_to_batch_transfer_request batch_id={batch_id}, accepted={accepted}");
+    let manager_guard = TRANSFER_MANAGER.lock().unwrap();
+    if let Some(manager) = manager_guard.as_ref() {
+        let mut pending = manager.pending.lock().unwrap();
+        if let Some(tx) = pending.remove(&batch_id) {
             let _ = tx.send(accepted);
         }
     }

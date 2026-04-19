@@ -23,6 +23,7 @@ pub fn run() {
             api::get_device_config,
             api::send_text,
             api::respond_to_transfer_request,
+            api::respond_to_batch_transfer_request,
             api::stop_server
         ])
         .setup(|app| util::init_app_config(app.handle()))

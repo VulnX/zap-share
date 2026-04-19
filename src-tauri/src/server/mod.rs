@@ -84,6 +84,7 @@ pub fn start_server<R: Runtime>(window: tauri::Window<R>, tx: mpsc::Sender<u16>)
                 .route("/download/files/{id}", web::get().to(send::get_file))
                 .route("/upload", web::get().to(recv::serve_upload_ui))
                 .route("/upload/request", web::post().to(recv::handle_request))
+                .route("/upload/request-batch", web::post().to(recv::handle_batch_request))
                 .route("/upload/files", web::post().to(recv::receive_file))
                 .route("/upload/text", web::post().to(recv::receive_text));
             app = app.app_data(window_data.clone());

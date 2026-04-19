@@ -82,9 +82,8 @@ export default function Choice({ children }: { children: React.ReactNode }) {
   }, [isMobile]);
   return (
     <div
-      className={`h-screen w-screen flex flex-col overflow-hidden transition-colors duration-300 ${
-        isTheme ? "bg-[#13151f] text-white" : "bg-[#f8f9fc] text-black"
-      }`}
+      className={`h-screen w-screen flex flex-col overflow-hidden transition-colors duration-300 ${isTheme ? "bg-[#13151f] text-white" : "bg-[#f8f9fc] text-black"
+        }`}
     >
       <Navigation tab={tab} setTab={setTab} />
       <main

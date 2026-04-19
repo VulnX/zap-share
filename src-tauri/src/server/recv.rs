@@ -41,7 +41,10 @@ pub async fn serve_upload_ui() -> impl Responder {
     HttpResponse::Ok().body(include_str!("../static/upload-portal.html"))
 }
 
-/// Handles `POST /upload/request`
+/// Handles `POST /upload/request` — TEXT only.
+///
+/// Used when the sender wants to transfer a text snippet.
+/// For file transfers use `POST /upload/request-batch` instead.
 pub async fn handle_request(
     window: web::Data<Window>,
     manager: web::Data<TransferManager>,
@@ -52,15 +55,10 @@ pub async fn handle_request(
     if matches!(mode, models::TransferMode::Send(_)) {
         return HttpResponse::Forbidden().body("Forbidden");
     }
-    // This is a blocking request, drop the `TRANSFER_MODE` guard
     drop(mode_guard);
 
     let request_id = req.id.clone();
-    debug!("Incoming transfer request: {:#?}", req);
-    debug!(
-        "Request type: {}, filename: {:?}, size: {:?}",
-        req.r#type, req.filename, req.filesize
-    );
+    debug!("Incoming text transfer request: {:#?}", req);
 
     let (tx, rx) = oneshot::channel();
     {
@@ -68,18 +66,15 @@ pub async fn handle_request(
         pending.insert(request_id.clone(), tx);
     }
 
-    // Emit event to frontend
     if let Err(e) = window.emit("transfer-request", req.into_inner()) {
         error!("Failed to emit transfer-request: {e}");
         return HttpResponse::InternalServerError().body("Failed to notify receiver");
     }
 
-    // Wait for response (with timeout)
     match tokio::time::timeout(std::time::Duration::from_secs(60), rx).await {
         Ok(Ok(accepted)) => {
             if accepted {
                 let token = uuid::Uuid::new_v4().to_string();
-                debug!("Transfer accepted for request_id {request_id}; generated token: {token}");
                 {
                     let mut tokens = manager.tokens.lock().unwrap();
                     tokens.insert(token.clone());
@@ -98,13 +93,81 @@ pub async fn handle_request(
             }
         }
         _ => {
-            // Timeout or channel closed
             let mut pending = manager.pending.lock().unwrap();
             pending.remove(&request_id);
             HttpResponse::RequestTimeout().body("Request timed out or cancelled")
         }
     }
 }
+
+/// Handles `POST /upload/request-batch` — FILES.
+///
+/// Accepts metadata for all files in a single request, emits one
+/// `transfer-request-batch` event to the UI, waits for the user to
+/// accept/reject, then returns a token for **each** file on acceptance.
+pub async fn handle_batch_request(
+    window: web::Data<Window>,
+    manager: web::Data<TransferManager>,
+    req: web::Json<models::BatchTransferRequest>,
+) -> impl Responder {
+    let mode_guard = api::TRANSFER_MODE.read().unwrap();
+    let mode = mode_guard.as_ref().unwrap();
+    if matches!(mode, models::TransferMode::Send(_)) {
+        return HttpResponse::Forbidden().body("Forbidden");
+    }
+    drop(mode_guard);
+
+    let batch_id = req.batch_id.clone();
+    let file_ids: Vec<String> = req.files.iter().map(|f| f.id.clone()).collect();
+    debug!("Incoming batch transfer request id={batch_id} files={}", file_ids.len());
+
+    let (tx, rx) = oneshot::channel();
+    {
+        let mut pending = manager.pending.lock().unwrap();
+        pending.insert(batch_id.clone(), tx);
+    }
+
+    if let Err(e) = window.emit("transfer-request-batch", req.into_inner()) {
+        error!("Failed to emit transfer-request-batch: {e}");
+        return HttpResponse::InternalServerError().body("Failed to notify receiver");
+    }
+
+    match tokio::time::timeout(std::time::Duration::from_secs(60), rx).await {
+        Ok(Ok(accepted)) => {
+            if accepted {
+                let tokens: Vec<String> = file_ids
+                    .iter()
+                    .map(|_| uuid::Uuid::new_v4().to_string())
+                    .collect();
+                {
+                    let mut tok_guard = manager.tokens.lock().unwrap();
+                    for t in &tokens {
+                        tok_guard.insert(t.clone());
+                    }
+                }
+                debug!("Batch accepted; issued {} tokens", tokens.len());
+                HttpResponse::Ok().json(models::BatchTransferResponse {
+                    batch_id,
+                    accepted: true,
+                    tokens,
+                })
+            } else {
+                debug!("Batch rejected for batch_id={batch_id}");
+                HttpResponse::Ok().json(models::BatchTransferResponse {
+                    batch_id,
+                    accepted: false,
+                    tokens: vec![],
+                })
+            }
+        }
+        _ => {
+            let mut pending = manager.pending.lock().unwrap();
+            pending.remove(&batch_id);
+            HttpResponse::RequestTimeout().body("Request timed out or cancelled")
+        }
+    }
+}
+
 
 /// Handles `POST /upload/files`
 ///

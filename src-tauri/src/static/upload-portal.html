@@ -1,464 +1,513 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Send to device</title>
-    <style>
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
 
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: #0f0f11;
-        color: #e4e4e7;
-        min-height: 100dvh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 24px 16px 40px;
-        gap: 20px;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Send to device</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-      h1 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #f4f4f5;
-        letter-spacing: -0.02em;
-      }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f11;
+      color: #e4e4e7;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+      gap: 20px;
+    }
 
-      /* Tab toggle */
-      .tabs {
-        display: flex;
-        background: #1c1c1f;
-        border: 1px solid #2a2a2e;
-        border-radius: 12px;
-        padding: 4px;
-        gap: 2px;
-      }
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f4f4f5;
+      letter-spacing: -0.02em;
+    }
 
-      .tab-btn {
-        flex: 1;
-        padding: 8px 24px;
-        border: none;
-        border-radius: 9px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
-        background: transparent;
-        color: #71717a;
-        transition: all 0.15s;
-      }
+    /* Tab toggle */
+    .tabs {
+      display: flex;
+      background: #1c1c1f;
+      border: 1px solid #2a2a2e;
+      border-radius: 12px;
+      padding: 4px;
+      gap: 2px;
+    }
 
-      .tab-btn.active {
-        background: #2a2a2e;
-        color: #f4f4f5;
-      }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 24px;
+      border: none;
+      border-radius: 9px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: #71717a;
+      transition: all 0.15s;
+    }
 
-      /* Panels */
-      .panel {
-        display: none;
-        width: 100%;
-        max-width: 420px;
-        flex-direction: column;
-        gap: 16px;
-      }
+    .tab-btn.active {
+      background: #2a2a2e;
+      color: #f4f4f5;
+    }
 
-      .panel.visible {
-        display: flex;
-      }
+    /* Panels */
+    .panel {
+      display: none;
+      width: 100%;
+      max-width: 420px;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-      /* Drop zone */
-      .drop-zone {
-        border: 2px dashed #3a3a3e;
-        border-radius: 16px;
-        padding: 32px 16px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.2s;
-        background: #1a1a1d;
-      }
+    .panel.visible {
+      display: flex;
+    }
 
-      .drop-zone:hover,
-      .drop-zone.drag-over {
-        border-color: #6366f1;
-        background: #1e1e2a;
-      }
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed #3a3a3e;
+      border-radius: 16px;
+      padding: 32px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #1a1a1d;
+    }
 
-      .drop-zone .icon {
-        font-size: 2.4rem;
-        margin-bottom: 10px;
-      }
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: #6366f1;
+      background: #1e1e2a;
+    }
 
-      .drop-zone .label {
-        font-size: 0.9rem;
-        color: #a1a1aa;
-      }
+    .drop-zone .icon {
+      font-size: 2.4rem;
+      margin-bottom: 10px;
+    }
 
-      .drop-zone .sublabel {
-        font-size: 0.75rem;
-        color: #52525b;
-        margin-top: 4px;
-      }
+    .drop-zone .label {
+      font-size: 0.9rem;
+      color: #a1a1aa;
+    }
 
-      #fileInput {
-        display: none;
-      }
+    .drop-zone .sublabel {
+      font-size: 0.75rem;
+      color: #52525b;
+      margin-top: 4px;
+    }
 
-      #fileName {
-        font-size: 0.82rem;
-        color: #818cf8;
-        font-weight: 500;
-        min-height: 1.2em;
-        text-align: center;
-      }
+    #fileInput {
+      display: none;
+    }
 
-      /* Progress bar */
-      .progress-wrap {
-        height: 6px;
-        background: #27272a;
-        border-radius: 99px;
-        overflow: hidden;
-        opacity: 0;
-        transition: opacity 0.2s;
-      }
+    #fileName {
+      font-size: 0.82rem;
+      color: #818cf8;
+      font-weight: 500;
+      min-height: 1.2em;
+      text-align: center;
+    }
 
-      .progress-wrap.visible {
-        opacity: 1;
-      }
+    /* Progress bar */
+    .progress-wrap {
+      height: 6px;
+      background: #27272a;
+      border-radius: 99px;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
 
-      #progressBar {
-        height: 100%;
-        width: 0;
-        background: linear-gradient(90deg, #6366f1, #818cf8);
-        border-radius: 99px;
-        transition: width 0.2s;
-      }
+    .progress-wrap.visible {
+      opacity: 1;
+    }
 
-      /* Status */
-      #statusMsg {
-        font-size: 0.8rem;
-        color: #71717a;
-        text-align: center;
-        min-height: 1.2em;
-      }
+    #progressBar {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #6366f1, #818cf8);
+      border-radius: 99px;
+      transition: width 0.2s;
+    }
 
-      #statusMsg.success {
-        color: #4ade80;
-      }
+    /* Status */
+    #statusMsg {
+      font-size: 0.8rem;
+      color: #71717a;
+      text-align: center;
+      min-height: 1.2em;
+    }
 
-      #statusMsg.error {
-        color: #f87171;
-      }
+    #statusMsg.success {
+      color: #4ade80;
+    }
 
-      /* Textarea */
-      textarea {
-        width: 100%;
-        height: 180px;
-        background: #1a1a1d;
-        border: 1.5px solid #3a3a3e;
-        border-radius: 14px;
-        color: #e4e4e7;
-        font-size: 0.95rem;
-        padding: 14px;
-        resize: none;
-        outline: none;
-        line-height: 1.6;
-        transition: border-color 0.15s;
-      }
+    #statusMsg.error {
+      color: #f87171;
+    }
 
-      textarea:focus {
-        border-color: #6366f1;
-      }
+    /* Textarea */
+    textarea {
+      width: 100%;
+      height: 180px;
+      background: #1a1a1d;
+      border: 1.5px solid #3a3a3e;
+      border-radius: 14px;
+      color: #e4e4e7;
+      font-size: 0.95rem;
+      padding: 14px;
+      resize: none;
+      outline: none;
+      line-height: 1.6;
+      transition: border-color 0.15s;
+    }
 
-      textarea::placeholder {
-        color: #52525b;
-      }
+    textarea:focus {
+      border-color: #6366f1;
+    }
 
-      /* Button */
-      .btn {
-        width: 100%;
-        padding: 13px;
-        border: none;
-        border-radius: 12px;
-        font-size: 0.9rem;
-        font-weight: 700;
-        cursor: pointer;
-        background: #6366f1;
-        color: #fff;
-        letter-spacing: 0.01em;
-        transition:
-          background 0.15s,
-          opacity 0.15s,
-          transform 0.1s;
-      }
+    textarea::placeholder {
+      color: #52525b;
+    }
 
-      .btn:hover {
-        background: #4f46e5;
-      }
+    /* Button */
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: #6366f1;
+      color: #fff;
+      letter-spacing: 0.01em;
+      transition:
+        background 0.15s,
+        opacity 0.15s,
+        transform 0.1s;
+    }
 
-      .btn:active {
-        transform: scale(0.98);
-      }
+    .btn:hover {
+      background: #4f46e5;
+    }
 
-      .btn:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-      }
-    </style>
-  </head>
+    .btn:active {
+      transform: scale(0.98);
+    }
 
-  <body>
-    <h1>Send to device</h1>
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
 
-    <!-- Tab switcher -->
-    <div class="tabs">
-      <button class="tab-btn active" id="tabFile" onclick="switchTab('file')">
-        File
-      </button>
-      <button class="tab-btn" id="tabText" onclick="switchTab('text')">
-        Text
-      </button>
+<body>
+  <h1>Send to device</h1>
+
+  <!-- Tab switcher -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tabFile" onclick="switchTab('file')">
+      File
+    </button>
+    <button class="tab-btn" id="tabText" onclick="switchTab('text')">
+      Text
+    </button>
+  </div>
+
+  <!-- ── File panel ── -->
+  <div class="panel visible" id="panelFile">
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="icon">📂</div>
+      <p class="label">Tap to select files</p>
+      <p class="sublabel">or drag &amp; drop here</p>
     </div>
-
-    <!-- ── File panel ── -->
-    <div class="panel visible" id="panelFile">
-      <div
-        class="drop-zone"
-        id="dropZone"
-        onclick="document.getElementById('fileInput').click()"
-      >
-        <div class="icon">📂</div>
-        <p class="label">Tap to select files</p>
-        <p class="sublabel">or drag &amp; drop here</p>
-      </div>
-      <input type="file" id="fileInput" multiple onchange="filesChosen()" />
-      <p id="fileName"></p>
-      <div class="progress-wrap" id="progressWrap">
-        <div id="progressBar"></div>
-      </div>
-      <p id="statusMsg"></p>
-      <button class="btn" id="uploadBtn" onclick="uploadFiles()" disabled>
-        Upload
-      </button>
+    <input type="file" id="fileInput" multiple onchange="filesChosen()" />
+    <p id="fileName"></p>
+    <div class="progress-wrap" id="progressWrap">
+      <div id="progressBar"></div>
     </div>
+    <p id="statusMsg"></p>
+    <button class="btn" id="uploadBtn" onclick="uploadFiles()" disabled>
+      Upload
+    </button>
+  </div>
 
-    <!-- ── Text panel ── -->
-    <div class="panel" id="panelText">
-      <textarea
-        id="textInput"
-        placeholder="Paste or type text to send…"
-      ></textarea>
-      <button class="btn" id="sendTextBtn" onclick="sendText()">
-        Send text
-      </button>
-    </div>
+  <!-- ── Text panel ── -->
+  <div class="panel" id="panelText">
+    <textarea id="textInput" placeholder="Paste or type text to send…"></textarea>
+    <button class="btn" id="sendTextBtn" onclick="sendText()">
+      Send text
+    </button>
+  </div>
 
-    <script>
-      // ── Tab ──────────────────────────────────────────────────────────────────
-      function switchTab(tab) {
-        document
-          .getElementById("panelFile")
-          .classList.toggle("visible", tab === "file");
-        document
-          .getElementById("panelText")
-          .classList.toggle("visible", tab === "text");
-        document
-          .getElementById("tabFile")
-          .classList.toggle("active", tab === "file");
-        document
-          .getElementById("tabText")
-          .classList.toggle("active", tab === "text");
+  <script>
+    // ── Tab ──────────────────────────────────────────────────────────────────
+    function switchTab(tab) {
+      document
+        .getElementById("panelFile")
+        .classList.toggle("visible", tab === "file");
+      document
+        .getElementById("panelText")
+        .classList.toggle("visible", tab === "text");
+      document
+        .getElementById("tabFile")
+        .classList.toggle("active", tab === "file");
+      document
+        .getElementById("tabText")
+        .classList.toggle("active", tab === "text");
+    }
+
+    // ── Drag & drop ──────────────────────────────────────────────────────────
+    const dz = document.getElementById("dropZone");
+    dz.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dz.classList.add("drag-over");
+    });
+    dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
+    dz.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dz.classList.remove("drag-over");
+      document.getElementById("fileInput").files = e.dataTransfer.files;
+      filesChosen();
+    });
+
+    // ── File selection ───────────────────────────────────────────────────────
+    function filesChosen() {
+      const files = document.getElementById("fileInput").files;
+      const btn = document.getElementById("uploadBtn");
+      const nameEl = document.getElementById("fileName");
+      if (!files.length) {
+        btn.disabled = true;
+        nameEl.textContent = "";
+        return;
       }
+      nameEl.textContent = [...files].map((f) => f.name).join(", ");
+      btn.disabled = false;
+      setStatus("", "");
+    }
 
-      // ── Drag & drop ──────────────────────────────────────────────────────────
-      const dz = document.getElementById("dropZone");
-      dz.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        dz.classList.add("drag-over");
+    // ── Handshake ──────────────────────────────────────────────────────────
+    function generateId() {
+      return (
+        Date.now().toString(36) + Math.random().toString(36).substring(2, 10)
+      );
+    }
+
+    /**
+     * Request tokens for all files at once via a single batch handshake.
+     * Returns an array of tokens (parallel to `files` array) on acceptance.
+     */
+    async function getBatchTokens(files) {
+      const batchId = generateId();
+      const fileInfos = Array.from(files).map((f) => ({
+        id: generateId(),
+        filename: f.name,
+        filesize: f.size,
+      }));
+
+      const res = await fetch("/upload/request-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          batch_id: batchId,
+          device_name: "Web Browser",
+          files: fileInfos,
+        }),
       });
-      dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
-      dz.addEventListener("drop", (e) => {
-        e.preventDefault();
-        dz.classList.remove("drag-over");
-        document.getElementById("fileInput").files = e.dataTransfer.files;
-        filesChosen();
+
+      if (!res.ok) {
+        if (res.status === 408) throw new Error("Request timed out");
+        throw new Error("Handshake failed: " + res.status);
+      }
+
+      const data = await res.json();
+      if (!data.accepted) throw new Error("Rejected");
+      return data.tokens; // string[] parallel to fileInfos
+    }
+
+    /** Single-file token for text transfers (unchanged path). */
+    async function getTextToken(textLength) {
+      const id = generateId();
+      const res = await fetch("/upload/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          device_name: "Web Browser",
+          type: "text",
+          filename: null,
+          filesize: textLength,
+        }),
       });
 
-      // ── File selection ───────────────────────────────────────────────────────
-      function filesChosen() {
-        const files = document.getElementById("fileInput").files;
-        const btn = document.getElementById("uploadBtn");
-        const nameEl = document.getElementById("fileName");
-        if (!files.length) {
-          btn.disabled = true;
-          nameEl.textContent = "";
-          return;
+      if (!res.ok) {
+        if (res.status === 408) throw new Error("Request timed out");
+        throw new Error("Handshake failed: " + res.status);
+      }
+
+      const data = await res.json();
+      if (!data.accepted) throw new Error("Rejected");
+      return data.token;
+    }
+
+    // ── Upload ───────────────────────────────────────────────────────────────
+    async function uploadFiles() {
+      const files = document.getElementById("fileInput").files;
+      const btn = document.getElementById("uploadBtn");
+      if (!files.length) return;
+      btn.disabled = true;
+
+      try {
+        const fileCount = files.length;
+        setStatus(
+          fileCount === 1
+            ? "Waiting for acceptance…"
+            : `Waiting for acceptance of ${fileCount} files…`,
+          ""
+        );
+
+        const tokens = await getBatchTokens(files);
+
+        // Upload sequentially using parallel-indexed tokens
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const token = tokens[i];
+          setStatus(`Uploading ${file.name} (${i + 1}/${files.length})…`, "");
+          await uploadOne(file, token);
         }
-        nameEl.textContent = [...files].map((f) => f.name).join(", ");
-        btn.disabled = false;
-        setStatus("", "");
-      }
 
-      // ── Handshake ──────────────────────────────────────────────────────────
-      function generateId() {
-        return (
-          Date.now().toString(36) + Math.random().toString(36).substring(2, 10)
+        setStatus(
+          fileCount === 1 ? "Sent ✓" : `All ${fileCount} files sent ✓`,
+          "success"
+        );
+      } catch (err) {
+        setStatus(
+          err.message === "Rejected"
+            ? "Transfer rejected by receiver"
+            : err.message || "Upload failed",
+          "error"
         );
       }
 
-      async function getTransferToken(type, filename, filesize) {
-        const id = generateId();
-        const device_name = "Web Browser";
+      btn.disabled = false;
+    }
 
-        const res = await fetch("/upload/request", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, device_name, type, filename, filesize }),
-        });
+    function uploadOne(file, token) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/upload/files", true);
+        xhr.setRequestHeader("X-Filename", encodeURIComponent(file.name));
+        xhr.setRequestHeader("X-Transfer-Token", token);
 
-        if (!res.ok) {
-          if (res.status === 408) throw new Error("Request timed out");
-          throw new Error("Handshake failed: " + res.status);
-        }
+        xhr.upload.onprogress = (e) => {
+          if (!e.lengthComputable) return;
+          const pct = (e.loaded / e.total) * 100;
+          document.getElementById("progressWrap").classList.add("visible");
+          document.getElementById("progressBar").style.width = pct + "%";
+          setStatus("Uploading… " + Math.round(pct) + "%", "");
+        };
 
-        const data = await res.json();
-        if (!data.accepted) throw new Error("Rejected");
-        return data.token;
-      }
-
-      // ── Upload ───────────────────────────────────────────────────────────────
-      async function uploadFiles() {
-        const files = document.getElementById("fileInput").files;
-        const btn = document.getElementById("uploadBtn");
-        if (!files.length) return;
-        btn.disabled = true;
-        for (const file of files) {
-          setStatus("Waiting for acceptance…", "");
-          try {
-            const token = await getTransferToken("file", file.name, file.size);
-            setStatus("Uploading " + file.name + "…", "");
-            await uploadOne(file, token);
-            setStatus(file.name + " — sent ✓", "success");
-          } catch (err) {
-            setStatus(
-              err.message === "Rejected"
-                ? "Transfer rejected by receiver"
-                : err.message || "Failed to send " + file.name,
-              "error",
-            );
-          }
-        }
-        btn.disabled = false;
-      }
-
-      function uploadOne(file, token) {
-        return new Promise((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open("POST", "/upload/files", true);
-          xhr.setRequestHeader("X-Filename", encodeURIComponent(file.name));
-          xhr.setRequestHeader("X-Transfer-Token", token);
-
-          xhr.upload.onprogress = (e) => {
-            if (!e.lengthComputable) return;
-            const pct = (e.loaded / e.total) * 100;
-            document.getElementById("progressWrap").classList.add("visible");
-            document.getElementById("progressBar").style.width = pct + "%";
-            setStatus("Uploading… " + Math.round(pct) + "%", "");
-          };
-
-          xhr.onload = () => {
-            document.getElementById("progressBar").style.width = "100%";
-            if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else if (xhr.status === 413) {
-              alert("Not enough space on device.");
-              reject();
-            } else {
-              alert("Upload error: " + xhr.status);
-              reject();
-            }
-          };
-
-          xhr.onerror = () => {
-            alert("Network error.");
+        xhr.onload = () => {
+          document.getElementById("progressBar").style.width = "100%";
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else if (xhr.status === 413) {
+            alert("Not enough space on device.");
             reject();
-          };
-          xhr.send(file);
-        });
-      }
-
-      // ── Text send ────────────────────────────────────────────────────────────
-      async function sendText() {
-        const text = document.getElementById("textInput").value.trim();
-        if (!text) {
-          alert("Please enter some text.");
-          return;
-        }
-        const btn = document.getElementById("sendTextBtn");
-        btn.disabled = true;
-        const originalText = btn.textContent;
-        btn.textContent = "Waiting for acceptance…";
-        try {
-          const token = await getTransferToken("text", null, text.length);
-          btn.textContent = "Sending…";
-          const res = await fetch("/upload/text", {
-            method: "POST",
-            headers: {
-              "Content-Type": "text/plain",
-              "X-Transfer-Token": token,
-            },
-            body: text,
-          });
-          if (res.ok) {
-            btn.textContent = "Sent ✓";
-            document.getElementById("textInput").value = "";
-            setTimeout(() => {
-              btn.textContent = originalText;
-              btn.disabled = false;
-            }, 1800);
           } else {
-            btn.textContent = "Error " + res.status;
-            btn.disabled = false;
+            alert("Upload error: " + xhr.status);
+            reject();
           }
-        } catch (err) {
-          btn.textContent = err.message === "Rejected" ? "Rejected" : "Failed";
+        };
+
+        xhr.onerror = () => {
+          alert("Network error.");
+          reject();
+        };
+        xhr.send(file);
+      });
+    }
+
+    // ── Text send ────────────────────────────────────────────────────────────
+    async function sendText() {
+      const text = document.getElementById("textInput").value.trim();
+      if (!text) {
+        alert("Please enter some text.");
+        return;
+      }
+      const btn = document.getElementById("sendTextBtn");
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.textContent = "Waiting for acceptance…";
+      try {
+        const token = await getTextToken(text.length);
+        btn.textContent = "Sending…";
+        const res = await fetch("/upload/text", {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain",
+            "X-Transfer-Token": token,
+          },
+          body: text,
+        });
+        if (res.ok) {
+          btn.textContent = "Sent ✓";
+          document.getElementById("textInput").value = "";
           setTimeout(() => {
             btn.textContent = originalText;
             btn.disabled = false;
           }, 1800);
+        } else {
+          btn.textContent = "Error " + res.status;
+          btn.disabled = false;
         }
+      } catch (err) {
+        btn.textContent = err.message === "Rejected" ? "Rejected" : "Failed";
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.disabled = false;
+        }, 1800);
       }
+    }
 
-      function setStatus(msg, cls) {
-        const el = document.getElementById("statusMsg");
-        el.textContent = msg;
-        el.className = cls;
-      }
+    function setStatus(msg, cls) {
+      const el = document.getElementById("statusMsg");
+      el.textContent = msg;
+      el.className = cls;
+    }
 
-      // Live portal updates via SSE
-      let evtSource = new EventSource("/events");
-      evtSource.onmessage = (event) => {
-        if (event.data === "reload") {
-          console.log("Reload signal received, redirecting...");
-          document.body.innerHTML = `
+    // Live portal updates via SSE
+    let evtSource = new EventSource("/events");
+    evtSource.onmessage = (event) => {
+      if (event.data === "reload") {
+        console.log("Reload signal received, redirecting...");
+        document.body.innerHTML = `
                 <div style="height: 100dvh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; background: #0f0f11; color: #e4e4e7;">
                     <p style="font-weight: 500;">Switching portal...</p>
                 </div>
             `;
-          window.location.href = "/";
-        }
-      };
-      evtSource.onerror = (e) => {
-        console.error("SSE Connection error. Reconnecting...", e);
-      };
-      window.addEventListener("beforeunload", () => {
-        evtSource.close();
-      });
-    </script>
-  </body>
+        window.location.href = "/";
+      }
+    };
+    evtSource.onerror = (e) => {
+      console.error("SSE Connection error. Reconnecting...", e);
+    };
+    window.addEventListener("beforeunload", () => {
+      evtSource.close();
+    });
+  </script>
+</body>
+
 </html>

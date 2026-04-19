@@ -95,7 +95,7 @@ pub struct AppConfig {
 pub struct TransferRequest {
     pub id: String,
     pub device_name: String,
-    pub r#type: String, // "file" or "text"
+    pub r#type: String, // "text" only — files use BatchTransferRequest
     pub filename: Option<String>,
     pub filesize: Option<u64>,
 }
@@ -106,6 +106,33 @@ pub struct TransferResponse {
     pub accepted: bool,
     pub token: Option<String>,
 }
+
+/// Metadata for a single file inside a batch request
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FileInfo {
+    /// Unique sub-ID that maps to a specific token in the response
+    pub id: String,
+    pub filename: String,
+    pub filesize: u64,
+}
+
+/// Sent by the sender when they want to transfer one or more files at once
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BatchTransferRequest {
+    pub batch_id: String,
+    pub device_name: String,
+    pub files: Vec<FileInfo>,
+}
+
+/// Response to a batch request: tokens are ordered 1-to-1 with request files
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BatchTransferResponse {
+    pub batch_id: String,
+    pub accepted: bool,
+    /// Parallel to `files` in the request — `None` when rejected
+    pub tokens: Vec<String>,
+}
+
 
 #[derive(Debug)]
 pub struct BroadcastThread {

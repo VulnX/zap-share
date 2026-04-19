@@ -50,7 +50,19 @@ export interface SharedFiles {
 export type TransferRequest = {
   id: string;
   device_name: string;
-  type: "file" | "text";
+  type: "text"; // text only — files use BatchTransferRequest
   filename?: string;
   filesize?: number;
+};
+
+export type FileInfo = {
+  id: string;
+  filename: string;
+  filesize: number;
+};
+
+export type BatchTransferRequest = {
+  batch_id: string;
+  device_name: string;
+  files: FileInfo[];
 };
