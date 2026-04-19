@@ -1,6 +1,6 @@
 # Installation
 
-This document covers building Zap Share from source and using prebuilt packages.
+This document covers building ShareCrow from source and using prebuilt packages.
 
 ---
 
@@ -88,19 +88,19 @@ For sideloading or testing, you can self-sign the release APK.
 
 ```bash
 keytool -genkey -v \
-  -keystore zap-share.jks \
+  -keystore sharecrow.jks \
   -keyalg RSA \
   -keysize 2048 \
   -validity 10000 \
-  -alias zap-share
+  -alias sharecrow
 ```
 
 2. Sign the APK using `apksigner` (found in your Android SDK `build-tools` directory):
 
 ```bash
 apksigner sign \
-  --ks zap-share.jks \
-  --out zap-share-signed.apk \
+  --ks sharecrow.jks \
+  --out sharecrow-signed.apk \
   src-tauri/gen/android/app/build/outputs/apk/release/app-release-unsigned.apk
 ```
 
@@ -108,7 +108,7 @@ apksigner sign \
 
 ## Use Prebuilt Packages
 
-Download the latest release for your platform from the [Releases](https://github.com/vulnx/zap-share/releases) page.
+Download the latest release for your platform from the [Releases](https://github.com/vulnx/sharecrow/releases) page.
 
 | Platform | Format |
 |----------|--------|

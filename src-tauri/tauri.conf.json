@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Zap Share",
+  "productName": "ShareCrow",
   "version": "0.1.0",
   "identifier": "com.ipd.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Zap Share",
+        "title": "ShareCrow",
         "width": 900,
         "height": 650
       }

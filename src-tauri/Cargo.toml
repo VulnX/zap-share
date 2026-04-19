@@ -1,5 +1,5 @@
 [package]
-name = "zap_share"
+name = "share_crow"
 version = "0.1.0"
 description = "A Smart File-Sharing App"
 authors = ["you"]
